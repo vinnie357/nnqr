@@ -1,3 +1,4 @@
 [tools]
 node = 'lts'
-rust = 'lts'
+rust = '1.87.0'
+zig = 'latest'

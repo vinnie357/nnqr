@@ -1,0 +1,93 @@
+name: Build Windows Release
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Cache cargo index
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Build Release
+      run: cargo build --release
+      
+    - name: Run tests
+      run: cargo test --release
+      
+    - name: Create Release Package
+      shell: powershell
+      run: |
+        New-Item -ItemType Directory -Force -Path release
+        Copy-Item target/release/quadradius.exe release/
+        # Copy any assets if they exist
+        if (Test-Path assets) {
+          Copy-Item -Recurse assets release/
+        }
+        # Create a simple README
+        @"
+        Quadradius for Windows
+        =====================
+        
+        To play: Double-click quadradius.exe
+        
+        Controls:
+        - Left click: Select piece
+        - Right click: Move piece
+        
+        Enjoy!
+        "@ | Out-File -FilePath release/README.txt -Encoding UTF8
+        
+    - name: Upload Windows Executable
+      uses: actions/upload-artifact@v3
+      with:
+        name: quadradius-windows-x64
+        path: release/
+        
+    - name: Create ZIP for Release
+      if: startsWith(github.ref, 'refs/tags/')
+      shell: powershell
+      run: |
+        Compress-Archive -Path release/* -DestinationPath quadradius-windows-x64.zip
+        
+    - name: Upload Release Asset
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: quadradius-windows-x64.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

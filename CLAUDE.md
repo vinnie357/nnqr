@@ -7,7 +7,7 @@ You are implementing Quadradius, a turn-based strategy game described as "checke
 1. **Project Requirements Document (PRD)** - Contains complete game mechanics, technical architecture, and project specifications
 2. **Implementation Plan** - Contains strict phase-by-phase execution steps with acceptance criteria
 
-**Your workflow should be**: Implementation Plan (what to do) → CLAUDE.md (how to do it) → PRD (detailed specifications)
+**Your workflow should be**: Implementation Plan (what to do) → CLAUDE.md (how to do it) → PRD (detailed specifications) → Rust Testing Guide (comprehensive testing strategy)
 
 ## Implementation Philosophy
 
@@ -33,11 +33,61 @@ You are implementing Quadradius, a turn-based strategy game described as "checke
 ### Reference Document Usage
 - **Implementation Plan**: Your step-by-step roadmap (FOLLOW THIS STRICTLY)
 - **PRD**: Detailed specifications when you need technical details
+- **Rust Testing Guide**: Comprehensive testing strategy and examples for each phase
 - **CLAUDE.md** (this doc): Best practices and implementation guidance
+
+## Testing Strategy Integration
+
+**CRITICAL**: Testing is mandatory for each phase - refer to the Rust Testing Guide for comprehensive testing patterns.
+
+### Phase-Based Testing Requirements
+**Phase 1 Foundation**: 
+- Board logic tests (initialization, coordinates, height validation)
+- Movement validation tests (basic rules, height restrictions, occupied tiles)
+- Turn management tests (alternation, invalid actions)
+- Win condition tests (piece elimination, game over detection)
+
+**Phase 2 Power-Up Foundation**:
+- Power orb spawning and collection tests
+- Power activation framework tests  
+- Individual power effect tests for all 5 initial powers
+- Integration tests combining powers with movement
+
+**Phase 3 Expanded Powers**:
+- Systematic testing of power groups (movement, combat, board manipulation, meta)
+- Complex power interaction tests
+- Performance tests with multiple active powers
+
+### Testing Commands for Development
+```bash
+# Run all tests
+cargo test
+
+# Run specific test module
+cargo test board_tests
+
+# Run tests with output visible
+cargo test -- --nocapture
+
+# Run performance tests (marked with #[ignore])
+cargo test -- --ignored
+
+# Check test coverage
+cargo tarpaulin --out Html
+```
+
+### Test-Driven Development Approach
+1. **Write tests FIRST** for each new feature
+2. **Run tests** to confirm they fail (red)
+3. **Implement minimum code** to make tests pass (green)
+4. **Refactor** while keeping tests green
+5. **Add more tests** for edge cases and error conditions
+
+Refer to the Rust Testing Guide for detailed examples, test structure patterns, and Bevy-specific testing approaches.
 
 ## Development Phases & Milestones
 
-**CRITICAL**: These phases align with the Implementation Plan. Refer to the Implementation Plan for specific acceptance criteria and detailed tasks.
+**CRITICAL**: These phases align with the Implementation Plan. Refer to the Implementation Plan for specific acceptance criteria and detailed tasks. Each phase MUST include comprehensive testing as outlined in the Rust Testing Guide.
 
 ### Phase 1: Foundation (Complete this FIRST)
 **Goal**: Get a basic playable game without power-ups
@@ -49,7 +99,10 @@ You are implementing Quadradius, a turn-based strategy game described as "checke
 - Step 1.3: Movement system with terrain height rules
 - Step 1.4: Turn management and win conditions
 
-**Don't proceed to Phase 2 until**: Two humans can play a complete game locally with all basic rules working perfectly.
+**Don't proceed to Phase 2 until**: 
+- Two humans can play a complete game locally with all basic rules working perfectly
+- **ALL Phase 1 tests pass** (see Rust Testing Guide for required test coverage)
+- Code is clean, documented, and maintainable
 
 ### Phase 2: Power-Up Foundation  
 **Goal**: Add core power-up mechanics with first 5 powers
@@ -143,33 +196,39 @@ struct PowerActivated {
 
 ## Testing Strategy
 
-### Test Each Phase Thoroughly
+### Testing Each Phase Thoroughly
+Refer to the Rust Testing Guide for comprehensive examples. Key testing patterns:
+
 ```rust
-// Example tests you should write:
+// Example from Testing Guide - Board Logic Tests
 #[cfg(test)]
-mod tests {
+mod board_tests {
     use super::*;
 
     #[test]
-    fn test_basic_movement_validation() {
-        // Test height restrictions
-        // Test bounds checking
-        // Test occupied tile handling
+    fn test_board_initialization() {
+        let board = Board::new(8, 8);
+        assert_eq!(board.width, 8);
+        assert_eq!(board.height, 8);
     }
 
     #[test]
-    fn test_turn_alternation() {
-        // Ensure turns switch correctly
-        // Test invalid turn attempts
-    }
-
-    #[test]
-    fn test_win_conditions() {
-        // Test piece elimination victory
-        // Test edge cases
+    fn test_height_movement_restrictions() {
+        let mut board = Board::new(8, 8);
+        board.set_height(1, 0, 2); // Raise destination
+        
+        // Cannot move up two levels
+        assert!(!is_valid_move((0, 0), (1, 0), &board));
     }
 }
 ```
+
+**Testing Requirements by Phase**:
+- **Phase 1**: Board, movement, turn management, win condition tests
+- **Phase 2**: Power orb, collection, activation, and first 5 power tests  
+- **Phase 3**: Comprehensive power interaction and performance tests
+
+For detailed test examples, patterns, and Bevy-specific testing approaches, see the Rust Testing Guide.
 
 ### Manual Testing Checklist
 For each milestone, manually verify:
@@ -178,6 +237,14 @@ For each milestone, manually verify:
 - [ ] Game rules are enforced correctly
 - [ ] Visual feedback is clear
 - [ ] Performance is acceptable (60 FPS)
+- [ ] **All automated tests pass** (`cargo test`)
+- [ ] **Code coverage meets minimum thresholds** (use `cargo tarpaulin`)
+
+**Testing Integration with Development**:
+- Write tests FIRST for each new feature (TDD approach)
+- Run tests after every significant change
+- Use `cargo test -- --nocapture` to debug test failures
+- Keep test execution time under 10 seconds for fast feedback loops
 
 ## Code Organization
 
@@ -297,8 +364,9 @@ app.add_plugins((
 
 **DOCUMENT HIERARCHY**:
 1. **Implementation Plan** = Your strict roadmap (NEVER deviate without instruction)
-2. **CLAUDE.md** (this) = How to implement effectively  
-3. **PRD** = Detailed technical specifications when needed
+2. **Rust Testing Guide** = Comprehensive testing strategy and examples
+3. **CLAUDE.md** (this) = How to implement effectively  
+4. **PRD** = Detailed technical specifications when needed
 
 **PHASE DISCIPLINE**:
 The Implementation Plan's phase structure exists because 90% of game projects fail by trying to build everything at once. The phases are designed to prevent:

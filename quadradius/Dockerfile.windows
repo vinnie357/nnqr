@@ -1,0 +1,22 @@
+# Docker image for building Windows executables
+FROM rust:1.87
+
+# Install MinGW for Windows cross-compilation
+RUN apt-get update && apt-get install -y \
+    mingw-w64 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Windows target
+RUN rustup target add x86_64-pc-windows-gnu
+
+# Set working directory
+WORKDIR /app
+
+# Copy source files
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+
+# Build the Windows executable
+RUN cargo build --release --target x86_64-pc-windows-gnu
+
+# The executable will be at /app/target/x86_64-pc-windows-gnu/release/quadradius.exe
