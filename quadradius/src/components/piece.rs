@@ -1,6 +1,7 @@
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Component, Clone, Copy, PartialEq, Debug)]
+#[derive(Component, Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
 pub enum Player {
     Player1,
     Player2,
@@ -13,4 +14,19 @@ pub struct GamePiece {
 }
 
 #[derive(Component)]
-pub struct Selected;
+pub struct Dragging {
+    pub offset: Vec2,
+}
+
+#[derive(Component)]
+pub struct InvalidMoveAnimation {
+    pub start_time: f32,
+    pub duration: f32,
+    pub original_pos: Vec3,
+}
+
+#[derive(Component)]
+pub struct InvalidMoveFlash {
+    pub start_time: f32,
+    pub duration: f32,
+}

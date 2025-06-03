@@ -12,7 +12,7 @@ fn test_board_tile_creation() {
         coordinates: (3, 4),
         height: 2,
     };
-    
+
     assert_eq!(tile.coordinates, (3, 4));
     assert_eq!(tile.height, 2);
 }
@@ -23,7 +23,7 @@ fn test_valid_coordinates() {
     assert!(is_valid_position(0, 0));
     assert!(is_valid_position(7, 7));
     assert!(is_valid_position(3, 5));
-    
+
     // Invalid coordinates
     assert!(!is_valid_position(8, 0));
     assert!(!is_valid_position(0, 8));
@@ -36,11 +36,11 @@ fn test_terrain_height_bounds() {
         coordinates: (0, 0),
         height: 0,
     };
-    
+
     // Test minimum height
     tile.height = -3;
     assert!(tile.height >= -3);
-    
+
     // Test maximum height
     tile.height = 3;
     assert!(tile.height <= 3);

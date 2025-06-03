@@ -1,18 +1,20 @@
 use crate::components::*;
 use crate::resources::*;
-use bevy::prelude::*;
 
 #[test]
 fn test_turn_alternation() {
     let mut game_state = GameState {
         current_player: Player::Player1,
-        selected_piece: None,
+        player1_powers: Vec::new(),
+        player2_powers: Vec::new(),
+        turn_phase: crate::resources::TurnPhase::PowerActivation,
+        selected_power: None,
     };
-    
+
     // End turn for Player 1
     end_turn(&mut game_state);
     assert_eq!(game_state.current_player, Player::Player2);
-    
+
     // End turn for Player 2
     end_turn(&mut game_state);
     assert_eq!(game_state.current_player, Player::Player1);
@@ -21,37 +23,41 @@ fn test_turn_alternation() {
 #[test]
 fn test_game_state_initialization() {
     let game_state = GameState::default();
-    
+
     assert_eq!(game_state.current_player, Player::Player1);
-    assert_eq!(game_state.selected_piece, None);
 }
 
 #[test]
 fn test_invalid_turn_actions() {
     let game_state = GameState {
         current_player: Player::Player1,
-        selected_piece: None,
+        player1_powers: Vec::new(),
+        player2_powers: Vec::new(),
+        turn_phase: crate::resources::TurnPhase::PowerActivation,
+        selected_power: None,
     };
-    
+
     // Player 2 cannot act during Player 1's turn
     assert!(!can_player_act(&game_state, Player::Player2));
-    
+
     // Player 1 can act during their turn
     assert!(can_player_act(&game_state, Player::Player1));
 }
 
 #[test]
-fn test_piece_selection_state() {
+fn test_multiple_turn_switches() {
     let mut game_state = GameState::default();
-    let test_entity = Entity::from_raw(123);
-    
-    // Select a piece
-    game_state.selected_piece = Some(test_entity);
-    assert_eq!(game_state.selected_piece, Some(test_entity));
-    
-    // Deselect piece
-    game_state.selected_piece = None;
-    assert_eq!(game_state.selected_piece, None);
+
+    // Start with Player 1
+    assert_eq!(game_state.current_player, Player::Player1);
+
+    // Switch multiple times
+    for _ in 0..5 {
+        end_turn(&mut game_state);
+    }
+
+    // After 5 switches, should be Player 2
+    assert_eq!(game_state.current_player, Player::Player2);
 }
 
 // Helper functions

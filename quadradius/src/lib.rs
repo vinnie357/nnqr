@@ -7,6 +7,7 @@ pub mod systems;
 mod tests {
     mod board_tests;
     mod movement_tests;
+    mod power_orb_tests;
     mod turn_tests;
     mod win_condition_tests;
 }
