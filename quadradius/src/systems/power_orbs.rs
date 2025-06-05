@@ -21,25 +21,31 @@ pub fn spawn_power_orbs(
     mut last_turn: Local<LastTurnTracker>,
 ) {
     // Check if we're in a new turn
-    let current_turn_id = (game_state.current_player.clone(), game_state.turn_phase.clone());
-    
+    let current_turn_id = (
+        game_state.current_player.clone(),
+        game_state.turn_phase.clone(),
+    );
+
     // Only spawn when transitioning to PowerActivation phase
     if game_state.turn_phase != TurnPhase::PowerActivation {
         return;
     }
-    
+
     // Check if this is a new turn
     if last_turn.last_player == Some(game_state.current_player) {
         return;
     }
-    
+
     last_turn.last_player = Some(game_state.current_player);
     last_turn.turn_count += 1;
-    
-    println!("Turn {} - checking power orb spawn for {:?}", last_turn.turn_count, game_state.current_player);
+
+    println!(
+        "Turn {} - checking power orb spawn for {:?}",
+        last_turn.turn_count, game_state.current_player
+    );
 
     let mut rng = rand::thread_rng();
-    
+
     // Random chance to spawn an orb
     if rng.gen::<f32>() > ORB_SPAWN_CHANCE {
         return;
@@ -47,16 +53,16 @@ pub fn spawn_power_orbs(
 
     // Find all empty tiles
     let mut empty_tiles = Vec::new();
-    
+
     for tile in tiles.iter() {
         let pos = tile.coordinates;
-        
+
         // Check if tile is occupied by a piece
         let has_piece = pieces.iter().any(|p| p.board_position == pos);
-        
+
         // Check if tile already has an orb
         let has_orb = orbs.iter().any(|o| o.board_position == pos);
-        
+
         if !has_piece && !has_orb {
             empty_tiles.push(pos);
         }
@@ -66,9 +72,9 @@ pub fn spawn_power_orbs(
     if !empty_tiles.is_empty() {
         let spawn_pos = empty_tiles[rng.gen_range(0..empty_tiles.len())];
         let power_type = PowerType::random();
-        
+
         let world_pos = board_to_world_position(spawn_pos);
-        
+
         commands.spawn((
             PowerOrb {
                 power_type,
@@ -84,8 +90,12 @@ pub fn spawn_power_orbs(
                 ..default()
             },
         ));
-        
-        println!("Power orb spawned: {} at {:?}", power_type.name(), spawn_pos);
+
+        println!(
+            "Power orb spawned: {} at {:?}",
+            power_type.name(),
+            spawn_pos
+        );
     }
 }
 
@@ -110,7 +120,7 @@ pub fn collect_power_orbs(
                         println!("Player 2 collected: {}", orb.power_type.name());
                     }
                 }
-                
+
                 // Remove the orb
                 commands.entity(orb_entity).despawn();
             }
@@ -125,10 +135,7 @@ fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
 }
 
 // Visual indicator system for orbs (make them pulse)
-pub fn animate_power_orbs(
-    time: Res<Time>,
-    mut orbs: Query<(&PowerOrb, &mut Transform)>,
-) {
+pub fn animate_power_orbs(time: Res<Time>, mut orbs: Query<(&PowerOrb, &mut Transform)>) {
     for (_orb, mut transform) in orbs.iter_mut() {
         let scale = 1.0 + (time.elapsed_seconds() * 3.0).sin() * 0.1;
         transform.scale = Vec3::splat(scale);

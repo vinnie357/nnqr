@@ -53,10 +53,10 @@ pub fn setup_enhanced_ui(mut commands: Commands, asset_server: Res<AssetServer>)
         .with_children(|parent| {
             // Top bar with game info
             setup_top_bar(parent);
-            
+
             // Side panels for power inventory
             setup_side_panels(parent);
-            
+
             // Bottom status bar
             setup_bottom_bar(parent);
         });
@@ -89,7 +89,7 @@ fn setup_top_bar(parent: &mut ChildBuilder) {
                     ..default()
                 },
             ));
-            
+
             // Turn indicator
             parent
                 .spawn((
@@ -118,7 +118,7 @@ fn setup_top_bar(parent: &mut ChildBuilder) {
                         TurnIndicatorText,
                     ));
                 });
-            
+
             // Score display
             parent
                 .spawn((
@@ -142,7 +142,7 @@ fn setup_top_bar(parent: &mut ChildBuilder) {
                             ..default()
                         },
                     ));
-                    
+
                     // Player 2 score
                     parent.spawn(TextBundle::from_section(
                         "P2: 20",
@@ -188,7 +188,7 @@ fn setup_side_panels(parent: &mut ChildBuilder) {
                 },
             ));
         });
-    
+
     // Right panel - Player 2 powers
     parent
         .spawn((
@@ -284,7 +284,7 @@ pub fn update_power_inventory_ui(
     for entity in existing_icons.iter() {
         commands.entity(entity).despawn_recursive();
     }
-    
+
     // Update Player 1 powers
     if let Ok(panel) = player1_panel.get_single() {
         commands.entity(panel).with_children(|parent| {
@@ -293,7 +293,7 @@ pub fn update_power_inventory_ui(
             }
         });
     }
-    
+
     // Update Player 2 powers
     if let Ok(panel) = player2_panel.get_single() {
         commands.entity(panel).with_children(|parent| {
@@ -304,7 +304,12 @@ pub fn update_power_inventory_ui(
     }
 }
 
-fn spawn_power_icon(parent: &mut ChildBuilder, power_type: PowerType, player: Player, index: usize) {
+fn spawn_power_icon(
+    parent: &mut ChildBuilder,
+    power_type: PowerType,
+    player: Player,
+    index: usize,
+) {
     parent
         .spawn((
             ButtonBundle {
@@ -344,16 +349,21 @@ fn spawn_power_icon(parent: &mut ChildBuilder, power_type: PowerType, player: Pl
 pub fn animate_ui_elements(
     mut commands: Commands,
     time: Res<Time>,
-    mut animated: Query<(Entity, &mut UIAnimation, &mut Style, Option<&mut BackgroundColor>)>,
+    mut animated: Query<(
+        Entity,
+        &mut UIAnimation,
+        &mut Style,
+        Option<&mut BackgroundColor>,
+    )>,
 ) {
     for (entity, mut animation, mut style, bg_color) in animated.iter_mut() {
         if animation.start_time == 0.0 {
             animation.start_time = time.elapsed_seconds();
         }
-        
+
         let elapsed = time.elapsed_seconds() - animation.start_time;
         let progress = (elapsed / animation.duration).min(1.0);
-        
+
         match &animation.animation_type {
             UIAnimationType::FadeIn => {
                 if let Some(mut bg) = bg_color {
@@ -374,7 +384,7 @@ pub fn animate_ui_elements(
                 style.top = Val::Px(bounce * 10.0);
             }
         }
-        
+
         if progress >= 1.0 {
             commands.entity(entity).remove::<UIAnimation>();
         }
@@ -391,12 +401,12 @@ pub fn update_turn_indicator_enhanced(
             Player::Player1 => "Player 1",
             Player::Player2 => "Player 2",
         };
-        
+
         let phase = match game_state.turn_phase {
             TurnPhase::PowerActivation => "Power Phase",
             TurnPhase::PieceMovement => "Move Phase",
         };
-        
+
         text.sections[0].value = format!("{}'s Turn - {}", player_name, phase);
         text.sections[0].style.color = match game_state.current_player {
             Player::Player1 => Color::rgb(0.9, 0.3, 0.3),
@@ -416,13 +426,13 @@ pub fn show_power_tooltips(
     for entity in existing_tooltips.iter() {
         commands.entity(entity).despawn_recursive();
     }
-    
+
     let window = windows.single();
     if let Some(cursor_pos) = window.cursor_position() {
         for (icon, transform, node) in power_icons.iter() {
             let icon_pos = transform.translation().truncate();
             let icon_size = node.size();
-            
+
             // Simple AABB check for hover
             if cursor_pos.x >= icon_pos.x - icon_size.x / 2.0
                 && cursor_pos.x <= icon_pos.x + icon_size.x / 2.0

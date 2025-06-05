@@ -28,7 +28,7 @@ pub fn setup_enhanced_board(
             0.3 + height_factor * 0.3,
             0.4 + height_factor * 0.2,
         );
-        
+
         commands.entity(entity).insert((
             AnimatedTile {
                 base_color,
@@ -43,7 +43,9 @@ pub fn setup_enhanced_board(
                     base_color.b() + 0.1,
                 ),
             },
-            HeightIndicator { height: tile.height },
+            HeightIndicator {
+                height: tile.height,
+            },
         ));
     }
 }
@@ -60,11 +62,11 @@ pub fn setup_board_background(mut commands: Commands) {
         transform: Transform::from_xyz(0.0, 0.0, -10.0),
         ..default()
     });
-    
+
     // Board frame
     let frame_thickness = 10.0;
     let board_size = BOARD_SIZE as f32 * TILE_SIZE + frame_thickness * 2.0;
-    
+
     // Top frame
     commands.spawn(SpriteBundle {
         sprite: Sprite {
@@ -75,7 +77,7 @@ pub fn setup_board_background(mut commands: Commands) {
         transform: Transform::from_xyz(0.0, board_size / 2.0 - frame_thickness / 2.0, -1.0),
         ..default()
     });
-    
+
     // Bottom frame
     commands.spawn(SpriteBundle {
         sprite: Sprite {
@@ -86,7 +88,7 @@ pub fn setup_board_background(mut commands: Commands) {
         transform: Transform::from_xyz(0.0, -board_size / 2.0 + frame_thickness / 2.0, -1.0),
         ..default()
     });
-    
+
     // Left frame
     commands.spawn(SpriteBundle {
         sprite: Sprite {
@@ -97,7 +99,7 @@ pub fn setup_board_background(mut commands: Commands) {
         transform: Transform::from_xyz(-board_size / 2.0 + frame_thickness / 2.0, 0.0, -1.0),
         ..default()
     });
-    
+
     // Right frame
     commands.spawn(SpriteBundle {
         sprite: Sprite {
@@ -119,13 +121,13 @@ pub fn animate_board_tiles(
 ) {
     let window = windows.single();
     let (camera, camera_transform) = camera_q.single();
-    
+
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
             for (anim_tile, height_ind, mut sprite, mut transform) in tiles.iter_mut() {
                 let tile_pos = Vec2::new(transform.translation.x, transform.translation.y);
                 let distance = tile_pos.distance(world_pos);
-                
+
                 // Hover effect
                 if distance < TILE_SIZE / 2.0 {
                     sprite.color = anim_tile.hover_color;
@@ -136,10 +138,12 @@ pub fn animate_board_tiles(
                     sprite.color = anim_tile.base_color;
                     transform.scale = Vec3::ONE;
                 }
-                
+
                 // Height-based animation
-                let height_offset = (time.elapsed_seconds() * 2.0 + height_ind.height as f32).sin() * 0.5;
-                transform.translation.z = -5.0 + height_ind.height as f32 * 0.1 + height_offset * 0.1;
+                let height_offset =
+                    (time.elapsed_seconds() * 2.0 + height_ind.height as f32).sin() * 0.5;
+                transform.translation.z =
+                    -5.0 + height_ind.height as f32 * 0.1 + height_offset * 0.1;
             }
         }
     }
@@ -152,23 +156,25 @@ pub fn enhance_piece_visuals(
 ) {
     for (entity, piece, transform) in pieces.iter() {
         // Add shadow
-        let shadow_entity = commands.spawn((
-            PieceShadow { parent: entity },
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::rgba(0.0, 0.0, 0.0, 0.3),
-                    custom_size: Some(Vec2::splat(TILE_SIZE * 0.7)),
+        let shadow_entity = commands
+            .spawn((
+                PieceShadow { parent: entity },
+                SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::rgba(0.0, 0.0, 0.0, 0.3),
+                        custom_size: Some(Vec2::splat(TILE_SIZE * 0.7)),
+                        ..default()
+                    },
+                    transform: Transform::from_xyz(
+                        transform.translation.x + 5.0,
+                        transform.translation.y - 5.0,
+                        transform.translation.z - 0.1,
+                    ),
                     ..default()
                 },
-                transform: Transform::from_xyz(
-                    transform.translation.x + 5.0,
-                    transform.translation.y - 5.0,
-                    transform.translation.z - 0.1,
-                ),
-                ..default()
-            },
-        )).id();
-        
+            ))
+            .id();
+
         // Add glow effect to pieces
         commands.entity(entity).insert(PieceGlow {
             intensity: 0.0,

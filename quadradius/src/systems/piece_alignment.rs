@@ -2,16 +2,14 @@ use crate::components::*;
 use bevy::prelude::*;
 
 // Ensure pieces are always aligned to grid positions
-pub fn align_pieces_to_grid(
-    mut pieces: Query<(&GamePiece, &mut Transform), Without<Dragging>>,
-) {
+pub fn align_pieces_to_grid(mut pieces: Query<(&GamePiece, &mut Transform), Without<Dragging>>) {
     for (piece, mut transform) in pieces.iter_mut() {
         let world_pos = board_to_world_position(piece.board_position);
-        
+
         // Only update if the piece is not at the correct position
         let current_x = transform.translation.x;
         let current_y = transform.translation.y;
-        
+
         if (current_x - world_pos.x).abs() > 0.1 || (current_y - world_pos.y).abs() > 0.1 {
             transform.translation.x = world_pos.x;
             transform.translation.y = world_pos.y;

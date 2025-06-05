@@ -32,13 +32,13 @@ pub fn initialize_terrain_heights(
     for (entity, mut tile) in tiles.iter_mut() {
         // Initialize all tiles to height 0 (ground level)
         tile.height = 0;
-        
+
         commands.entity(entity).insert(TerrainHeight {
             height: 0,
             visual_offset: 0.0,
         });
     }
-    
+
     println!("🏔️ Terrain height system initialized - all tiles at ground level");
 }
 
@@ -50,7 +50,7 @@ pub fn update_terrain_visuals(
         // Adjust Y position based on height
         let base_y = tile.coordinates.1 as f32 * 75.0 - 262.5;
         transform.translation.y = base_y + (terrain.height as f32 * HEIGHT_VISUAL_SCALE);
-        
+
         // Adjust Z position for proper layering
         transform.translation.z = 0.1 + (terrain.height as f32 * 0.01);
     }
@@ -63,27 +63,31 @@ pub fn update_height_sprite_colors(
     for (_, mut sprite, terrain) in tiles.iter_mut() {
         // Color tiles based on height for visual feedback
         let height_factor = (terrain.height + 2) as f32 / 7.0; // Normalize to 0-1
-        
+
         sprite.color = match terrain.height {
             h if h < 0 => Color::rgb(0.3, 0.3, 0.6), // Blue for below ground
-            0 => Color::rgb(0.5, 0.4, 0.3), // Brown for ground level
-            1 => Color::rgb(0.6, 0.5, 0.4), // Light brown for level 1
-            2 => Color::rgb(0.7, 0.6, 0.5), // Lighter brown for level 2
-            3 => Color::rgb(0.8, 0.7, 0.6), // Tan for level 3
-            4 => Color::rgb(0.9, 0.8, 0.7), // Light tan for level 4
-            _ => Color::rgb(1.0, 0.9, 0.8), // Nearly white for max height
+            0 => Color::rgb(0.5, 0.4, 0.3),          // Brown for ground level
+            1 => Color::rgb(0.6, 0.5, 0.4),          // Light brown for level 1
+            2 => Color::rgb(0.7, 0.6, 0.5),          // Lighter brown for level 2
+            3 => Color::rgb(0.8, 0.7, 0.6),          // Tan for level 3
+            4 => Color::rgb(0.9, 0.8, 0.7),          // Light tan for level 4
+            _ => Color::rgb(1.0, 0.9, 0.8),          // Nearly white for max height
         };
     }
 }
 
 // Validate movement based on height differences
-pub fn is_valid_height_movement(from_pos: (u8, u8), to_pos: (u8, u8), tiles: &Query<&BoardTile>) -> bool {
+pub fn is_valid_height_movement(
+    from_pos: (u8, u8),
+    to_pos: (u8, u8),
+    tiles: &Query<&BoardTile>,
+) -> bool {
     let from_tile = tiles.iter().find(|tile| tile.coordinates == from_pos);
     let to_tile = tiles.iter().find(|tile| tile.coordinates == to_pos);
-    
+
     if let (Some(from), Some(to)) = (from_tile, to_tile) {
         let height_diff = to.height - from.height;
-        
+
         // Core Quadradius rule: Can move down any amount, can only move up 1 level
         if height_diff <= 1 {
             return true;
@@ -92,7 +96,7 @@ pub fn is_valid_height_movement(from_pos: (u8, u8), to_pos: (u8, u8), tiles: &Qu
             return false;
         }
     }
-    
+
     false
 }
 
@@ -103,15 +107,15 @@ pub fn raise_column(
     commands: &mut Commands,
 ) {
     println!("⬆️ Raising column {}", column);
-    
+
     let mut affected_tiles = 0;
-    
+
     for (entity, mut tile, mut terrain) in tiles.iter_mut() {
         if tile.coordinates.0 == column && tile.height < MAX_HEIGHT {
             let old_height = tile.height;
             tile.height += 1;
             terrain.height = tile.height;
-            
+
             // Add animation component
             commands.entity(entity).insert(TerrainAnimation {
                 start_height: old_height,
@@ -119,13 +123,15 @@ pub fn raise_column(
                 duration: 0.5,
                 elapsed: 0.0,
             });
-            
+
             affected_tiles += 1;
-            println!("  Tile ({}, {}) raised from {} to {}", 
-                tile.coordinates.0, tile.coordinates.1, old_height, tile.height);
+            println!(
+                "  Tile ({}, {}) raised from {} to {}",
+                tile.coordinates.0, tile.coordinates.1, old_height, tile.height
+            );
         }
     }
-    
+
     if affected_tiles == 0 {
         println!("  No tiles could be raised (already at max height)");
     }
@@ -138,15 +144,15 @@ pub fn lower_column(
     commands: &mut Commands,
 ) {
     println!("⬇️ Lowering column {}", column);
-    
+
     let mut affected_tiles = 0;
-    
+
     for (entity, mut tile, mut terrain) in tiles.iter_mut() {
         if tile.coordinates.0 == column && tile.height > MIN_HEIGHT {
             let old_height = tile.height;
             tile.height -= 1;
             terrain.height = tile.height;
-            
+
             // Add animation component
             commands.entity(entity).insert(TerrainAnimation {
                 start_height: old_height,
@@ -154,13 +160,15 @@ pub fn lower_column(
                 duration: 0.5,
                 elapsed: 0.0,
             });
-            
+
             affected_tiles += 1;
-            println!("  Tile ({}, {}) lowered from {} to {}", 
-                tile.coordinates.0, tile.coordinates.1, old_height, tile.height);
+            println!(
+                "  Tile ({}, {}) lowered from {} to {}",
+                tile.coordinates.0, tile.coordinates.1, old_height, tile.height
+            );
         }
     }
-    
+
     if affected_tiles == 0 {
         println!("  No tiles could be lowered (already at min height)");
     }
@@ -174,14 +182,14 @@ pub fn destroy_column(
     commands: &mut Commands,
 ) {
     println!("💥 Destroying column {}", column);
-    
+
     // Lower all tiles in column to minimum height
     for (entity, mut tile, mut terrain) in tiles.iter_mut() {
         if tile.coordinates.0 == column {
             let old_height = tile.height;
             tile.height = MIN_HEIGHT;
             terrain.height = tile.height;
-            
+
             // Add dramatic animation
             commands.entity(entity).insert(TerrainAnimation {
                 start_height: old_height,
@@ -189,27 +197,34 @@ pub fn destroy_column(
                 duration: 1.0,
                 elapsed: 0.0,
             });
-            
-            println!("  Tile ({}, {}) destroyed (height {} -> {})", 
-                tile.coordinates.0, tile.coordinates.1, old_height, tile.height);
+
+            println!(
+                "  Tile ({}, {}) destroyed (height {} -> {})",
+                tile.coordinates.0, tile.coordinates.1, old_height, tile.height
+            );
         }
     }
-    
+
     // Remove all pieces in the column
     let mut destroyed_pieces = 0;
     for (entity, piece) in pieces.iter() {
         if piece.board_position.0 == column {
             commands.entity(entity).despawn();
             destroyed_pieces += 1;
-            println!("  Destroyed piece at ({}, {})", 
-                piece.board_position.0, piece.board_position.1);
+            println!(
+                "  Destroyed piece at ({}, {})",
+                piece.board_position.0, piece.board_position.1
+            );
         }
     }
-    
+
     // Spawn destruction visual effect
     spawn_column_destruction_effect(commands, column);
-    
-    println!("  Column {} destroyed: {} pieces removed", column, destroyed_pieces);
+
+    println!(
+        "  Column {} destroyed: {} pieces removed",
+        column, destroyed_pieces
+    );
 }
 
 // Animate terrain height changes
@@ -220,7 +235,7 @@ pub fn animate_terrain_changes(
 ) {
     for (entity, mut terrain, mut animation) in animated_tiles.iter_mut() {
         animation.elapsed += time.delta_seconds();
-        
+
         if animation.elapsed >= animation.duration {
             // Animation complete
             terrain.height = animation.target_height;
@@ -228,9 +243,9 @@ pub fn animate_terrain_changes(
         } else {
             // Interpolate height for smooth animation
             let progress = animation.elapsed / animation.duration;
-            let current_height = animation.start_height as f32 + 
-                (animation.target_height - animation.start_height) as f32 * progress;
-            
+            let current_height = animation.start_height as f32
+                + (animation.target_height - animation.start_height) as f32 * progress;
+
             terrain.visual_offset = (current_height - terrain.height as f32) * HEIGHT_VISUAL_SCALE;
         }
     }
@@ -241,12 +256,12 @@ fn spawn_column_destruction_effect(commands: &mut Commands, column: u8) {
     for row in 0..8 {
         let world_x = column as f32 * 75.0 - 262.5;
         let world_y = row as f32 * 75.0 - 262.5;
-        
+
         // Spawn explosion particles
         for _ in 0..5 {
             let offset_x = (rand::random::<f32>() - 0.5) * 40.0;
             let offset_y = (rand::random::<f32>() - 0.5) * 40.0;
-            
+
             commands.spawn((
                 SpriteBundle {
                     sprite: Sprite {
@@ -286,17 +301,17 @@ pub fn spawn_height_indicators(
         if terrain.height != 0 {
             let world_x = tile.coordinates.0 as f32 * 75.0 - 262.5;
             let world_y = tile.coordinates.1 as f32 * 75.0 - 262.5;
-            
+
             commands.spawn((
                 Text2dBundle {
                     text: Text::from_section(
                         format!("{}", terrain.height),
                         TextStyle {
                             font_size: 16.0,
-                            color: if terrain.height > 0 { 
-                                Color::WHITE 
-                            } else { 
-                                Color::rgb(0.8, 0.8, 1.0) 
+                            color: if terrain.height > 0 {
+                                Color::WHITE
+                            } else {
+                                Color::rgb(0.8, 0.8, 1.0)
                             },
                             ..default()
                         },
@@ -325,24 +340,24 @@ pub fn update_height_indicators(
         for (entity, _, _) in indicators.iter() {
             commands.entity(entity).despawn();
         }
-        
+
         // Respawn all indicators (simplified approach)
         // In a real implementation, we'd only update changed ones
         for (tile, terrain) in changed_tiles.iter() {
             if terrain.height != 0 {
                 let world_x = tile.coordinates.0 as f32 * 75.0 - 262.5;
                 let world_y = tile.coordinates.1 as f32 * 75.0 - 262.5;
-                
+
                 commands.spawn((
                     Text2dBundle {
                         text: Text::from_section(
                             format!("{}", terrain.height),
                             TextStyle {
                                 font_size: 16.0,
-                                color: if terrain.height > 0 { 
-                                    Color::WHITE 
-                                } else { 
-                                    Color::rgb(0.8, 0.8, 1.0) 
+                                color: if terrain.height > 0 {
+                                    Color::WHITE
+                                } else {
+                                    Color::rgb(0.8, 0.8, 1.0)
                                 },
                                 ..default()
                             },
@@ -379,14 +394,14 @@ pub fn debug_terrain_commands(
     if keyboard.just_pressed(KeyCode::F3) {
         destroy_column(0, &mut terrain_tiles, &pieces, &mut commands);
     }
-    
+
     // Test height movement validation
     if keyboard.just_pressed(KeyCode::F4) {
         println!("\n🔍 Testing height movement validation:");
         for tile in tiles.iter() {
             if tile.coordinates == (0, 0) {
                 println!("  Tile (0,0) height: {}", tile.height);
-                
+
                 // Test movement to adjacent tiles
                 let adjacent = [(0, 1), (1, 0), (1, 1)];
                 for &pos in &adjacent {
@@ -400,7 +415,7 @@ pub fn debug_terrain_commands(
             }
         }
     }
-    
+
     // Print height map
     if keyboard.just_pressed(KeyCode::H) {
         println!("\n🗺️ TERRAIN HEIGHT MAP:");
@@ -428,19 +443,20 @@ pub fn validate_movement_with_terrain(
     // First check basic movement rules (diagonal, distance, etc.)
     let dx = (to_pos.0 as i8 - from_pos.0 as i8).abs();
     let dy = (to_pos.1 as i8 - from_pos.1 as i8).abs();
-    
+
     // Basic checkers movement (diagonal only, one step)
     if dx != 1 || dy != 1 {
         return false;
     }
-    
+
     // Then check height restrictions
     is_valid_height_movement(from_pos, to_pos, tiles)
 }
 
 // Get terrain height at position
 pub fn get_terrain_height(pos: (u8, u8), tiles: &Query<&BoardTile>) -> Option<i8> {
-    tiles.iter()
+    tiles
+        .iter()
         .find(|tile| tile.coordinates == pos)
         .map(|tile| tile.height)
 }

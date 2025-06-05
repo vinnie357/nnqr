@@ -1,5 +1,5 @@
-use crate::{components::*, resources::*};
 use crate::systems::TerrainHeight;
+use crate::{components::*, resources::*};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -29,33 +29,47 @@ pub fn handle_power_selection(
         if let Some(&power_type) = powers.get(power_index) {
             match power_type {
                 // Powers that apply to all pieces
-                PowerType::MoveDiagonal | PowerType::Teleport | PowerType::Jump | 
-                PowerType::MoveTwo | PowerType::Knight | PowerType::MoveTwice |
-                PowerType::Slide => {
+                PowerType::MoveDiagonal
+                | PowerType::Teleport
+                | PowerType::Jump
+                | PowerType::MoveTwo
+                | PowerType::Knight
+                | PowerType::MoveTwice
+                | PowerType::Slide => {
                     // No targeting needed - applies to current player's pieces
                     spawn_power_ready_indicator(&mut commands);
                 }
-                
+
                 // Column targeting powers
                 PowerType::RaiseColumn | PowerType::LowerColumn | PowerType::DestroyColumn => {
                     // Need to target a column
                     spawn_column_target_indicators(&mut commands);
                 }
-                
+
                 // Piece targeting powers
-                PowerType::Multiply | PowerType::Swap | PowerType::Push | PowerType::Pull |
-                PowerType::Recruit | PowerType::Freeze | PowerType::Sniper | PowerType::Assassin => {
+                PowerType::Multiply
+                | PowerType::Swap
+                | PowerType::Push
+                | PowerType::Pull
+                | PowerType::Recruit
+                | PowerType::Freeze
+                | PowerType::Sniper
+                | PowerType::Assassin => {
                     // Need to target a piece
                     spawn_piece_target_indicators(&mut commands, &game_state);
                 }
-                
+
                 // Area targeting powers
-                PowerType::SmartBomb | PowerType::RaiseArea | PowerType::LowerArea |
-                PowerType::Rotate | PowerType::Shuffle | PowerType::Earthquake => {
+                PowerType::SmartBomb
+                | PowerType::RaiseArea
+                | PowerType::LowerArea
+                | PowerType::Rotate
+                | PowerType::Shuffle
+                | PowerType::Earthquake => {
                     // Need to target an area
                     spawn_area_target_indicators(&mut commands);
                 }
-                
+
                 // Special targeting or no targeting
                 _ => {
                     spawn_power_ready_indicator(&mut commands);
@@ -127,8 +141,8 @@ fn spawn_piece_target_indicators(commands: &mut Commands, game_state: &GameState
 
 fn spawn_area_target_indicators(commands: &mut Commands) {
     // Highlight 3x3 areas for area-effect powers
-    for x in 1..BOARD_SIZE-1 {
-        for y in 1..BOARD_SIZE-1 {
+    for x in 1..BOARD_SIZE - 1 {
+        for y in 1..BOARD_SIZE - 1 {
             let world_pos = board_to_world_position((x, y));
             commands.spawn((
                 PowerTargetIndicator,
@@ -199,13 +213,22 @@ pub fn handle_power_activation(
                         PowerType::DestroyColumn => {
                             // Use the new terrain height system
                             use crate::systems::terrain_height::destroy_column;
-                            destroy_column(board_pos.0, &mut tile_queries.p1(), &pieces, &mut commands);
+                            destroy_column(
+                                board_pos.0,
+                                &mut tile_queries.p1(),
+                                &pieces,
+                                &mut commands,
+                            );
                             true
                         }
-                        PowerType::Multiply => {
-                            activate_multiply(&mut commands, board_pos, &game_state, &pieces, &tile_queries.p0())
-                        }
-                        
+                        PowerType::Multiply => activate_multiply(
+                            &mut commands,
+                            board_pos,
+                            &game_state,
+                            &pieces,
+                            &tile_queries.p0(),
+                        ),
+
                         // Movement powers (Phase 3)
                         PowerType::Teleport => {
                             use crate::systems::movement_powers::activate_teleport;
@@ -244,9 +267,11 @@ pub fn handle_power_activation(
                         }
                         PowerType::Assassin => {
                             // Assassin removes any piece instantly
-                            if let Some(target_piece) = pieces.iter().find(|(_, p)| p.board_position == board_pos) {
+                            if let Some(target_piece) =
+                                pieces.iter().find(|(_, p)| p.board_position == board_pos)
+                            {
                                 commands.entity(target_piece.0).despawn();
-                                
+
                                 // Spawn explosion effect
                                 let world_pos = board_to_world_position(board_pos);
                                 crate::systems::visual_effects::spawn_capture_explosion(
@@ -254,7 +279,7 @@ pub fn handle_power_activation(
                                     Vec3::new(world_pos.x, world_pos.y, 0.0),
                                     Color::rgb(0.8, 0.0, 0.0), // Red explosion for assassin
                                 );
-                                
+
                                 println!("Assassin eliminated piece at {:?}", board_pos);
                                 true
                             } else {
@@ -264,17 +289,19 @@ pub fn handle_power_activation(
                         }
                         PowerType::Sniper => {
                             // Sniper can eliminate any enemy piece
-                            if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.board_position == board_pos) {
+                            if let Some((entity, piece)) =
+                                pieces.iter().find(|(_, p)| p.board_position == board_pos)
+                            {
                                 if piece.player != game_state.current_player {
                                     commands.entity(entity).despawn();
-                                    
+
                                     let world_pos = board_to_world_position(board_pos);
                                     crate::systems::visual_effects::spawn_capture_explosion(
                                         &mut commands,
                                         Vec3::new(world_pos.x, world_pos.y, 0.0),
                                         Color::rgb(1.0, 0.5, 0.0), // Orange explosion for sniper
                                     );
-                                    
+
                                     println!("Sniper eliminated enemy piece at {:?}", board_pos);
                                     true
                                 } else {
@@ -293,19 +320,24 @@ pub fn handle_power_activation(
                                 for dy in -1i8..=1 {
                                     let target_x = board_pos.0 as i8 + dx;
                                     let target_y = board_pos.1 as i8 + dy;
-                                    
-                                    if target_x >= 0 && target_x < BOARD_SIZE as i8 && 
-                                       target_y >= 0 && target_y < BOARD_SIZE as i8 {
+
+                                    if target_x >= 0
+                                        && target_x < BOARD_SIZE as i8
+                                        && target_y >= 0
+                                        && target_y < BOARD_SIZE as i8
+                                    {
                                         let target = (target_x as u8, target_y as u8);
-                                        
-                                        if let Some((entity, _)) = pieces.iter().find(|(_, p)| p.board_position == target) {
+
+                                        if let Some((entity, _)) =
+                                            pieces.iter().find(|(_, p)| p.board_position == target)
+                                        {
                                             commands.entity(entity).despawn();
                                             destroyed += 1;
                                         }
                                     }
                                 }
                             }
-                            
+
                             if destroyed > 0 {
                                 let world_pos = board_to_world_position(board_pos);
                                 // Big explosion for smart bomb
@@ -316,7 +348,7 @@ pub fn handle_power_activation(
                                         Color::rgb(1.0, 0.3, 0.0),
                                     );
                                 }
-                                
+
                                 println!("SmartBomb destroyed {} pieces!", destroyed);
                                 true
                             } else {
@@ -324,7 +356,7 @@ pub fn handle_power_activation(
                                 false
                             }
                         }
-                        
+
                         // Powers that need specific targets will show indicators
                         _ => {
                             println!("Power {} not yet implemented", power_type.name());
@@ -340,7 +372,7 @@ pub fn handle_power_activation(
                             Vec3::new(world_pos.x, world_pos.y, 0.0),
                             power_type,
                         );
-                        
+
                         // Spawn floating text
                         crate::systems::visual_effects::spawn_floating_text(
                             &mut commands,
@@ -350,8 +382,10 @@ pub fn handle_power_activation(
                         );
 
                         // Remove the used power from inventory
-                        game_state.get_current_player_powers_mut().remove(power_index);
-                        
+                        game_state
+                            .get_current_player_powers_mut()
+                            .remove(power_index);
+
                         // Clear selection and move to piece movement
                         game_state.selected_power = None;
                         game_state.turn_phase = TurnPhase::PieceMovement;
@@ -382,11 +416,7 @@ fn activate_move_diagonal(
     }
 }
 
-fn activate_raise_column(
-    commands: &mut Commands,
-    column: u8,
-    tiles: &Query<&BoardTile>,
-) {
+fn activate_raise_column(commands: &mut Commands, column: u8, tiles: &Query<&BoardTile>) {
     // Increase height of all tiles in the column
     for tile in tiles.iter() {
         if tile.coordinates.0 == column {
@@ -394,7 +424,9 @@ fn activate_raise_column(
             // For now, we'll spawn a visual effect
             let world_pos = board_to_world_position(tile.coordinates);
             commands.spawn((
-                ActivePowerEffect { power_type: PowerType::RaiseColumn },
+                ActivePowerEffect {
+                    power_type: PowerType::RaiseColumn,
+                },
                 SpriteBundle {
                     sprite: Sprite {
                         color: Color::rgba(0.0, 1.0, 0.0, 0.5),
@@ -409,17 +441,15 @@ fn activate_raise_column(
     }
 }
 
-fn activate_lower_column(
-    commands: &mut Commands,
-    column: u8,
-    tiles: &Query<&BoardTile>,
-) {
+fn activate_lower_column(commands: &mut Commands, column: u8, tiles: &Query<&BoardTile>) {
     // Decrease height of all tiles in the column
     for tile in tiles.iter() {
         if tile.coordinates.0 == column {
             let world_pos = board_to_world_position(tile.coordinates);
             commands.spawn((
-                ActivePowerEffect { power_type: PowerType::LowerColumn },
+                ActivePowerEffect {
+                    power_type: PowerType::LowerColumn,
+                },
                 SpriteBundle {
                     sprite: Sprite {
                         color: Color::rgba(1.0, 1.0, 0.0, 0.5),
@@ -452,7 +482,9 @@ fn activate_destroy_column(
         if tile.coordinates.0 == column {
             let world_pos = board_to_world_position(tile.coordinates);
             commands.spawn((
-                ActivePowerEffect { power_type: PowerType::DestroyColumn },
+                ActivePowerEffect {
+                    power_type: PowerType::DestroyColumn,
+                },
                 SpriteBundle {
                     sprite: Sprite {
                         color: Color::rgba(1.0, 0.0, 0.0, 0.5),
@@ -474,25 +506,32 @@ fn activate_multiply(
     pieces: &Query<(Entity, &GamePiece)>,
     _tiles: &Query<&BoardTile>,
 ) -> bool {
-    println!("Multiply: Checking position {:?} for current player {:?}", target_pos, game_state.current_player);
-    
+    println!(
+        "Multiply: Checking position {:?} for current player {:?}",
+        target_pos, game_state.current_player
+    );
+
     // Check if there's a piece at target position owned by current player
     for (_, piece) in pieces.iter() {
         if piece.board_position == target_pos && piece.player == game_state.current_player {
-            println!("Multiply: Found valid piece to duplicate at {:?}", target_pos);
+            println!(
+                "Multiply: Found valid piece to duplicate at {:?}",
+                target_pos
+            );
             // Find adjacent empty tile
             let directions = [(0, 1), (0, -1), (1, 0), (-1, 0)];
-            
+
             for (dx, dy) in directions.iter() {
                 let new_x = target_pos.0 as i8 + dx;
                 let new_y = target_pos.1 as i8 + dy;
-                
-                if new_x >= 0 && new_x < BOARD_SIZE as i8 && new_y >= 0 && new_y < BOARD_SIZE as i8 {
+
+                if new_x >= 0 && new_x < BOARD_SIZE as i8 && new_y >= 0 && new_y < BOARD_SIZE as i8
+                {
                     let new_pos = (new_x as u8, new_y as u8);
-                    
+
                     // Check if position is empty
                     let occupied = pieces.iter().any(|(_, p)| p.board_position == new_pos);
-                    
+
                     if !occupied {
                         // Spawn new piece
                         let world_pos = board_to_world_position(new_pos);
@@ -527,14 +566,10 @@ fn activate_multiply(
 }
 
 // Update movement validation to handle diagonal moves
-pub fn is_valid_move_with_diagonal(
-    from: (u8, u8),
-    to: (u8, u8),
-    allow_diagonal: bool,
-) -> bool {
+pub fn is_valid_move_with_diagonal(from: (u8, u8), to: (u8, u8), allow_diagonal: bool) -> bool {
     let dx = (to.0 as i8 - from.0 as i8).abs();
     let dy = (to.1 as i8 - from.1 as i8).abs();
-    
+
     if allow_diagonal {
         // Allow diagonal moves (distance 1 in both x and y)
         (dx == 1 && dy == 1) || (dx == 1 && dy == 0) || (dx == 0 && dy == 1)
@@ -570,9 +605,9 @@ fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
 fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
     let x = ((world_pos.x / TILE_SIZE) + BOARD_SIZE as f32 / 2.0).round() as i8;
     let y = ((world_pos.y / TILE_SIZE) + BOARD_SIZE as f32 / 2.0).round() as i8;
-    
+
     let x = x.max(0).min(BOARD_SIZE as i8 - 1) as u8;
     let y = y.max(0).min(BOARD_SIZE as i8 - 1) as u8;
-    
+
     (x, y)
 }

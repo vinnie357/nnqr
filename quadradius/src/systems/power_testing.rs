@@ -36,12 +36,12 @@ pub struct PowerTest {
 
 #[derive(Clone, Debug)]
 pub enum TestScenario {
-    BasicUsage,           // Normal conditions
-    EdgeCase,             // Board edges, corners
-    Blocked,              // Target blocked by other pieces
-    EmptyBoard,           // Minimal pieces on board
-    FullBoard,            // Many pieces on board
-    PowerCombination,     // Using with other active powers
+    BasicUsage,       // Normal conditions
+    EdgeCase,         // Board edges, corners
+    Blocked,          // Target blocked by other pieces
+    EmptyBoard,       // Minimal pieces on board
+    FullBoard,        // Many pieces on board
+    PowerCombination, // Using with other active powers
 }
 
 #[derive(Clone, Debug)]
@@ -79,20 +79,34 @@ pub fn setup_power_test_suite(
 ) {
     if keyboard.just_pressed(KeyCode::F5) {
         println!("🧪 Setting up comprehensive power test suite...");
-        
+
         test_suite.test_queue.clear();
         test_suite.test_results.clear();
-        
+
         // Create tests for all power types
         let all_powers = [
-            PowerType::MoveDiagonal, PowerType::RaiseColumn, PowerType::LowerColumn,
-            PowerType::DestroyColumn, PowerType::Multiply, PowerType::Teleport,
-            PowerType::Jump, PowerType::MoveTwo, PowerType::Knight, PowerType::SmartBomb,
-            PowerType::Sniper, PowerType::Assassin, PowerType::Push, PowerType::Pull,
-            PowerType::Swap, PowerType::Shield, PowerType::Invisible, PowerType::Leap,
-            PowerType::MoveTwice, PowerType::Slide,
+            PowerType::MoveDiagonal,
+            PowerType::RaiseColumn,
+            PowerType::LowerColumn,
+            PowerType::DestroyColumn,
+            PowerType::Multiply,
+            PowerType::Teleport,
+            PowerType::Jump,
+            PowerType::MoveTwo,
+            PowerType::Knight,
+            PowerType::SmartBomb,
+            PowerType::Sniper,
+            PowerType::Assassin,
+            PowerType::Push,
+            PowerType::Pull,
+            PowerType::Swap,
+            PowerType::Shield,
+            PowerType::Invisible,
+            PowerType::Leap,
+            PowerType::MoveTwice,
+            PowerType::Slide,
         ];
-        
+
         for power in all_powers {
             // Test each power in different scenarios
             test_suite.test_queue.push_back(PowerTest {
@@ -101,14 +115,14 @@ pub fn setup_power_test_suite(
                 expected_outcome: ExpectedOutcome::Success,
                 setup_description: format!("Basic usage test for {:?}", power),
             });
-            
+
             test_suite.test_queue.push_back(PowerTest {
                 power_type: power,
                 test_scenario: TestScenario::EdgeCase,
                 expected_outcome: ExpectedOutcome::PartialSuccess,
                 setup_description: format!("Edge case test for {:?}", power),
             });
-            
+
             test_suite.test_queue.push_back(PowerTest {
                 power_type: power,
                 test_scenario: TestScenario::Blocked,
@@ -116,8 +130,11 @@ pub fn setup_power_test_suite(
                 setup_description: format!("Blocked target test for {:?}", power),
             });
         }
-        
-        println!("✅ Test suite ready: {} tests queued", test_suite.test_queue.len());
+
+        println!(
+            "✅ Test suite ready: {} tests queued",
+            test_suite.test_queue.len()
+        );
         println!("Press F6 to start automated testing, F7 for manual testing");
     }
 }
@@ -137,7 +154,7 @@ pub fn start_automated_testing(
             println!("❌ No tests queued! Press F5 to setup test suite first.");
         }
     }
-    
+
     if keyboard.just_pressed(KeyCode::F8) {
         test_suite.auto_mode = false;
         println!("⏸️  Automated testing paused.");
@@ -155,31 +172,37 @@ pub fn execute_automated_tests(
     if !test_suite.auto_mode {
         return;
     }
-    
+
     test_suite.current_delay += time.delta_seconds();
-    
+
     if test_suite.current_delay >= test_suite.test_delay {
         if let Some(test) = test_suite.test_queue.pop_front() {
             test_suite.current_delay = 0.0;
-            
-            println!("🧪 Running test: {:?} - {:?}", test.power_type, test.test_scenario);
-            
+
+            println!(
+                "🧪 Running test: {:?} - {:?}",
+                test.power_type, test.test_scenario
+            );
+
             // Execute the test
             let result = execute_power_test(&test, &mut game_state, &pieces, &mut commands);
-            
+
             // Store result
             test_suite.test_results.push(result.clone());
-            
+
             // Report result
             if result.success {
                 println!("   ✅ PASS: {:?}", result.actual);
             } else {
-                println!("   ❌ FAIL: Expected {:?}, got {:?}", result.expected, result.actual);
+                println!(
+                    "   ❌ FAIL: Expected {:?}, got {:?}",
+                    result.expected, result.actual
+                );
                 if let Some(error) = &result.error_message {
                     println!("      Error: {}", error);
                 }
             }
-            
+
             test_suite.current_test = Some(test);
         } else {
             // All tests completed
@@ -197,18 +220,20 @@ fn execute_power_test(
     commands: &mut Commands,
 ) -> PowerTestResult {
     let start_time = std::time::Instant::now();
-    
+
     // Setup test scenario
     setup_test_scenario(&test.test_scenario, game_state, pieces, commands);
-    
+
     // Add power to current player
-    game_state.get_current_player_powers_mut().push(test.power_type);
-    
+    game_state
+        .get_current_player_powers_mut()
+        .push(test.power_type);
+
     // Try to activate power (simplified for testing)
     let outcome = simulate_power_activation(test.power_type, game_state, pieces);
-    
+
     let execution_time = start_time.elapsed().as_secs_f32();
-    
+
     // Determine if test passed
     let success = match (&test.expected_outcome, &outcome) {
         (ExpectedOutcome::Success, TestOutcome::PowerActivated) => true,
@@ -216,7 +241,7 @@ fn execute_power_test(
         (ExpectedOutcome::NoEffect, TestOutcome::NoTargetSelected) => true,
         _ => false,
     };
-    
+
     PowerTestResult {
         power_type: test.power_type,
         scenario: test.test_scenario.clone(),
@@ -264,8 +289,12 @@ fn setup_test_scenario(
         }
         TestScenario::PowerCombination => {
             // Activate multiple powers
-            game_state.get_current_player_powers_mut().push(PowerType::MoveDiagonal);
-            game_state.get_current_player_powers_mut().push(PowerType::Teleport);
+            game_state
+                .get_current_player_powers_mut()
+                .push(PowerType::MoveDiagonal);
+            game_state
+                .get_current_player_powers_mut()
+                .push(PowerType::Teleport);
         }
     }
 }
@@ -277,13 +306,14 @@ fn simulate_power_activation(
     pieces: &Query<(Entity, &GamePiece)>,
 ) -> TestOutcome {
     // Get first piece of current player for testing
-    let player_piece = pieces.iter()
+    let player_piece = pieces
+        .iter()
         .find(|(_, piece)| piece.player == game_state.current_player);
-    
+
     if player_piece.is_none() {
         return TestOutcome::Error("No player piece found".to_string());
     }
-    
+
     // Simulate power effects based on type
     match power_type {
         PowerType::MoveDiagonal | PowerType::Teleport | PowerType::Jump => {
@@ -300,10 +330,11 @@ fn simulate_power_activation(
         }
         PowerType::SmartBomb | PowerType::Sniper | PowerType::Assassin => {
             // Offensive powers - check for targets
-            let enemy_pieces = pieces.iter()
+            let enemy_pieces = pieces
+                .iter()
                 .filter(|(_, piece)| piece.player != game_state.current_player)
                 .count();
-            
+
             if enemy_pieces > 0 {
                 TestOutcome::PowerActivated
             } else {
@@ -325,16 +356,24 @@ fn simulate_power_activation(
 fn generate_test_summary(test_suite: &PowerTestSuite) {
     println!("\n🏁 POWER TEST SUITE COMPLETED");
     println!("=====================================");
-    
+
     let total_tests = test_suite.test_results.len();
     let passed_tests = test_suite.test_results.iter().filter(|r| r.success).count();
     let failed_tests = total_tests - passed_tests;
-    
+
     println!("📊 SUMMARY:");
     println!("   Total Tests: {}", total_tests);
-    println!("   Passed: {} ({:.1}%)", passed_tests, (passed_tests as f32 / total_tests as f32) * 100.0);
-    println!("   Failed: {} ({:.1}%)", failed_tests, (failed_tests as f32 / total_tests as f32) * 100.0);
-    
+    println!(
+        "   Passed: {} ({:.1}%)",
+        passed_tests,
+        (passed_tests as f32 / total_tests as f32) * 100.0
+    );
+    println!(
+        "   Failed: {} ({:.1}%)",
+        failed_tests,
+        (failed_tests as f32 / total_tests as f32) * 100.0
+    );
+
     // Group results by power type
     println!("\n📋 RESULTS BY POWER:");
     let mut power_results = std::collections::HashMap::new();
@@ -346,11 +385,11 @@ fn generate_test_summary(test_suite: &PowerTestSuite) {
             entry.1 += 1;
         }
     }
-    
+
     for (power, (passed, failed)) in power_results {
         let total = passed + failed;
         let pass_rate = (passed as f32 / total as f32) * 100.0;
-        
+
         let status = if pass_rate >= 80.0 {
             "✅"
         } else if pass_rate >= 60.0 {
@@ -358,39 +397,46 @@ fn generate_test_summary(test_suite: &PowerTestSuite) {
         } else {
             "❌"
         };
-        
-        println!("   {} {:?}: {}/{} ({:.1}%)", status, power, passed, total, pass_rate);
+
+        println!(
+            "   {} {:?}: {}/{} ({:.1}%)",
+            status, power, passed, total, pass_rate
+        );
     }
-    
+
     // Show failed tests
-    let failed_results: Vec<_> = test_suite.test_results.iter()
+    let failed_results: Vec<_> = test_suite
+        .test_results
+        .iter()
         .filter(|r| !r.success)
         .collect();
-    
+
     if !failed_results.is_empty() {
         println!("\n❌ FAILED TESTS:");
         for result in failed_results.iter().take(10) {
-            println!("   {:?} ({:?}): Expected {:?}, got {:?}", 
-                result.power_type, result.scenario, result.expected, result.actual);
+            println!(
+                "   {:?} ({:?}): Expected {:?}, got {:?}",
+                result.power_type, result.scenario, result.expected, result.actual
+            );
         }
-        
+
         if failed_results.len() > 10 {
             println!("   ... and {} more", failed_results.len() - 10);
         }
     }
-    
+
     println!("\n✨ Testing complete! Use results to improve power implementations.");
     println!("Press F5 to run tests again");
 }
 
 // Manual test controls
-pub fn manual_test_controls(
-    mut test_suite: ResMut<PowerTestSuite>,
-    keyboard: Res<Input<KeyCode>>,
-) {
+pub fn manual_test_controls(mut test_suite: ResMut<PowerTestSuite>, keyboard: Res<Input<KeyCode>>) {
     if keyboard.just_pressed(KeyCode::F7) {
         if let Some(test) = test_suite.test_queue.pop_front() {
-            println!("🔧 Manual test: {:?} - {}", test.power_type, test.setup_description);
+            println!(
+                "🔧 Manual test: {:?} - {}",
+                test.power_type, test.setup_description
+            );
             println!("   Press Space to execute, or N to skip");
             test_suite.current_test = Some(test);
         } else {

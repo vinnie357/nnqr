@@ -47,7 +47,7 @@ pub fn spawn_power_activation_particles(
 ) {
     let color = power_type.color();
     let mut rng = rand::thread_rng();
-    
+
     // Spawn multiple particles
     for _ in 0..15 {
         let velocity = Vec3::new(
@@ -55,7 +55,7 @@ pub fn spawn_power_activation_particles(
             rng.gen_range(50.0..150.0),
             0.0,
         );
-        
+
         commands.spawn((
             ParticleEffect {
                 lifetime: 2.0,
@@ -78,23 +78,15 @@ pub fn spawn_power_activation_particles(
 }
 
 // Spawn explosion effect for piece capture
-pub fn spawn_capture_explosion(
-    commands: &mut Commands,
-    position: Vec3,
-    player_color: Color,
-) {
+pub fn spawn_capture_explosion(commands: &mut Commands, position: Vec3, player_color: Color) {
     let mut rng = rand::thread_rng();
-    
+
     // Main explosion burst
     for _ in 0..20 {
         let angle = rng.gen_range(0.0..std::f32::consts::TAU);
         let speed = rng.gen_range(50.0..150.0);
-        let velocity = Vec3::new(
-            angle.cos() * speed,
-            angle.sin() * speed,
-            0.0,
-        );
-        
+        let velocity = Vec3::new(angle.cos() * speed, angle.sin() * speed, 0.0);
+
         commands.spawn((
             ParticleEffect {
                 lifetime: 1.5,
@@ -117,12 +109,7 @@ pub fn spawn_capture_explosion(
 }
 
 // Add floating damage text
-pub fn spawn_floating_text(
-    commands: &mut Commands,
-    position: Vec3,
-    text: String,
-    color: Color,
-) {
+pub fn spawn_floating_text(commands: &mut Commands, position: Vec3, text: String, color: Color) {
     commands.spawn((
         FloatingText {
             lifetime: 2.0,
@@ -151,23 +138,23 @@ pub fn update_particle_effects(
 ) {
     for (entity, mut particle, mut transform, mut sprite) in particles.iter_mut() {
         particle.lifetime -= time.delta_seconds();
-        
+
         if particle.lifetime <= 0.0 {
             commands.entity(entity).despawn();
             continue;
         }
-        
+
         // Update position
         transform.translation += particle.velocity * time.delta_seconds();
-        
+
         // Fade out over time
         let alpha = particle.lifetime / particle.max_lifetime;
         sprite.color.set_a(alpha);
-        
+
         // Shrink over time
         let scale = alpha * particle.size / 4.0;
         transform.scale = Vec3::splat(scale);
-        
+
         // Apply gravity
         particle.velocity.y -= 200.0 * time.delta_seconds();
     }
@@ -181,15 +168,15 @@ pub fn update_floating_text(
 ) {
     for (entity, mut floating, mut transform, mut text) in texts.iter_mut() {
         floating.lifetime -= time.delta_seconds();
-        
+
         if floating.lifetime <= 0.0 {
             commands.entity(entity).despawn();
             continue;
         }
-        
+
         // Update position
         transform.translation += floating.velocity * time.delta_seconds();
-        
+
         // Fade out
         let alpha = floating.lifetime / 2.0;
         if let Some(section) = text.sections.first_mut() {
@@ -206,13 +193,13 @@ pub fn update_animated_scale(
 ) {
     for (entity, mut anim, mut transform) in scaled.iter_mut() {
         anim.elapsed += time.delta_seconds();
-        
+
         if anim.elapsed >= anim.duration {
             transform.scale = Vec3::splat(anim.target_scale);
             commands.entity(entity).remove::<AnimatedScale>();
             continue;
         }
-        
+
         // Smooth interpolation
         let t = anim.elapsed / anim.duration;
         let smooth_t = t * t * (3.0 - 2.0 * t); // Smoothstep
@@ -222,14 +209,11 @@ pub fn update_animated_scale(
 }
 
 // Update pulsing effects
-pub fn update_pulse_effects(
-    time: Res<Time>,
-    mut pulsing: Query<(&PulseEffect, &mut Transform)>,
-) {
+pub fn update_pulse_effects(time: Res<Time>, mut pulsing: Query<(&PulseEffect, &mut Transform)>) {
     for (pulse, mut transform) in pulsing.iter_mut() {
         let time_factor = time.elapsed_seconds() * pulse.speed;
-        let scale = pulse.min_scale + (pulse.max_scale - pulse.min_scale) * 
-            (0.5 + 0.5 * time_factor.sin());
+        let scale =
+            pulse.min_scale + (pulse.max_scale - pulse.min_scale) * (0.5 + 0.5 * time_factor.sin());
         transform.scale = Vec3::splat(scale);
     }
 }
@@ -280,9 +264,9 @@ pub fn update_screen_shake(
     if screen_shake.remaining <= 0.0 {
         return;
     }
-    
+
     screen_shake.remaining -= time.delta_seconds();
-    
+
     if screen_shake.remaining <= 0.0 {
         // Reset camera position
         for mut transform in camera.iter_mut() {
@@ -291,13 +275,13 @@ pub fn update_screen_shake(
         }
         return;
     }
-    
+
     // Apply shake
     let mut rng = rand::thread_rng();
     let shake_factor = screen_shake.remaining / screen_shake.duration;
     let offset_x = rng.gen_range(-1.0..1.0) * screen_shake.intensity * shake_factor;
     let offset_y = rng.gen_range(-1.0..1.0) * screen_shake.intensity * shake_factor;
-    
+
     for mut transform in camera.iter_mut() {
         transform.translation.x = offset_x;
         transform.translation.y = offset_y;
@@ -318,7 +302,10 @@ pub fn animate_piece_movement(
         duration: 0.1,
         elapsed: 0.0,
     });
-    
+
     // This would need a proper movement tween component in a full implementation
-    println!("Animating piece movement from {:?} to {:?}", start_pos, end_pos);
+    println!(
+        "Animating piece movement from {:?} to {:?}",
+        start_pos, end_pos
+    );
 }

@@ -6,6 +6,10 @@
 # having git ignore such leftovers. You can use `.git/info/exclude` to
 # configure your local ignore list.
 
+#nvim
+nvim-linux-*
+nvim-linux.tar.gz
+
 ## File system
 .DS_Store
 desktop.ini

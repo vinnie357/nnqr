@@ -59,14 +59,12 @@ const POWERS_TO_TEST: [PowerType; 12] = [
     PowerType::LowerColumn,
     PowerType::DestroyColumn,
     PowerType::Multiply,
-    
     // Movement Powers (implemented)
     PowerType::Teleport,
     PowerType::Jump,
     PowerType::MoveTwo,
     PowerType::Knight,
     PowerType::Slide,
-    
     // Combat Powers (implemented)
     PowerType::SmartBomb,
     PowerType::Sniper,
@@ -86,41 +84,41 @@ pub fn start_automated_power_tests(
         test_runner.current_test_index = 0;
         test_runner.test_results.clear();
         test_runner.test_phase = TestPhase::Setup;
-        
+
         // Reset game state for clean testing
         game_state.current_player = Player::Player1;
         game_state.turn_phase = TurnPhase::PowerActivation;
         game_state.player1_powers.clear();
         game_state.player2_powers.clear();
         game_state.selected_power = None;
-        
+
         println!("🤖 AUTOMATED POWER TESTING STARTED");
         println!("═══════════════════════════════════");
         println!("Testing {} powers automatically...", POWERS_TO_TEST.len());
         println!("═══════════════════════════════════");
         return;
     }
-    
+
     if keyboard.just_pressed(KeyCode::F9) {
         test_runner.tests_running = true;
         test_runner.current_test_index = 0;
         test_runner.test_results.clear();
         test_runner.test_phase = TestPhase::Setup;
-        
+
         // Reset game state for clean testing
         game_state.current_player = Player::Player1;
         game_state.turn_phase = TurnPhase::PowerActivation;
         game_state.player1_powers.clear();
         game_state.player2_powers.clear();
         game_state.selected_power = None;
-        
+
         println!("🤖 AUTOMATED POWER TESTING STARTED");
         println!("═══════════════════════════════════");
         println!("Testing {} powers automatically...", POWERS_TO_TEST.len());
         println!("Press F10 to stop testing");
         println!("═══════════════════════════════════");
     }
-    
+
     if keyboard.just_pressed(KeyCode::F10) {
         test_runner.tests_running = false;
         println!("🛑 Automated testing stopped by user");
@@ -140,13 +138,13 @@ pub fn run_automated_power_tests(
     if !test_runner.tests_running {
         return;
     }
-    
+
     test_runner.test_timer.tick(time.delta());
-    
+
     if !test_runner.test_timer.just_finished() {
         return;
     }
-    
+
     // Check if all tests completed
     if test_runner.current_test_index >= POWERS_TO_TEST.len() {
         test_runner.tests_running = false;
@@ -154,61 +152,72 @@ pub fn run_automated_power_tests(
         generate_automated_test_report(&test_runner);
         return;
     }
-    
+
     let current_power = POWERS_TO_TEST[test_runner.current_test_index];
-    
+
     match test_runner.test_phase {
         TestPhase::Setup => {
             println!("🔧 Setting up test for: {:?}", current_power);
             setup_test_environment(&mut game_state);
             test_runner.test_phase = TestPhase::AddPower;
         }
-        
+
         TestPhase::AddPower => {
             println!("➕ Adding power: {:?}", current_power);
             add_power_for_testing(&mut game_state, current_power);
             test_runner.test_phase = TestPhase::ActivatePower;
         }
-        
+
         TestPhase::ActivatePower => {
             println!("⚡ Testing power activation: {:?}", current_power);
             let result = test_power_activation(&mut game_state, current_power);
             test_runner.test_phase = TestPhase::TestEffect;
-            
+
             // Store initial result
-            test_runner.test_results.insert(current_power, TestResult {
-                power: current_power,
-                status: if result { TestStatus::Partial } else { TestStatus::Fail },
-                details: if result { "Power activation successful".to_string() } else { "Power activation failed".to_string() },
-                timestamp: time.elapsed_seconds_f64(),
-            });
+            test_runner.test_results.insert(
+                current_power,
+                TestResult {
+                    power: current_power,
+                    status: if result {
+                        TestStatus::Partial
+                    } else {
+                        TestStatus::Fail
+                    },
+                    details: if result {
+                        "Power activation successful".to_string()
+                    } else {
+                        "Power activation failed".to_string()
+                    },
+                    timestamp: time.elapsed_seconds_f64(),
+                },
+            );
         }
-        
+
         TestPhase::TestEffect => {
             println!("🧪 Testing power effects: {:?}", current_power);
             let effect_result = test_power_effects(current_power, &pieces, &tiles, &game_state);
             test_runner.test_phase = TestPhase::Cleanup;
-            
+
             // Update result with effect testing
             if let Some(mut result) = test_runner.test_results.get_mut(&current_power) {
                 result.status = effect_result.status;
                 result.details = format!("{} | {}", result.details, effect_result.details);
             }
         }
-        
+
         TestPhase::Cleanup => {
             println!("🧹 Cleaning up after test: {:?}", current_power);
             cleanup_test_environment(&mut game_state, &mut commands, &pieces);
             test_runner.test_phase = TestPhase::Complete;
         }
-        
+
         TestPhase::Complete => {
             println!("✅ Test completed for: {:?}", current_power);
             if let Some(result) = test_runner.test_results.get(&current_power) {
                 println!("   Result: {:?} - {}", result.status, result.details);
             }
             println!();
-            
+
             test_runner.current_test_index += 1;
             test_runner.test_phase = TestPhase::Setup;
         }
@@ -234,7 +243,7 @@ fn add_power_for_testing(game_state: &mut GameState, power: PowerType) {
 fn test_power_activation(game_state: &mut GameState, power: PowerType) -> bool {
     let powers = game_state.get_current_player_powers();
     let has_power = powers.contains(&power);
-    
+
     if has_power {
         // Try to select the power
         if let Some(index) = powers.iter().position(|p| *p == power) {
@@ -243,17 +252,17 @@ fn test_power_activation(game_state: &mut GameState, power: PowerType) -> bool {
             return true;
         }
     }
-    
+
     println!("   ❌ Failed to activate power: {:?}", power);
     false
 }
 
 // Test power effects based on power type
 fn test_power_effects(
-    power: PowerType, 
+    power: PowerType,
     pieces: &Query<(Entity, &GamePiece, &Transform)>,
     tiles: &Query<&BoardTile>,
-    game_state: &GameState
+    game_state: &GameState,
 ) -> TestResult {
     match power {
         PowerType::MoveDiagonal => test_movement_power(power, pieces),
@@ -262,34 +271,40 @@ fn test_power_effects(
         PowerType::MoveTwo => test_movement_power(power, pieces),
         PowerType::Knight => test_movement_power(power, pieces),
         PowerType::Slide => test_movement_power(power, pieces),
-        
+
         PowerType::RaiseColumn => test_terrain_power(power, tiles),
         PowerType::LowerColumn => test_terrain_power(power, tiles),
         PowerType::DestroyColumn => test_terrain_power(power, tiles),
-        
+
         PowerType::SmartBomb => test_combat_power(power, pieces),
         PowerType::Sniper => test_combat_power(power, pieces),
-        
+
         PowerType::Multiply => test_piece_creation_power(power, pieces),
-        
+
         _ => TestResult {
             power,
             status: TestStatus::NotImplemented,
             details: "Power not implemented yet".to_string(),
             timestamp: 0.0,
-        }
+        },
     }
 }
 
 // Test movement powers
-fn test_movement_power(power: PowerType, pieces: &Query<(Entity, &GamePiece, &Transform)>) -> TestResult {
+fn test_movement_power(
+    power: PowerType,
+    pieces: &Query<(Entity, &GamePiece, &Transform)>,
+) -> TestResult {
     let piece_count = pieces.iter().count();
-    
+
     if piece_count > 0 {
         TestResult {
             power,
             status: TestStatus::Pass,
-            details: format!("Movement power framework ready, {} pieces available for testing", piece_count),
+            details: format!(
+                "Movement power framework ready, {} pieces available for testing",
+                piece_count
+            ),
             timestamp: 0.0,
         }
     } else {
@@ -305,12 +320,16 @@ fn test_movement_power(power: PowerType, pieces: &Query<(Entity, &GamePiece, &Tr
 // Test terrain manipulation powers
 fn test_terrain_power(power: PowerType, tiles: &Query<&BoardTile>) -> TestResult {
     let tile_count = tiles.iter().count();
-    
-    if tile_count == 64 { // 8x8 board
+
+    if tile_count == 64 {
+        // 8x8 board
         TestResult {
             power,
             status: TestStatus::Pass,
-            details: format!("Terrain power framework ready, {} tiles available", tile_count),
+            details: format!(
+                "Terrain power framework ready, {} tiles available",
+                tile_count
+            ),
             timestamp: 0.0,
         }
     } else {
@@ -324,14 +343,20 @@ fn test_terrain_power(power: PowerType, tiles: &Query<&BoardTile>) -> TestResult
 }
 
 // Test combat powers
-fn test_combat_power(power: PowerType, pieces: &Query<(Entity, &GamePiece, &Transform)>) -> TestResult {
+fn test_combat_power(
+    power: PowerType,
+    pieces: &Query<(Entity, &GamePiece, &Transform)>,
+) -> TestResult {
     let piece_count = pieces.iter().count();
-    
+
     if piece_count > 1 {
         TestResult {
             power,
             status: TestStatus::Pass,
-            details: format!("Combat power framework ready, {} pieces available as targets", piece_count),
+            details: format!(
+                "Combat power framework ready, {} pieces available as targets",
+                piece_count
+            ),
             timestamp: 0.0,
         }
     } else {
@@ -345,14 +370,21 @@ fn test_combat_power(power: PowerType, pieces: &Query<(Entity, &GamePiece, &Tran
 }
 
 // Test piece creation powers
-fn test_piece_creation_power(power: PowerType, pieces: &Query<(Entity, &GamePiece, &Transform)>) -> TestResult {
+fn test_piece_creation_power(
+    power: PowerType,
+    pieces: &Query<(Entity, &GamePiece, &Transform)>,
+) -> TestResult {
     let piece_count = pieces.iter().count();
-    
-    if piece_count < 64 { // Board not full
+
+    if piece_count < 64 {
+        // Board not full
         TestResult {
             power,
             status: TestStatus::Pass,
-            details: format!("Piece creation power framework ready, {} pieces on board", piece_count),
+            details: format!(
+                "Piece creation power framework ready, {} pieces on board",
+                piece_count
+            ),
             timestamp: 0.0,
         }
     } else {
@@ -374,7 +406,7 @@ fn cleanup_test_environment(
     game_state.player1_powers.clear();
     game_state.player2_powers.clear();
     game_state.selected_power = None;
-    
+
     // Reset to clean state for next test
     game_state.turn_phase = TurnPhase::PowerActivation;
 }
@@ -383,33 +415,45 @@ fn cleanup_test_environment(
 fn generate_automated_test_report(test_runner: &AutomatedTestRunner) {
     println!("\n🤖 AUTOMATED POWER TEST REPORT");
     println!("═══════════════════════════════════════");
-    
+
     let mut pass_count = 0;
     let mut fail_count = 0;
     let mut partial_count = 0;
     let mut not_implemented_count = 0;
-    
+
     for power in &POWERS_TO_TEST {
         if let Some(result) = test_runner.test_results.get(power) {
             let status_symbol = match result.status {
-                TestStatus::Pass => { pass_count += 1; "✅" }
-                TestStatus::Fail => { fail_count += 1; "❌" }
-                TestStatus::Partial => { partial_count += 1; "⚠️" }
-                TestStatus::NotImplemented => { not_implemented_count += 1; "🚫" }
-                TestStatus::NotTested => "⏳"
+                TestStatus::Pass => {
+                    pass_count += 1;
+                    "✅"
+                }
+                TestStatus::Fail => {
+                    fail_count += 1;
+                    "❌"
+                }
+                TestStatus::Partial => {
+                    partial_count += 1;
+                    "⚠️"
+                }
+                TestStatus::NotImplemented => {
+                    not_implemented_count += 1;
+                    "🚫"
+                }
+                TestStatus::NotTested => "⏳",
             };
-            
+
             println!("{} {:?}: {:?}", status_symbol, power, result.status);
             println!("   {}", result.details);
         } else {
             println!("⏳ {:?}: Not tested", power);
         }
     }
-    
+
     println!("═══════════════════════════════════════");
     println!("SUMMARY:");
     println!("✅ Pass: {}", pass_count);
-    println!("⚠️ Partial: {}", partial_count);  
+    println!("⚠️ Partial: {}", partial_count);
     println!("❌ Fail: {}", fail_count);
     println!("🚫 Not Implemented: {}", not_implemented_count);
     println!("═══════════════════════════════════════");
@@ -427,11 +471,25 @@ pub fn show_automated_test_controls(
         println!("F10 - Stop automated power testing");
         println!("F8  - Show this help");
         println!();
-        println!("Current Status: {}", if test_runner.tests_running { "RUNNING" } else { "STOPPED" });
+        println!(
+            "Current Status: {}",
+            if test_runner.tests_running {
+                "RUNNING"
+            } else {
+                "STOPPED"
+            }
+        );
         if test_runner.tests_running {
-            println!("Current Test: {}/{}", test_runner.current_test_index + 1, POWERS_TO_TEST.len());
+            println!(
+                "Current Test: {}/{}",
+                test_runner.current_test_index + 1,
+                POWERS_TO_TEST.len()
+            );
             if test_runner.current_test_index < POWERS_TO_TEST.len() {
-                println!("Testing: {:?}", POWERS_TO_TEST[test_runner.current_test_index]);
+                println!(
+                    "Testing: {:?}",
+                    POWERS_TO_TEST[test_runner.current_test_index]
+                );
                 println!("Phase: {:?}", test_runner.test_phase);
             }
         }

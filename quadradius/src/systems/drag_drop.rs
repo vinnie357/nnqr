@@ -1,4 +1,8 @@
-use crate::{components::*, resources::*, systems::{MoveDiagonalActive, TeleportActive, JumpActive, MoveTwoActive, KnightMoveActive}};
+use crate::{
+    components::*,
+    resources::*,
+    systems::{JumpActive, KnightMoveActive, MoveDiagonalActive, MoveTwoActive, TeleportActive},
+};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -46,7 +50,7 @@ pub fn handle_drag_start(
 
                     // Check if this piece has diagonal move
                     let has_diagonal = diagonal_pieces.contains(entity);
-                    
+
                     // Show valid move indicators
                     spawn_valid_move_indicators(
                         &mut commands,
@@ -159,14 +163,14 @@ pub fn handle_drag_end(
                             Player::Player1 => Color::rgb(0.2, 0.2, 0.8), // Enemy color for explosion
                             Player::Player2 => Color::rgb(0.8, 0.2, 0.2),
                         };
-                        
+
                         // Spawn capture explosion
                         crate::systems::visual_effects::spawn_capture_explosion(
                             &mut commands,
                             Vec3::new(captured_world_pos.x, captured_world_pos.y, 0.0),
                             captured_player_color,
                         );
-                        
+
                         // Spawn floating text
                         crate::systems::visual_effects::spawn_floating_text(
                             &mut commands,
@@ -174,7 +178,7 @@ pub fn handle_drag_end(
                             "Captured!".to_string(),
                             Color::rgb(1.0, 0.3, 0.3),
                         );
-                        
+
                         commands.entity(captured).despawn();
                     }
 
@@ -190,7 +194,7 @@ pub fn handle_drag_end(
                         Player::Player1 => Player::Player2,
                         Player::Player2 => Player::Player1,
                     };
-                    
+
                     // Reset to power activation phase for next player
                     game_state.turn_phase = TurnPhase::PowerActivation;
                     game_state.selected_power = None;
@@ -205,7 +209,7 @@ pub fn handle_drag_end(
                     if let Ok((_, _, mut transform, _)) = dragging_pieces.get_mut(entity) {
                         let world_pos = board_to_world_position(start_pos);
                         transform.translation = Vec3::new(world_pos.x, world_pos.y, 1.0);
-                        
+
                         // Add shake animation and flash effect
                         commands.entity(entity).insert((
                             InvalidMoveAnimation {
@@ -316,7 +320,7 @@ fn find_best_valid_target_enhanced(
 ) -> Option<(u8, u8)> {
     // First, check if the exact drop position is valid
     let exact_target = world_to_board_position(drop_world_pos);
-    
+
     // Use enhanced movement validation
     if crate::systems::enhanced_movement::validate_enhanced_movement(
         start_pos,
@@ -333,18 +337,18 @@ fn find_best_valid_target_enhanced(
     ) {
         return Some(exact_target);
     }
-    
+
     // For magnetic snapping, check nearby positions
     let mut best_move = None;
     let mut best_distance = f32::MAX;
-    
+
     // Check all positions within 2 tiles for special moves
     for x in 0..BOARD_SIZE {
         for y in 0..BOARD_SIZE {
             let target = (x, y);
             let world_pos = board_to_world_position(target);
             let distance = drop_world_pos.distance(world_pos);
-            
+
             // Only consider positions within snapping range
             if distance < TILE_SIZE * 0.7 {
                 if crate::systems::enhanced_movement::validate_enhanced_movement(
@@ -368,7 +372,7 @@ fn find_best_valid_target_enhanced(
             }
         }
     }
-    
+
     best_move
 }
 
@@ -382,24 +386,31 @@ fn get_valid_moves(
 ) -> Vec<(u8, u8)> {
     let mut valid_moves = Vec::new();
     let mut directions = vec![(0, 1), (0, -1), (1, 0), (-1, 0)];
-    
+
     if allow_diagonal {
         // Add diagonal directions
         directions.extend_from_slice(&[(1, 1), (1, -1), (-1, 1), (-1, -1)]);
     }
-    
+
     for (dx, dy) in directions.iter() {
         let new_x = from.0 as i8 + dx;
         let new_y = from.1 as i8 + dy;
-        
+
         if new_x >= 0 && new_x < BOARD_SIZE as i8 && new_y >= 0 && new_y < BOARD_SIZE as i8 {
             let target_pos = (new_x as u8, new_y as u8);
-            if is_valid_move_with_positions(from, target_pos, tiles, piece_positions, current_player, allow_diagonal) {
+            if is_valid_move_with_positions(
+                from,
+                target_pos,
+                tiles,
+                piece_positions,
+                current_player,
+                allow_diagonal,
+            ) {
                 valid_moves.push(target_pos);
             }
         }
     }
-    
+
     valid_moves
 }
 
@@ -413,7 +424,7 @@ fn spawn_valid_move_indicators(
 ) {
     // Check all directions
     let mut directions = vec![(0, 1), (0, -1), (1, 0), (-1, 0)];
-    
+
     if allow_diagonal {
         // Add diagonal directions
         directions.extend_from_slice(&[(1, 1), (1, -1), (-1, 1), (-1, -1)]);

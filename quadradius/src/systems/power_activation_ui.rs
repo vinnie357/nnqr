@@ -105,31 +105,38 @@ pub fn update_power_activation_ui(
             // Auto-skip if no powers available
             let powers = game_state.get_current_player_powers();
             if powers.is_empty() {
-                println!("Player {:?} has no powers - auto-skipping to movement phase", game_state.current_player);
+                println!(
+                    "Player {:?} has no powers - auto-skipping to movement phase",
+                    game_state.current_player
+                );
                 game_state.turn_phase = TurnPhase::PieceMovement;
                 *visibility = Visibility::Hidden;
                 return;
             }
-            
+
             // Only log once when first entering power phase
             static mut LAST_LOG: Option<(Player, usize)> = None;
             unsafe {
                 if LAST_LOG != Some((game_state.current_player, powers.len())) {
-                    println!("Player {:?} has {} powers available", game_state.current_player, powers.len());
+                    println!(
+                        "Player {:?} has {} powers available",
+                        game_state.current_player,
+                        powers.len()
+                    );
                     LAST_LOG = Some((game_state.current_player, powers.len()));
                 }
             }
-            
+
             *visibility = Visibility::Visible;
-            
+
             // Remove old power buttons
             for entity in button_query.iter() {
                 commands.entity(entity).despawn_recursive();
             }
-            
+
             // Get current player's powers
             let powers = game_state.get_current_player_powers();
-            
+
             if !powers.is_empty() {
                 // Add power buttons
                 if let Some(mut panel_commands) = commands.get_entity(panel_entity) {

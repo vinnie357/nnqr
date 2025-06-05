@@ -118,7 +118,7 @@ pub fn show_valid_moves_for_powers(
 
     for (entity, piece) in dragging_pieces.iter() {
         let from = piece.board_position;
-        
+
         // Collect all piece positions
         let piece_positions: Vec<((u8, u8), Player, Entity)> = pieces
             .iter()
@@ -129,7 +129,7 @@ pub fn show_valid_moves_for_powers(
         for x in 0..BOARD_SIZE {
             for y in 0..BOARD_SIZE {
                 let to = (x, y);
-                
+
                 if validate_enhanced_movement(
                     from,
                     to,
@@ -173,18 +173,22 @@ fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
 pub fn cleanup_movement_powers(
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
-    pieces: Query<(Entity, &GamePiece), Or<(
-        With<MoveDiagonalActive>,
-        With<TeleportActive>,
-        With<JumpActive>,
-        With<MoveTwoActive>,
-        With<KnightMoveActive>,
-    )>>,
+    pieces: Query<
+        (Entity, &GamePiece),
+        Or<(
+            With<MoveDiagonalActive>,
+            With<TeleportActive>,
+            With<JumpActive>,
+            With<MoveTwoActive>,
+            With<KnightMoveActive>,
+        )>,
+    >,
 ) {
     // Only clean up when transitioning to next player's turn
     if game_state.is_changed() && game_state.turn_phase == TurnPhase::PowerActivation {
         for (entity, _) in pieces.iter() {
-            commands.entity(entity)
+            commands
+                .entity(entity)
                 .remove::<MoveDiagonalActive>()
                 .remove::<TeleportActive>()
                 .remove::<JumpActive>()

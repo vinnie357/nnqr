@@ -80,7 +80,7 @@ pub fn update_turn_indicator(
             Player::Player1 => "Player 1's Turn (Red)",
             Player::Player2 => "Player 2's Turn (Blue)",
         };
-        
+
         let phase_text = match game_state.turn_phase {
             TurnPhase::PowerActivation => " - Power Phase",
             TurnPhase::PieceMovement => " - Move Phase",
@@ -96,7 +96,7 @@ pub fn update_power_inventory(
 ) {
     for mut text in query.iter_mut() {
         let powers = game_state.get_current_player_powers();
-        
+
         if powers.is_empty() {
             text.sections[0].value = "Powers: None".to_string();
         } else {

@@ -16,21 +16,22 @@ pub fn update_piece_count(
 ) {
     let mut player1_count = 0;
     let mut player2_count = 0;
-    
+
     for piece in pieces.iter() {
         match piece.player {
             Player::Player1 => player1_count += 1,
             Player::Player2 => player2_count += 1,
         }
     }
-    
+
     for (mut text, counter) in score_texts.iter_mut() {
         let count = match counter.player {
             Player::Player1 => player1_count,
             Player::Player2 => player2_count,
         };
-        
-        text.sections[0].value = format!("P{}: {}", 
+
+        text.sections[0].value = format!(
+            "P{}: {}",
             match counter.player {
                 Player::Player1 => "1",
                 Player::Player2 => "2",
@@ -56,14 +57,14 @@ pub fn animate_score_changes(
 ) {
     for (entity, mut text, mut animation) in animated_scores.iter_mut() {
         animation.elapsed += time.delta_seconds();
-        
+
         if animation.elapsed >= animation.duration {
             text.sections[0].value = animation.end_value.to_string();
             commands.entity(entity).remove::<ScoreChangeAnimation>();
         } else {
             let progress = animation.elapsed / animation.duration;
-            let current = animation.start_value as f32 + 
-                (animation.end_value - animation.start_value) as f32 * progress;
+            let current = animation.start_value as f32
+                + (animation.end_value - animation.start_value) as f32 * progress;
             text.sections[0].value = (current as i32).to_string();
         }
     }
@@ -75,16 +76,12 @@ pub struct PowerNotification {
     pub lifetime: f32,
 }
 
-pub fn spawn_power_notification(
-    commands: &mut Commands,
-    power_type: PowerType,
-    player: Player,
-) {
+pub fn spawn_power_notification(commands: &mut Commands, power_type: PowerType, player: Player) {
     let player_color = match player {
         Player::Player1 => Color::rgb(0.9, 0.3, 0.3),
         Player::Player2 => Color::rgb(0.3, 0.3, 0.9),
     };
-    
+
     commands
         .spawn((
             NodeBundle {
@@ -104,7 +101,8 @@ pub fn spawn_power_notification(
         ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
-                format!("Player {} collected {}", 
+                format!(
+                    "Player {} collected {}",
                     match player {
                         Player::Player1 => "1",
                         Player::Player2 => "2",
@@ -127,7 +125,7 @@ pub fn update_power_notifications(
 ) {
     for (entity, mut notification, mut bg_color) in notifications.iter_mut() {
         notification.lifetime -= time.delta_seconds();
-        
+
         if notification.lifetime <= 0.0 {
             commands.entity(entity).despawn_recursive();
         } else if notification.lifetime < 1.0 {
@@ -158,10 +156,10 @@ pub fn update_match_timer(
     mut timer_displays: Query<&mut Text, With<TimerDisplay>>,
 ) {
     timer.elapsed += time.delta_seconds();
-    
+
     let minutes = (timer.elapsed / 60.0) as i32;
     let seconds = (timer.elapsed % 60.0) as i32;
-    
+
     for mut text in timer_displays.iter_mut() {
         text.sections[0].value = format!("{:02}:{:02}", minutes, seconds);
     }
@@ -179,10 +177,7 @@ impl Default for TurnCounter {
     }
 }
 
-pub fn increment_turn_counter(
-    mut turn_counter: ResMut<TurnCounter>,
-    game_state: Res<GameState>,
-) {
+pub fn increment_turn_counter(mut turn_counter: ResMut<TurnCounter>, game_state: Res<GameState>) {
     if game_state.is_changed() && game_state.turn_phase == TurnPhase::PowerActivation {
         turn_counter.turn_number += 1;
     }

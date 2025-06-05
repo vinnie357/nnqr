@@ -1,6 +1,6 @@
 use crate::{components::*, resources::*};
-use bevy::prelude::*;
 use bevy::app::AppExit;
+use bevy::prelude::*;
 
 // Game states for menu flow
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
@@ -72,7 +72,7 @@ pub fn setup_main_menu(mut commands: Commands) {
                 },
                 ..default()
             });
-            
+
             // Menu container
             parent
                 .spawn(NodeBundle {
@@ -87,14 +87,14 @@ pub fn setup_main_menu(mut commands: Commands) {
                 .with_children(|parent| {
                     // Start button
                     spawn_menu_button(parent, "Start Game", MenuAction::StartGame);
-                    
+
                     // Settings button
                     spawn_menu_button(parent, "Settings", MenuAction::Settings);
-                    
+
                     // Quit button
                     spawn_menu_button(parent, "Quit", MenuAction::Quit);
                 });
-            
+
             // Credits
             parent.spawn(TextBundle {
                 text: Text::from_section(
@@ -239,10 +239,10 @@ pub fn setup_pause_menu(mut commands: Commands) {
                             ..default()
                         },
                     ));
-                    
+
                     // Resume button
                     spawn_menu_button(parent, "Resume", MenuAction::Resume);
-                    
+
                     // Main menu button
                     spawn_menu_button(parent, "Main Menu", MenuAction::MainMenu);
                 });
@@ -274,13 +274,13 @@ pub fn setup_game_over_menu(
         Some(Player::Player2) => "Player 2 Wins!",
         None => "Draw!",
     };
-    
+
     let winner_color = match game_result.winner {
         Some(Player::Player1) => Color::rgb(0.9, 0.3, 0.3),
         Some(Player::Player2) => Color::rgb(0.3, 0.3, 0.9),
         None => Color::rgb(0.7, 0.7, 0.7),
     };
-    
+
     commands
         .spawn((
             NodeBundle {
@@ -321,10 +321,10 @@ pub fn setup_game_over_menu(
                             ..default()
                         },
                     ));
-                    
+
                     // Play again button
                     spawn_menu_button(parent, "Play Again", MenuAction::Restart);
-                    
+
                     // Main menu button
                     spawn_menu_button(parent, "Main Menu", MenuAction::MainMenu);
                 });

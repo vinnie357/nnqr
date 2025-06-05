@@ -1,14 +1,14 @@
-use bevy::prelude::*;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::prelude::*;
 
 mod components;
 mod resources;
 mod systems;
 
+use components::power::PowerType;
 use resources::*;
 use systems::win_condition::GameResult;
 use systems::*;
-use components::power::PowerType;
 
 fn main() {
     App::new()
@@ -36,6 +36,7 @@ fn main() {
         .init_resource::<AutoBalanceTest>()
         .init_resource::<PerformanceMonitor>()
         .init_resource::<AutomatedTestRunner>()
+        .init_resource::<systems::power_orbs::LastTurnTracker>()
         .add_state::<GameMenuState>()
         .add_event::<PowerUsageEvent>()
         .add_event::<GameEndEvent>()
@@ -43,7 +44,7 @@ fn main() {
             Startup,
             (
                 setup_camera,
-                // setup_board_background, // Temporarily disabled 
+                // setup_board_background, // Temporarily disabled
                 setup_board,
                 setup_pieces,
                 setup_ui,
@@ -108,7 +109,7 @@ fn main() {
                 handle_power_selection,
                 handle_power_activation,
                 cleanup_power_effects,
-                spawn_balanced_power_orbs.before(update_power_activation_ui),
+                spawn_power_orbs.before(update_power_activation_ui),
                 collect_power_orbs,
                 animate_power_orbs,
             ),
@@ -131,6 +132,7 @@ fn main() {
                 // update_piece_glow,
             ),
         )
+        // Debug and testing systems only in debug builds - disabled for release
         .add_systems(
             Update,
             (
@@ -151,38 +153,39 @@ fn main() {
                 show_automated_test_controls,
             ),
         )
-        .add_systems(
-            Update,
-            (
-                // Balance and testing systems
-                track_power_usage,
-                track_game_completion,
-                generate_balance_report,
-                analyze_power_effectiveness,
-                analyze_power_spawn_balance,
-                generate_balance_recommendations,
-            ),
-        )
-        .add_systems(
-            Update,
-            (
-                // Power testing systems
-                setup_power_test_suite,
-                start_automated_testing,
-                execute_automated_tests,
-                manual_test_controls,
-            ),
-        )
-        .add_systems(
-            Update,
-            (
-                // Power balance systems
-                apply_dynamic_balance,
-                enforce_power_limits,
-                track_power_usage_for_balance,
-                balance_mode_controls,
-            ),
-        )
+        // Balance and testing systems - disabled for release
+        //.add_systems(
+        //    Update,
+        //    (
+        //        // Balance and testing systems
+        //        track_power_usage,
+        //        track_game_completion,
+        //        generate_balance_report,
+        //        analyze_power_effectiveness,
+        //        analyze_power_spawn_balance,
+        //        generate_balance_recommendations,
+        //    ),
+        //)
+        //.add_systems(
+        //    Update,
+        //    (
+        //        // Power testing systems
+        //        setup_power_test_suite,
+        //        start_automated_testing,
+        //        execute_automated_tests,
+        //        manual_test_controls,
+        //    ),
+        //)
+        //.add_systems(
+        //    Update,
+        //    (
+        //        // Power balance systems
+        //        apply_dynamic_balance,
+        //        enforce_power_limits,
+        //        track_power_usage_for_balance,
+        //        balance_mode_controls,
+        //    ),
+        //)
         .add_systems(
             Update,
             (
@@ -224,30 +227,12 @@ fn main() {
         //         debug_lobby_commands,
         //     ),
         // )
-        .add_systems(
-            OnEnter(GameMenuState::MainMenu),
-            setup_main_menu,
-        )
-        .add_systems(
-            OnEnter(GameMenuState::Paused), 
-            setup_pause_menu,
-        )
-        .add_systems(
-            OnEnter(GameMenuState::GameOver),
-            setup_game_over_menu,
-        )
-        .add_systems(
-            OnExit(GameMenuState::MainMenu),
-            cleanup_menu,
-        )
-        .add_systems(
-            OnExit(GameMenuState::Paused),
-            cleanup_menu,
-        )
-        .add_systems(
-            OnExit(GameMenuState::GameOver),
-            cleanup_menu,
-        )
+        .add_systems(OnEnter(GameMenuState::MainMenu), setup_main_menu)
+        .add_systems(OnEnter(GameMenuState::Paused), setup_pause_menu)
+        .add_systems(OnEnter(GameMenuState::GameOver), setup_game_over_menu)
+        .add_systems(OnExit(GameMenuState::MainMenu), cleanup_menu)
+        .add_systems(OnExit(GameMenuState::Paused), cleanup_menu)
+        .add_systems(OnExit(GameMenuState::GameOver), cleanup_menu)
         .add_systems(
             Update,
             (

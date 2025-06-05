@@ -1,0 +1,18 @@
+#!/bin/bash
+echo "Starting Quadradius Power System Test"
+echo "====================================="
+echo ""
+echo "Debug Controls:"
+echo "P - Spawn a random power orb"
+echo "O - Display current player's powers"
+echo "I - Generate power test report"
+echo "Space - End turn"
+echo ""
+echo "Test Instructions:"
+echo "1. Press P to spawn power orbs"
+echo "2. Move pieces to collect orbs"
+echo "3. Press O to verify collection"
+echo "4. Powers should activate during power phase"
+echo ""
+echo "Starting game..."
+cargo run
