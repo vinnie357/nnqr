@@ -6,6 +6,10 @@
 # having git ignore such leftovers. You can use `.git/info/exclude` to
 # configure your local ignore list.
 
+# windows builds
+*.exe
+quadradius/*.exe
+
 #nvim
 nvim-linux-*
 nvim-linux.tar.gz
