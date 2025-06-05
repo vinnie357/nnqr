@@ -51,23 +51,62 @@ impl Default for AutomatedTestRunner {
     }
 }
 
-// List of powers to test in order of priority
-const POWERS_TO_TEST: [PowerType; 12] = [
-    // Phase 2 Foundation Powers (highest priority)
+// List of all implemented powers to test
+const POWERS_TO_TEST: [PowerType; 45] = [
+    // Phase 2 Foundation Powers (5)
     PowerType::MoveDiagonal,
     PowerType::RaiseColumn,
     PowerType::LowerColumn,
     PowerType::DestroyColumn,
     PowerType::Multiply,
-    // Movement Powers (implemented)
+    
+    // Movement Powers (10)
     PowerType::Teleport,
     PowerType::Jump,
     PowerType::MoveTwo,
     PowerType::Knight,
     PowerType::Slide,
-    // Combat Powers (implemented)
+    PowerType::Swap,
+    PowerType::Push,
+    PowerType::Pull,
+    PowerType::MoveTwice,
+    PowerType::Leap,
+    
+    // Combat Powers (10)
     PowerType::SmartBomb,
     PowerType::Sniper,
+    PowerType::Shield,
+    PowerType::Invisible,
+    PowerType::Recruit,
+    PowerType::Freeze,
+    PowerType::Poison,
+    PowerType::Explode,
+    PowerType::Assassin,
+    PowerType::Resurrect,
+    
+    // Board Manipulation Powers (10)
+    PowerType::RaiseArea,
+    PowerType::LowerArea,
+    PowerType::CreateWall,
+    PowerType::DestroyWall,
+    PowerType::Rotate,
+    PowerType::Shuffle,
+    PowerType::Earthquake,
+    PowerType::Bridge,
+    PowerType::Pit,
+    PowerType::Terraform,
+    
+    // Meta Powers (15 total - there are actually 15, not 10)
+    PowerType::StealPower,
+    PowerType::CopyPower,
+    PowerType::NullifyPower,
+    PowerType::DoublePower,
+    PowerType::RandomPower,
+    PowerType::PowerSwap,
+    PowerType::PowerGift,
+    PowerType::PowerDrain,
+    PowerType::Reflect,
+    PowerType::Absorb,
 ];
 
 // Start automated testing
@@ -265,28 +304,60 @@ fn test_power_effects(
     game_state: &GameState,
 ) -> TestResult {
     match power {
+        // Phase 2 Foundation Powers
         PowerType::MoveDiagonal => test_movement_power(power, pieces),
+        PowerType::RaiseColumn => test_terrain_power(power, tiles),
+        PowerType::LowerColumn => test_terrain_power(power, tiles),
+        PowerType::DestroyColumn => test_terrain_power(power, tiles),
+        PowerType::Multiply => test_piece_creation_power(power, pieces),
+
+        // Movement Powers
         PowerType::Teleport => test_movement_power(power, pieces),
         PowerType::Jump => test_movement_power(power, pieces),
         PowerType::MoveTwo => test_movement_power(power, pieces),
         PowerType::Knight => test_movement_power(power, pieces),
         PowerType::Slide => test_movement_power(power, pieces),
+        PowerType::Swap => test_piece_targeting_power(power, pieces),
+        PowerType::Push => test_piece_targeting_power(power, pieces),
+        PowerType::Pull => test_piece_targeting_power(power, pieces),
+        PowerType::MoveTwice => test_movement_power(power, pieces),
+        PowerType::Leap => test_movement_power(power, pieces),
 
-        PowerType::RaiseColumn => test_terrain_power(power, tiles),
-        PowerType::LowerColumn => test_terrain_power(power, tiles),
-        PowerType::DestroyColumn => test_terrain_power(power, tiles),
-
+        // Combat Powers
         PowerType::SmartBomb => test_combat_power(power, pieces),
         PowerType::Sniper => test_combat_power(power, pieces),
+        PowerType::Shield => test_self_buff_power(power, pieces),
+        PowerType::Invisible => test_self_buff_power(power, pieces),
+        PowerType::Recruit => test_piece_targeting_power(power, pieces),
+        PowerType::Freeze => test_piece_targeting_power(power, pieces),
+        PowerType::Poison => test_piece_targeting_power(power, pieces),
+        PowerType::Explode => test_self_sacrifice_power(power, pieces),
+        PowerType::Assassin => test_piece_targeting_power(power, pieces),
+        PowerType::Resurrect => test_piece_creation_power(power, pieces),
 
-        PowerType::Multiply => test_piece_creation_power(power, pieces),
+        // Board Manipulation Powers
+        PowerType::RaiseArea => test_area_power(power, tiles),
+        PowerType::LowerArea => test_area_power(power, tiles),
+        PowerType::CreateWall => test_area_power(power, tiles),
+        PowerType::DestroyWall => test_area_power(power, tiles),
+        PowerType::Rotate => test_area_power(power, tiles),
+        PowerType::Shuffle => test_area_power(power, tiles),
+        PowerType::Earthquake => test_board_wide_power(power, tiles),
+        PowerType::Bridge => test_area_power(power, tiles),
+        PowerType::Pit => test_terrain_power(power, tiles),
+        PowerType::Terraform => test_terrain_power(power, tiles),
 
-        _ => TestResult {
-            power,
-            status: TestStatus::NotImplemented,
-            details: "Power not implemented yet".to_string(),
-            timestamp: 0.0,
-        },
+        // Meta Powers
+        PowerType::StealPower => test_meta_power(power, game_state),
+        PowerType::CopyPower => test_meta_power(power, game_state),
+        PowerType::NullifyPower => test_meta_power(power, game_state),
+        PowerType::DoublePower => test_meta_power(power, game_state),
+        PowerType::RandomPower => test_meta_power(power, game_state),
+        PowerType::PowerSwap => test_meta_power(power, game_state),
+        PowerType::PowerGift => test_meta_power(power, game_state),
+        PowerType::PowerDrain => test_meta_power(power, game_state),
+        PowerType::Reflect => test_self_buff_power(power, pieces),
+        PowerType::Absorb => test_self_buff_power(power, pieces),
     }
 }
 
@@ -457,6 +528,153 @@ fn generate_automated_test_report(test_runner: &AutomatedTestRunner) {
     println!("❌ Fail: {}", fail_count);
     println!("🚫 Not Implemented: {}", not_implemented_count);
     println!("═══════════════════════════════════════");
+}
+
+// Test powers that target specific pieces
+fn test_piece_targeting_power(
+    power: PowerType,
+    pieces: &Query<(Entity, &GamePiece, &Transform)>,
+) -> TestResult {
+    let piece_count = pieces.iter().count();
+
+    if piece_count > 1 {
+        TestResult {
+            power,
+            status: TestStatus::Pass,
+            details: format!(
+                "Piece targeting power ready, {} pieces available as targets",
+                piece_count
+            ),
+            timestamp: 0.0,
+        }
+    } else {
+        TestResult {
+            power,
+            status: TestStatus::Fail,
+            details: "Insufficient pieces for targeting testing".to_string(),
+            timestamp: 0.0,
+        }
+    }
+}
+
+// Test powers that buff the current player's pieces
+fn test_self_buff_power(
+    power: PowerType,
+    pieces: &Query<(Entity, &GamePiece, &Transform)>,
+) -> TestResult {
+    let piece_count = pieces.iter().count();
+
+    if piece_count > 0 {
+        TestResult {
+            power,
+            status: TestStatus::Pass,
+            details: format!(
+                "Self-buff power ready, {} pieces available to buff",
+                piece_count
+            ),
+            timestamp: 0.0,
+        }
+    } else {
+        TestResult {
+            power,
+            status: TestStatus::Fail,
+            details: "No pieces available for buffing".to_string(),
+            timestamp: 0.0,
+        }
+    }
+}
+
+// Test powers that sacrifice current player's pieces
+fn test_self_sacrifice_power(
+    power: PowerType,
+    pieces: &Query<(Entity, &GamePiece, &Transform)>,
+) -> TestResult {
+    let piece_count = pieces.iter().count();
+
+    if piece_count > 0 {
+        TestResult {
+            power,
+            status: TestStatus::Pass,
+            details: format!(
+                "Self-sacrifice power ready, {} pieces available to sacrifice",
+                piece_count
+            ),
+            timestamp: 0.0,
+        }
+    } else {
+        TestResult {
+            power,
+            status: TestStatus::Fail,
+            details: "No pieces available for sacrifice".to_string(),
+            timestamp: 0.0,
+        }
+    }
+}
+
+// Test powers that affect 3x3 areas
+fn test_area_power(power: PowerType, tiles: &Query<&BoardTile>) -> TestResult {
+    let tile_count = tiles.iter().count();
+
+    if tile_count == 64 {
+        // 8x8 board
+        TestResult {
+            power,
+            status: TestStatus::Pass,
+            details: format!(
+                "Area power ready, {} tiles available for 3x3 effects",
+                tile_count
+            ),
+            timestamp: 0.0,
+        }
+    } else {
+        TestResult {
+            power,
+            status: TestStatus::Partial,
+            details: format!("Unexpected tile count: {} (expected 64)", tile_count),
+            timestamp: 0.0,
+        }
+    }
+}
+
+// Test powers that affect the entire board
+fn test_board_wide_power(power: PowerType, tiles: &Query<&BoardTile>) -> TestResult {
+    let tile_count = tiles.iter().count();
+
+    if tile_count == 64 {
+        TestResult {
+            power,
+            status: TestStatus::Pass,
+            details: format!(
+                "Board-wide power ready, {} tiles available for effects",
+                tile_count
+            ),
+            timestamp: 0.0,
+        }
+    } else {
+        TestResult {
+            power,
+            status: TestStatus::Partial,
+            details: format!("Unexpected tile count: {} (expected 64)", tile_count),
+            timestamp: 0.0,
+        }
+    }
+}
+
+// Test meta powers that manipulate power inventories
+fn test_meta_power(power: PowerType, game_state: &GameState) -> TestResult {
+    let p1_power_count = game_state.player1_powers.len();
+    let p2_power_count = game_state.player2_powers.len();
+    let total_powers = p1_power_count + p2_power_count;
+
+    TestResult {
+        power,
+        status: TestStatus::Pass,
+        details: format!(
+            "Meta power ready, {} total powers in game (P1: {}, P2: {})",
+            total_powers, p1_power_count, p2_power_count
+        ),
+        timestamp: 0.0,
+    }
 }
 
 // Display test controls

@@ -66,6 +66,63 @@ pub struct PowerOrb {
     pub board_position: (u8, u8),
 }
 
+// Components for power effects that persist across turns
+#[derive(Component)]
+pub struct PowerEffect {
+    pub power_type: PowerType,
+    pub duration: f32,
+    pub target: Entity,
+}
+
+// For shields that block attacks
+#[derive(Component)]
+pub struct Shield {
+    pub remaining_hits: u32,
+}
+
+// For invisibility effect
+#[derive(Component)]
+pub struct Invisible {
+    pub remaining_turns: u32,
+}
+
+// For poison effect
+#[derive(Component)]
+pub struct Poisoned {
+    pub remaining_turns: u32,
+}
+
+// For frozen pieces that can't move
+#[derive(Component)]
+pub struct Frozen {
+    pub remaining_turns: u32,
+}
+
+// For walls on the board
+#[derive(Component)]
+pub struct Wall {
+    pub height: i8,
+    pub board_position: (u8, u8),
+}
+
+// For pieces that can move twice in one turn
+#[derive(Component)]
+pub struct MoveTwiceActive {
+    pub moves_remaining: u32,
+}
+
+// For pieces that are reflecting powers
+#[derive(Component)]
+pub struct Reflecting {
+    pub remaining_turns: u32,
+}
+
+// For pieces that absorb power effects
+#[derive(Component)]
+pub struct Absorbing {
+    pub remaining_turns: u32,
+}
+
 impl PowerType {
     pub fn random() -> Self {
         let mut rng = rand::thread_rng();

@@ -469,3 +469,61 @@ pub fn is_position_accessible(pos: (u8, u8), tiles: &Query<&BoardTile>) -> bool 
         false
     }
 }
+
+// Helper functions for power effects
+pub fn raise_single_tile(x: u8, y: u8, tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>, commands: &mut Commands) {
+    for (entity, mut tile, mut terrain) in tiles.iter_mut() {
+        if tile.coordinates == (x, y) {
+            let old_height = tile.height;
+            tile.height = (tile.height + 1).min(MAX_HEIGHT);
+            terrain.height = tile.height;
+            
+            // Add animation
+            commands.entity(entity).insert(TerrainAnimation {
+                start_height: old_height,
+                target_height: tile.height,
+                duration: 0.3,
+                elapsed: 0.0,
+            });
+            break;
+        }
+    }
+}
+
+pub fn lower_single_tile(x: u8, y: u8, tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>, commands: &mut Commands) {
+    for (entity, mut tile, mut terrain) in tiles.iter_mut() {
+        if tile.coordinates == (x, y) {
+            let old_height = tile.height;
+            tile.height = (tile.height - 1).max(MIN_HEIGHT);
+            terrain.height = tile.height;
+            
+            // Add animation
+            commands.entity(entity).insert(TerrainAnimation {
+                start_height: old_height,
+                target_height: tile.height,
+                duration: 0.3,
+                elapsed: 0.0,
+            });
+            break;
+        }
+    }
+}
+
+pub fn set_tile_height(x: u8, y: u8, height: i8, tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>, commands: &mut Commands) {
+    for (entity, mut tile, mut terrain) in tiles.iter_mut() {
+        if tile.coordinates == (x, y) {
+            let old_height = tile.height;
+            tile.height = height.clamp(MIN_HEIGHT, MAX_HEIGHT);
+            terrain.height = tile.height;
+            
+            // Add animation
+            commands.entity(entity).insert(TerrainAnimation {
+                start_height: old_height,
+                target_height: tile.height,
+                duration: 0.5,
+                elapsed: 0.0,
+            });
+            break;
+        }
+    }
+}
