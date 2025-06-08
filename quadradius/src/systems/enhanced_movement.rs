@@ -113,7 +113,9 @@ pub fn show_valid_moves_for_powers(
 ) {
     // Clear old indicators
     for entity in existing_indicators.iter() {
-        commands.entity(entity).despawn();
+        if let Some(mut entity_commands) = commands.get_entity(entity) {
+            entity_commands.despawn();
+        }
     }
 
     for (entity, piece) in dragging_pieces.iter() {
@@ -172,7 +174,7 @@ fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
 // Clean up movement power components after turn
 pub fn cleanup_movement_powers(
     mut commands: Commands,
-    mut game_state: ResMut<GameState>,
+    game_state: ResMut<GameState>,
     pieces: Query<
         (Entity, &GamePiece),
         Or<(

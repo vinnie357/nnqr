@@ -21,10 +21,7 @@ pub fn spawn_power_orbs(
     mut last_turn: Local<LastTurnTracker>,
 ) {
     // Check if we're in a new turn
-    let current_turn_id = (
-        game_state.current_player.clone(),
-        game_state.turn_phase.clone(),
-    );
+    let current_turn_id = (game_state.current_player, game_state.turn_phase);
 
     // Only spawn when transitioning to PowerActivation phase
     if game_state.turn_phase != TurnPhase::PowerActivation {
@@ -122,7 +119,9 @@ pub fn collect_power_orbs(
                 }
 
                 // Remove the orb
-                commands.entity(orb_entity).despawn();
+                if let Some(mut entity_commands) = commands.get_entity(orb_entity) {
+                    entity_commands.despawn();
+                }
             }
         }
     }

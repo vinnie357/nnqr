@@ -120,7 +120,9 @@ pub fn update_invalid_move_text(
         text_component.lifetime -= time.delta_seconds();
 
         if text_component.lifetime <= 0.0 {
-            commands.entity(entity).despawn();
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+            }
         } else {
             // Float upward and fade out
             transform.translation.y += 30.0 * time.delta_seconds();

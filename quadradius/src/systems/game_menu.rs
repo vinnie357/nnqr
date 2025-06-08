@@ -1,4 +1,4 @@
-use crate::{components::*, resources::*};
+use crate::components::*;
 use bevy::app::AppExit;
 use bevy::prelude::*;
 

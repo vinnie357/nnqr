@@ -1,11 +1,10 @@
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 
 mod components;
 mod resources;
 mod systems;
 
-use components::power::PowerType;
 use resources::*;
 use systems::win_condition::GameResult;
 use systems::*;

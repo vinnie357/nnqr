@@ -179,7 +179,9 @@ pub fn handle_drag_end(
                             Color::rgb(1.0, 0.3, 0.3),
                         );
 
-                        commands.entity(captured).despawn();
+                        if let Some(mut entity_commands) = commands.get_entity(captured) {
+                            entity_commands.despawn();
+                        }
                     }
 
                     // Move is valid - update piece position
@@ -350,8 +352,8 @@ fn find_best_valid_target_enhanced(
             let distance = drop_world_pos.distance(world_pos);
 
             // Only consider positions within snapping range
-            if distance < TILE_SIZE * 0.7 {
-                if crate::systems::enhanced_movement::validate_enhanced_movement(
+            if distance < TILE_SIZE * 0.7
+                && crate::systems::enhanced_movement::validate_enhanced_movement(
                     start_pos,
                     target,
                     entity,
@@ -363,12 +365,11 @@ fn find_best_valid_target_enhanced(
                     jump_query,
                     move_two_query,
                     knight_query,
-                ) {
-                    if distance < best_distance {
-                        best_distance = distance;
-                        best_move = Some(target);
-                    }
-                }
+                )
+                && distance < best_distance
+            {
+                best_distance = distance;
+                best_move = Some(target);
             }
         }
     }
@@ -485,7 +486,9 @@ pub fn cleanup_indicators(
     // Remove indicators when no pieces are being dragged
     if dragging_query.is_empty() {
         for entity in indicators.iter() {
-            commands.entity(entity).despawn();
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+            }
         }
     }
 }

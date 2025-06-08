@@ -1,6 +1,5 @@
-use crate::{components::*, resources::*};
+use crate::components::*;
 use bevy::prelude::*;
-use rand::Rng;
 
 // Height-based movement rules and terrain system
 pub const MAX_HEIGHT: i8 = 5;
@@ -209,7 +208,9 @@ pub fn destroy_column(
     let mut destroyed_pieces = 0;
     for (entity, piece) in pieces.iter() {
         if piece.board_position.0 == column {
-            commands.entity(entity).despawn();
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+            }
             destroyed_pieces += 1;
             println!(
                 "  Destroyed piece at ({}, {})",
@@ -333,12 +334,14 @@ pub fn spawn_height_indicators(
 pub fn update_height_indicators(
     mut commands: Commands,
     changed_tiles: Query<(&BoardTile, &TerrainHeight), Changed<TerrainHeight>>,
-    mut indicators: Query<(Entity, &mut Text, &Transform), With<HeightIndicator>>,
+    indicators: Query<(Entity, &mut Text, &Transform), With<HeightIndicator>>,
 ) {
     if !changed_tiles.is_empty() {
         // Remove old indicators
         for (entity, _, _) in indicators.iter() {
-            commands.entity(entity).despawn();
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+            }
         }
 
         // Respawn all indicators (simplified approach)
@@ -471,13 +474,18 @@ pub fn is_position_accessible(pos: (u8, u8), tiles: &Query<&BoardTile>) -> bool 
 }
 
 // Helper functions for power effects
-pub fn raise_single_tile(x: u8, y: u8, tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>, commands: &mut Commands) {
+pub fn raise_single_tile(
+    x: u8,
+    y: u8,
+    tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>,
+    commands: &mut Commands,
+) {
     for (entity, mut tile, mut terrain) in tiles.iter_mut() {
         if tile.coordinates == (x, y) {
             let old_height = tile.height;
             tile.height = (tile.height + 1).min(MAX_HEIGHT);
             terrain.height = tile.height;
-            
+
             // Add animation
             commands.entity(entity).insert(TerrainAnimation {
                 start_height: old_height,
@@ -490,13 +498,18 @@ pub fn raise_single_tile(x: u8, y: u8, tiles: &mut Query<(Entity, &mut BoardTile
     }
 }
 
-pub fn lower_single_tile(x: u8, y: u8, tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>, commands: &mut Commands) {
+pub fn lower_single_tile(
+    x: u8,
+    y: u8,
+    tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>,
+    commands: &mut Commands,
+) {
     for (entity, mut tile, mut terrain) in tiles.iter_mut() {
         if tile.coordinates == (x, y) {
             let old_height = tile.height;
             tile.height = (tile.height - 1).max(MIN_HEIGHT);
             terrain.height = tile.height;
-            
+
             // Add animation
             commands.entity(entity).insert(TerrainAnimation {
                 start_height: old_height,
@@ -509,13 +522,19 @@ pub fn lower_single_tile(x: u8, y: u8, tiles: &mut Query<(Entity, &mut BoardTile
     }
 }
 
-pub fn set_tile_height(x: u8, y: u8, height: i8, tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>, commands: &mut Commands) {
+pub fn set_tile_height(
+    x: u8,
+    y: u8,
+    height: i8,
+    tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>,
+    commands: &mut Commands,
+) {
     for (entity, mut tile, mut terrain) in tiles.iter_mut() {
         if tile.coordinates == (x, y) {
             let old_height = tile.height;
             tile.height = height.clamp(MIN_HEIGHT, MAX_HEIGHT);
             terrain.height = tile.height;
-            
+
             // Add animation
             commands.entity(entity).insert(TerrainAnimation {
                 start_height: old_height,

@@ -1,4 +1,4 @@
-use crate::{components::*, resources::*};
+use crate::components::*;
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 use std::collections::VecDeque;
@@ -198,20 +198,26 @@ pub fn cleanup_entities(
 
         // Clean up old particles
         for entity in old_particles.iter() {
-            commands.entity(entity).despawn();
-            cleaned += 1;
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+                cleaned += 1;
+            }
         }
 
         // Clean up old indicators
         for entity in old_indicators.iter() {
-            commands.entity(entity).despawn();
-            cleaned += 1;
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+                cleaned += 1;
+            }
         }
 
         // Clean up old effects
         for entity in old_effects.iter() {
-            commands.entity(entity).despawn();
-            cleaned += 1;
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+                cleaned += 1;
+            }
         }
 
         // Clear performance warnings
@@ -232,7 +238,7 @@ pub fn optimize_visual_effects(
     mut commands: Commands,
     keyboard: Res<Input<KeyCode>>,
     particles: Query<(Entity, &crate::systems::visual_effects::ParticleEffect)>,
-    mut monitor: ResMut<PerformanceMonitor>,
+    monitor: ResMut<PerformanceMonitor>,
 ) {
     if keyboard.just_pressed(KeyCode::F10) {
         println!("✨ Optimizing visual effects...");
@@ -246,8 +252,10 @@ pub fn optimize_visual_effects(
             // Remove oldest particles
             for (entity, particle) in particles.iter() {
                 if particle.lifetime < particle.max_lifetime * 0.1 {
-                    commands.entity(entity).despawn();
-                    removed += 1;
+                    if let Some(mut entity_commands) = commands.get_entity(entity) {
+                        entity_commands.despawn();
+                        removed += 1;
+                    }
                 }
 
                 if removed >= particle_count / 2 {
@@ -321,7 +329,9 @@ pub fn auto_optimize_performance(
                     for (i, entity) in particles.iter().enumerate() {
                         if i >= 20 {
                             // Keep only 20 particles
-                            commands.entity(entity).despawn();
+                            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                                entity_commands.despawn();
+                            }
                         }
                     }
                 }
@@ -332,7 +342,9 @@ pub fn auto_optimize_performance(
                     for (i, entity) in orbs.iter().enumerate() {
                         if i >= 3 {
                             // Keep only 3 orbs
-                            commands.entity(entity).despawn();
+                            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                                entity_commands.despawn();
+                            }
                         }
                     }
                 }

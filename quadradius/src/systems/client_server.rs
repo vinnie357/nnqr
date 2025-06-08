@@ -440,7 +440,9 @@ pub fn display_client_server_status(
 ) {
     // Remove existing UI
     for entity in existing_ui.iter() {
-        commands.entity(entity).despawn();
+        if let Some(mut entity_commands) = commands.get_entity(entity) {
+            entity_commands.despawn();
+        }
     }
     
     let status_text = if server.is_authoritative {

@@ -40,7 +40,7 @@ pub fn generate_power_test_report(keyboard: Res<Input<KeyCode>>) {
 // Test specific powers in isolation
 pub fn test_individual_power(
     keyboard: Res<Input<KeyCode>>,
-    mut commands: Commands,
+    commands: Commands,
     mut game_state: ResMut<GameState>,
     pieces: Query<(Entity, &GamePiece)>,
 ) {

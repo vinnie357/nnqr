@@ -214,7 +214,7 @@ fn calculate_balance_adjustment(usage_count: u32, success_rate: f32) -> f32 {
 // Enhanced power orb spawning with balance considerations
 pub fn spawn_balanced_power_orbs(
     mut commands: Commands,
-    mut game_state: ResMut<GameState>,
+    game_state: ResMut<GameState>,
     balance_config: Res<PowerBalanceConfig>,
     usage_tracker: Res<PowerUsageTracker>,
     board_tiles: Query<&BoardTile>,
@@ -336,7 +336,7 @@ fn select_balanced_power_type(
 pub fn enforce_power_limits(
     mut game_state: ResMut<GameState>,
     balance_config: Res<PowerBalanceConfig>,
-    mut usage_tracker: ResMut<PowerUsageTracker>,
+    usage_tracker: ResMut<PowerUsageTracker>,
     turn_counter: Res<TurnCounter>,
 ) {
     let current_player = game_state.current_player;

@@ -59,7 +59,6 @@ const POWERS_TO_TEST: [PowerType; 45] = [
     PowerType::LowerColumn,
     PowerType::DestroyColumn,
     PowerType::Multiply,
-    
     // Movement Powers (10)
     PowerType::Teleport,
     PowerType::Jump,
@@ -71,7 +70,6 @@ const POWERS_TO_TEST: [PowerType; 45] = [
     PowerType::Pull,
     PowerType::MoveTwice,
     PowerType::Leap,
-    
     // Combat Powers (10)
     PowerType::SmartBomb,
     PowerType::Sniper,
@@ -83,7 +81,6 @@ const POWERS_TO_TEST: [PowerType; 45] = [
     PowerType::Explode,
     PowerType::Assassin,
     PowerType::Resurrect,
-    
     // Board Manipulation Powers (10)
     PowerType::RaiseArea,
     PowerType::LowerArea,
@@ -95,7 +92,6 @@ const POWERS_TO_TEST: [PowerType; 45] = [
     PowerType::Bridge,
     PowerType::Pit,
     PowerType::Terraform,
-    
     // Meta Powers (15 total - there are actually 15, not 10)
     PowerType::StealPower,
     PowerType::CopyPower,
@@ -116,27 +112,8 @@ pub fn start_automated_power_tests(
     mut game_state: ResMut<GameState>,
     time: Res<Time>,
 ) {
-    // Auto-start testing after 5 seconds
-    if !test_runner.tests_running && time.elapsed_seconds() > 5.0 {
-        println!("🤖 AUTO-STARTING AUTOMATED POWER TESTS...");
-        test_runner.tests_running = true;
-        test_runner.current_test_index = 0;
-        test_runner.test_results.clear();
-        test_runner.test_phase = TestPhase::Setup;
-
-        // Reset game state for clean testing
-        game_state.current_player = Player::Player1;
-        game_state.turn_phase = TurnPhase::PowerActivation;
-        game_state.player1_powers.clear();
-        game_state.player2_powers.clear();
-        game_state.selected_power = None;
-
-        println!("🤖 AUTOMATED POWER TESTING STARTED");
-        println!("═══════════════════════════════════");
-        println!("Testing {} powers automatically...", POWERS_TO_TEST.len());
-        println!("═══════════════════════════════════");
-        return;
-    }
+    // Auto-start testing disabled for release builds
+    // Tests now only run when manually triggered with F9
 
     if keyboard.just_pressed(KeyCode::F9) {
         test_runner.tests_running = true;
@@ -238,7 +215,7 @@ pub fn run_automated_power_tests(
             test_runner.test_phase = TestPhase::Cleanup;
 
             // Update result with effect testing
-            if let Some(mut result) = test_runner.test_results.get_mut(&current_power) {
+            if let Some(result) = test_runner.test_results.get_mut(&current_power) {
                 result.status = effect_result.status;
                 result.details = format!("{} | {}", result.details, effect_result.details);
             }

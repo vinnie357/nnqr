@@ -22,7 +22,9 @@ pub fn handle_power_selection(
 ) {
     // Clear old indicators
     for entity in indicators.iter() {
-        commands.entity(entity).despawn();
+        if let Some(mut entity_commands) = commands.get_entity(entity) {
+            entity_commands.despawn();
+        }
     }
 
     if let Some(power_index) = game_state.selected_power {
@@ -256,9 +258,11 @@ pub fn handle_power_activation(
                             // Add MoveTwiceActive component to current player's pieces
                             for (entity, piece) in pieces.iter() {
                                 if piece.player == game_state.current_player {
-                                    commands.entity(entity).insert(crate::components::power::MoveTwiceActive {
-                                        moves_remaining: 2,
-                                    });
+                                    commands.entity(entity).insert(
+                                        crate::components::power::MoveTwiceActive {
+                                            moves_remaining: 2,
+                                        },
+                                    );
                                 }
                             }
                             println!("Move Twice activated - pieces can move twice this turn");
@@ -271,12 +275,18 @@ pub fn handle_power_activation(
                         }
                         PowerType::Swap => {
                             // Swap positions with target piece
-                            if let Some((entity1, piece1)) = pieces.iter().find(|(_, p)| p.player == game_state.current_player) {
-                                if let Some((entity2, piece2)) = pieces.iter().find(|(_, p)| p.board_position == board_pos && p.player != game_state.current_player) {
+                            if let Some((entity1, piece1)) = pieces
+                                .iter()
+                                .find(|(_, p)| p.player == game_state.current_player)
+                            {
+                                if let Some((entity2, piece2)) = pieces.iter().find(|(_, p)| {
+                                    p.board_position == board_pos
+                                        && p.player != game_state.current_player
+                                }) {
                                     // Swap the board positions
                                     let pos1 = piece1.board_position;
                                     let pos2 = piece2.board_position;
-                                    
+
                                     commands.entity(entity1).insert(GamePiece {
                                         player: piece1.player,
                                         board_position: pos2,
@@ -285,13 +295,21 @@ pub fn handle_power_activation(
                                         player: piece2.player,
                                         board_position: pos1,
                                     });
-                                    
+
                                     // Update visual positions
                                     let world_pos1 = board_to_world_position(pos2);
                                     let world_pos2 = board_to_world_position(pos1);
-                                    commands.entity(entity1).insert(Transform::from_xyz(world_pos1.x, world_pos1.y, 1.0));
-                                    commands.entity(entity2).insert(Transform::from_xyz(world_pos2.x, world_pos2.y, 1.0));
-                                    
+                                    commands.entity(entity1).insert(Transform::from_xyz(
+                                        world_pos1.x,
+                                        world_pos1.y,
+                                        1.0,
+                                    ));
+                                    commands.entity(entity2).insert(Transform::from_xyz(
+                                        world_pos2.x,
+                                        world_pos2.y,
+                                        1.0,
+                                    ));
+
                                     println!("Swapped pieces at {:?} and {:?}", pos1, pos2);
                                     true
                                 } else {
@@ -305,26 +323,33 @@ pub fn handle_power_activation(
                         }
                         PowerType::Push => {
                             // Push target piece away
-                            if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.board_position == board_pos) {
+                            if let Some((entity, piece)) =
+                                pieces.iter().find(|(_, p)| p.board_position == board_pos)
+                            {
                                 // Calculate push direction from center of board
                                 let center = (BOARD_SIZE / 2, BOARD_SIZE / 2);
                                 let dx = if board_pos.0 > center.0 { 1 } else { -1 };
                                 let dy = if board_pos.1 > center.1 { 1 } else { -1 };
-                                
+
                                 let push_to = (
                                     (board_pos.0 as i8 + dx).clamp(0, BOARD_SIZE as i8 - 1) as u8,
                                     (board_pos.1 as i8 + dy).clamp(0, BOARD_SIZE as i8 - 1) as u8,
                                 );
-                                
+
                                 // Check if destination is empty
-                                let occupied = pieces.iter().any(|(_, p)| p.board_position == push_to);
+                                let occupied =
+                                    pieces.iter().any(|(_, p)| p.board_position == push_to);
                                 if !occupied {
                                     commands.entity(entity).insert(GamePiece {
                                         player: piece.player,
                                         board_position: push_to,
                                     });
                                     let world_pos = board_to_world_position(push_to);
-                                    commands.entity(entity).insert(Transform::from_xyz(world_pos.x, world_pos.y, 1.0));
+                                    commands.entity(entity).insert(Transform::from_xyz(
+                                        world_pos.x,
+                                        world_pos.y,
+                                        1.0,
+                                    ));
                                     println!("Pushed piece from {:?} to {:?}", board_pos, push_to);
                                     true
                                 } else {
@@ -338,27 +363,46 @@ pub fn handle_power_activation(
                         }
                         PowerType::Pull => {
                             // Pull target piece towards current player's piece
-                            if let Some((target_entity, target_piece)) = pieces.iter().find(|(_, p)| p.board_position == board_pos) {
-                                if let Some((_, puller_piece)) = pieces.iter().find(|(_, p)| p.player == game_state.current_player) {
+                            if let Some((target_entity, target_piece)) =
+                                pieces.iter().find(|(_, p)| p.board_position == board_pos)
+                            {
+                                if let Some((_, puller_piece)) = pieces
+                                    .iter()
+                                    .find(|(_, p)| p.player == game_state.current_player)
+                                {
                                     // Calculate pull direction
-                                    let dx = (puller_piece.board_position.0 as i8 - board_pos.0 as i8).signum();
-                                    let dy = (puller_piece.board_position.1 as i8 - board_pos.1 as i8).signum();
-                                    
+                                    let dx = (puller_piece.board_position.0 as i8
+                                        - board_pos.0 as i8)
+                                        .signum();
+                                    let dy = (puller_piece.board_position.1 as i8
+                                        - board_pos.1 as i8)
+                                        .signum();
+
                                     let pull_to = (
-                                        (board_pos.0 as i8 + dx).clamp(0, BOARD_SIZE as i8 - 1) as u8,
-                                        (board_pos.1 as i8 + dy).clamp(0, BOARD_SIZE as i8 - 1) as u8,
+                                        (board_pos.0 as i8 + dx).clamp(0, BOARD_SIZE as i8 - 1)
+                                            as u8,
+                                        (board_pos.1 as i8 + dy).clamp(0, BOARD_SIZE as i8 - 1)
+                                            as u8,
                                     );
-                                    
+
                                     // Check if destination is empty
-                                    let occupied = pieces.iter().any(|(_, p)| p.board_position == pull_to);
+                                    let occupied =
+                                        pieces.iter().any(|(_, p)| p.board_position == pull_to);
                                     if !occupied {
                                         commands.entity(target_entity).insert(GamePiece {
                                             player: target_piece.player,
                                             board_position: pull_to,
                                         });
                                         let world_pos = board_to_world_position(pull_to);
-                                        commands.entity(target_entity).insert(Transform::from_xyz(world_pos.x, world_pos.y, 1.0));
-                                        println!("Pulled piece from {:?} to {:?}", board_pos, pull_to);
+                                        commands.entity(target_entity).insert(Transform::from_xyz(
+                                            world_pos.x,
+                                            world_pos.y,
+                                            1.0,
+                                        ));
+                                        println!(
+                                            "Pulled piece from {:?} to {:?}",
+                                            board_pos, pull_to
+                                        );
                                         true
                                     } else {
                                         println!("Cannot pull - destination occupied");
@@ -375,20 +419,28 @@ pub fn handle_power_activation(
                         }
                         PowerType::Leap => {
                             // Leap to target position within 3 tiles
-                            if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.player == game_state.current_player) {
+                            if let Some((entity, piece)) = pieces
+                                .iter()
+                                .find(|(_, p)| p.player == game_state.current_player)
+                            {
                                 let source_pos = piece.board_position;
                                 let dx = (board_pos.0 as i8 - source_pos.0 as i8).abs();
                                 let dy = (board_pos.1 as i8 - source_pos.1 as i8).abs();
-                                
+
                                 if dx <= 3 && dy <= 3 {
-                                    let occupied = pieces.iter().any(|(_, p)| p.board_position == board_pos);
+                                    let occupied =
+                                        pieces.iter().any(|(_, p)| p.board_position == board_pos);
                                     if !occupied {
                                         commands.entity(entity).insert(GamePiece {
                                             player: piece.player,
                                             board_position: board_pos,
                                         });
                                         let world_pos = board_to_world_position(board_pos);
-                                        commands.entity(entity).insert(Transform::from_xyz(world_pos.x, world_pos.y, 1.0));
+                                        commands.entity(entity).insert(Transform::from_xyz(
+                                            world_pos.x,
+                                            world_pos.y,
+                                            1.0,
+                                        ));
                                         println!("Leaped from {:?} to {:?}", source_pos, board_pos);
                                         true
                                     } else {
@@ -406,11 +458,13 @@ pub fn handle_power_activation(
                         }
                         PowerType::Freeze => {
                             // Freeze target piece for 3 turns
-                            if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.board_position == board_pos) {
+                            if let Some((entity, piece)) =
+                                pieces.iter().find(|(_, p)| p.board_position == board_pos)
+                            {
                                 if piece.player != game_state.current_player {
-                                    commands.entity(entity).insert(crate::components::power::Frozen {
-                                        remaining_turns: 3,
-                                    });
+                                    commands.entity(entity).insert(
+                                        crate::components::power::Frozen { remaining_turns: 3 },
+                                    );
                                     println!("Frozen enemy piece at {:?} for 3 turns", board_pos);
                                     true
                                 } else {
@@ -427,7 +481,11 @@ pub fn handle_power_activation(
                             if let Some(target_piece) =
                                 pieces.iter().find(|(_, p)| p.board_position == board_pos)
                             {
-                                commands.entity(target_piece.0).despawn();
+                                if let Some(mut entity_commands) =
+                                    commands.get_entity(target_piece.0)
+                                {
+                                    entity_commands.despawn();
+                                }
 
                                 // Spawn explosion effect
                                 let world_pos = board_to_world_position(board_pos);
@@ -450,7 +508,9 @@ pub fn handle_power_activation(
                                 pieces.iter().find(|(_, p)| p.board_position == board_pos)
                             {
                                 if piece.player != game_state.current_player {
-                                    commands.entity(entity).despawn();
+                                    if let Some(mut entity_commands) = commands.get_entity(entity) {
+                                        entity_commands.despawn();
+                                    }
 
                                     let world_pos = board_to_world_position(board_pos);
                                     crate::systems::visual_effects::spawn_capture_explosion(
@@ -488,7 +548,11 @@ pub fn handle_power_activation(
                                         if let Some((entity, _)) =
                                             pieces.iter().find(|(_, p)| p.board_position == target)
                                         {
-                                            commands.entity(entity).despawn();
+                                            if let Some(mut entity_commands) =
+                                                commands.get_entity(entity)
+                                            {
+                                                entity_commands.despawn();
+                                            }
                                             destroyed += 1;
                                         }
                                     }
@@ -517,9 +581,9 @@ pub fn handle_power_activation(
                             // Give current player's pieces shield protection
                             for (entity, piece) in pieces.iter() {
                                 if piece.player == game_state.current_player {
-                                    commands.entity(entity).insert(crate::components::power::Shield {
-                                        remaining_hits: 1,
-                                    });
+                                    commands.entity(entity).insert(
+                                        crate::components::power::Shield { remaining_hits: 1 },
+                                    );
                                 }
                             }
                             println!("Shield activated - pieces protected from next attack");
@@ -529,9 +593,9 @@ pub fn handle_power_activation(
                             // Make current player's pieces invisible for 3 turns
                             for (entity, piece) in pieces.iter() {
                                 if piece.player == game_state.current_player {
-                                    commands.entity(entity).insert(crate::components::power::Invisible {
-                                        remaining_turns: 3,
-                                    });
+                                    commands.entity(entity).insert(
+                                        crate::components::power::Invisible { remaining_turns: 3 },
+                                    );
                                 }
                             }
                             println!("Invisibility activated - pieces invisible for 3 turns");
@@ -539,13 +603,15 @@ pub fn handle_power_activation(
                         }
                         PowerType::Recruit => {
                             // Convert enemy piece to current player's side
-                            if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.board_position == board_pos) {
+                            if let Some((entity, piece)) =
+                                pieces.iter().find(|(_, p)| p.board_position == board_pos)
+                            {
                                 if piece.player != game_state.current_player {
                                     commands.entity(entity).insert(GamePiece {
                                         player: game_state.current_player,
                                         board_position: piece.board_position,
                                     });
-                                    
+
                                     // Update piece color
                                     let new_color = match game_state.current_player {
                                         Player::Player1 => Color::rgb(0.8, 0.2, 0.2),
@@ -564,7 +630,7 @@ pub fn handle_power_activation(
                                         ),
                                         ..default()
                                     });
-                                    
+
                                     println!("Recruited enemy piece at {:?}", board_pos);
                                     true
                                 } else {
@@ -578,12 +644,17 @@ pub fn handle_power_activation(
                         }
                         PowerType::Poison => {
                             // Poison target piece - it dies after 3 turns
-                            if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.board_position == board_pos) {
+                            if let Some((entity, piece)) =
+                                pieces.iter().find(|(_, p)| p.board_position == board_pos)
+                            {
                                 if piece.player != game_state.current_player {
-                                    commands.entity(entity).insert(crate::components::power::Poisoned {
-                                        remaining_turns: 3,
-                                    });
-                                    println!("Poisoned enemy piece at {:?} - dies in 3 turns", board_pos);
+                                    commands.entity(entity).insert(
+                                        crate::components::power::Poisoned { remaining_turns: 3 },
+                                    );
+                                    println!(
+                                        "Poisoned enemy piece at {:?} - dies in 3 turns",
+                                        board_pos
+                                    );
                                     true
                                 } else {
                                     println!("Cannot poison your own piece");
@@ -596,37 +667,58 @@ pub fn handle_power_activation(
                         }
                         PowerType::Explode => {
                             // Sacrifice current player's piece to destroy surrounding pieces
-                            if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.board_position == board_pos && p.player == game_state.current_player) {
+                            if let Some((entity, piece)) = pieces.iter().find(|(_, p)| {
+                                p.board_position == board_pos
+                                    && p.player == game_state.current_player
+                            }) {
                                 // Remove the exploding piece
-                                commands.entity(entity).despawn();
-                                
+                                if let Some(mut entity_commands) = commands.get_entity(entity) {
+                                    entity_commands.despawn();
+                                }
+
                                 // Destroy all adjacent pieces
                                 let mut destroyed = 0;
                                 for dx in -1i8..=1 {
                                     for dy in -1i8..=1 {
-                                        if dx == 0 && dy == 0 { continue; } // Skip center piece (already destroyed)
-                                        
+                                        if dx == 0 && dy == 0 {
+                                            continue;
+                                        } // Skip center piece (already destroyed)
+
                                         let target_x = board_pos.0 as i8 + dx;
                                         let target_y = board_pos.1 as i8 + dy;
 
-                                        if target_x >= 0 && target_x < BOARD_SIZE as i8 && target_y >= 0 && target_y < BOARD_SIZE as i8 {
+                                        if target_x >= 0
+                                            && target_x < BOARD_SIZE as i8
+                                            && target_y >= 0
+                                            && target_y < BOARD_SIZE as i8
+                                        {
                                             let target = (target_x as u8, target_y as u8);
-                                            if let Some((target_entity, _)) = pieces.iter().find(|(_, p)| p.board_position == target) {
-                                                commands.entity(target_entity).despawn();
+                                            if let Some((target_entity, _)) = pieces
+                                                .iter()
+                                                .find(|(_, p)| p.board_position == target)
+                                            {
+                                                if let Some(mut entity_commands) =
+                                                    commands.get_entity(target_entity)
+                                                {
+                                                    entity_commands.despawn();
+                                                }
                                                 destroyed += 1;
                                             }
                                         }
                                     }
                                 }
-                                
+
                                 let world_pos = board_to_world_position(board_pos);
                                 crate::systems::visual_effects::spawn_capture_explosion(
                                     &mut commands,
                                     Vec3::new(world_pos.x, world_pos.y, 0.0),
                                     Color::rgb(1.0, 0.0, 0.0),
                                 );
-                                
-                                println!("Piece exploded at {:?}, destroying {} surrounding pieces", board_pos, destroyed);
+
+                                println!(
+                                    "Piece exploded at {:?}, destroying {} surrounding pieces",
+                                    board_pos, destroyed
+                                );
                                 true
                             } else {
                                 println!("No current player piece at target location to explode");
@@ -635,7 +727,8 @@ pub fn handle_power_activation(
                         }
                         PowerType::Resurrect => {
                             // Bring back a destroyed piece (simplified - spawn new piece)
-                            let occupied = pieces.iter().any(|(_, p)| p.board_position == board_pos);
+                            let occupied =
+                                pieces.iter().any(|(_, p)| p.board_position == board_pos);
                             if !occupied {
                                 let world_pos = board_to_world_position(board_pos);
                                 commands.spawn((
@@ -652,7 +745,11 @@ pub fn handle_power_activation(
                                             custom_size: Some(Vec2::splat(TILE_SIZE * 0.8)),
                                             ..default()
                                         },
-                                        transform: Transform::from_xyz(world_pos.x, world_pos.y, 1.0),
+                                        transform: Transform::from_xyz(
+                                            world_pos.x,
+                                            world_pos.y,
+                                            1.0,
+                                        ),
                                         ..default()
                                     },
                                 ));
@@ -671,10 +768,19 @@ pub fn handle_power_activation(
                                 for dy in -1i8..=1 {
                                     let target_x = board_pos.0 as i8 + dx;
                                     let target_y = board_pos.1 as i8 + dy;
-                                    if target_x >= 0 && target_x < BOARD_SIZE as i8 && target_y >= 0 && target_y < BOARD_SIZE as i8 {
+                                    if target_x >= 0
+                                        && target_x < BOARD_SIZE as i8
+                                        && target_y >= 0
+                                        && target_y < BOARD_SIZE as i8
+                                    {
                                         // Use terrain height system to raise
                                         use crate::systems::terrain_height::raise_single_tile;
-                                        raise_single_tile(target_x as u8, target_y as u8, &mut tile_queries.p1(), &mut commands);
+                                        raise_single_tile(
+                                            target_x as u8,
+                                            target_y as u8,
+                                            &mut tile_queries.p1(),
+                                            &mut commands,
+                                        );
                                     }
                                 }
                             }
@@ -687,10 +793,19 @@ pub fn handle_power_activation(
                                 for dy in -1i8..=1 {
                                     let target_x = board_pos.0 as i8 + dx;
                                     let target_y = board_pos.1 as i8 + dy;
-                                    if target_x >= 0 && target_x < BOARD_SIZE as i8 && target_y >= 0 && target_y < BOARD_SIZE as i8 {
+                                    if target_x >= 0
+                                        && target_x < BOARD_SIZE as i8
+                                        && target_y >= 0
+                                        && target_y < BOARD_SIZE as i8
+                                    {
                                         // Use terrain height system to lower
                                         use crate::systems::terrain_height::lower_single_tile;
-                                        lower_single_tile(target_x as u8, target_y as u8, &mut tile_queries.p1(), &mut commands);
+                                        lower_single_tile(
+                                            target_x as u8,
+                                            target_y as u8,
+                                            &mut tile_queries.p1(),
+                                            &mut commands,
+                                        );
                                     }
                                 }
                             }
@@ -722,7 +837,9 @@ pub fn handle_power_activation(
                             // Remove walls at target position
                             for (entity, wall) in walls.iter() {
                                 if wall.board_position == board_pos {
-                                    commands.entity(entity).despawn();
+                                    if let Some(mut entity_commands) = commands.get_entity(entity) {
+                                        entity_commands.despawn();
+                                    }
                                 }
                             }
                             println!("Destroyed wall at {:?}", board_pos);
@@ -732,27 +849,34 @@ pub fn handle_power_activation(
                             // Shuffle pieces in 3x3 area
                             let mut area_pieces = Vec::new();
                             let mut area_positions = Vec::new();
-                            
+
                             for dx in -1i8..=1 {
                                 for dy in -1i8..=1 {
                                     let target_x = board_pos.0 as i8 + dx;
                                     let target_y = board_pos.1 as i8 + dy;
-                                    if target_x >= 0 && target_x < BOARD_SIZE as i8 && target_y >= 0 && target_y < BOARD_SIZE as i8 {
+                                    if target_x >= 0
+                                        && target_x < BOARD_SIZE as i8
+                                        && target_y >= 0
+                                        && target_y < BOARD_SIZE as i8
+                                    {
                                         let target_pos = (target_x as u8, target_y as u8);
                                         area_positions.push(target_pos);
-                                        
-                                        if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.board_position == target_pos) {
+
+                                        if let Some((entity, piece)) = pieces
+                                            .iter()
+                                            .find(|(_, p)| p.board_position == target_pos)
+                                        {
                                             area_pieces.push((entity, piece.player));
                                         }
                                     }
                                 }
                             }
-                            
+
                             // Shuffle pieces to random positions in the area
                             use rand::seq::SliceRandom;
                             let mut rng = rand::thread_rng();
                             area_positions.shuffle(&mut rng);
-                            
+
                             for (i, (entity, player)) in area_pieces.iter().enumerate() {
                                 if let Some(&new_pos) = area_positions.get(i) {
                                     commands.entity(*entity).insert(GamePiece {
@@ -760,11 +884,19 @@ pub fn handle_power_activation(
                                         board_position: new_pos,
                                     });
                                     let world_pos = board_to_world_position(new_pos);
-                                    commands.entity(*entity).insert(Transform::from_xyz(world_pos.x, world_pos.y, 1.0));
+                                    commands.entity(*entity).insert(Transform::from_xyz(
+                                        world_pos.x,
+                                        world_pos.y,
+                                        1.0,
+                                    ));
                                 }
                             }
-                            
-                            println!("Shuffled {} pieces in area around {:?}", area_pieces.len(), board_pos);
+
+                            println!(
+                                "Shuffled {} pieces in area around {:?}",
+                                area_pieces.len(),
+                                board_pos
+                            );
                             true
                         }
                         PowerType::Earthquake => {
@@ -772,46 +904,73 @@ pub fn handle_power_activation(
                             use rand::Rng;
                             let mut rng = rand::thread_rng();
                             let mut changed = 0;
-                            
+
                             for x in 0..BOARD_SIZE {
                                 for y in 0..BOARD_SIZE {
-                                    if rng.gen::<f32>() < 0.3 { // 30% chance for each tile
+                                    if rng.gen::<f32>() < 0.3 {
+                                        // 30% chance for each tile
                                         if rng.gen::<bool>() {
                                             use crate::systems::terrain_height::raise_single_tile;
-                                            raise_single_tile(x, y, &mut tile_queries.p1(), &mut commands);
+                                            raise_single_tile(
+                                                x,
+                                                y,
+                                                &mut tile_queries.p1(),
+                                                &mut commands,
+                                            );
                                         } else {
                                             use crate::systems::terrain_height::lower_single_tile;
-                                            lower_single_tile(x, y, &mut tile_queries.p1(), &mut commands);
+                                            lower_single_tile(
+                                                x,
+                                                y,
+                                                &mut tile_queries.p1(),
+                                                &mut commands,
+                                            );
                                         }
                                         changed += 1;
                                     }
                                 }
                             }
-                            
+
                             println!("Earthquake affected {} tiles", changed);
                             true
                         }
                         PowerType::Pit => {
                             // Create deep hole at target position
                             use crate::systems::terrain_height::set_tile_height;
-                            set_tile_height(board_pos.0, board_pos.1, -3, &mut tile_queries.p1(), &mut commands);
-                            
+                            set_tile_height(
+                                board_pos.0,
+                                board_pos.1,
+                                -3,
+                                &mut tile_queries.p1(),
+                                &mut commands,
+                            );
+
                             // Remove any piece at this position
-                            if let Some((entity, _)) = pieces.iter().find(|(_, p)| p.board_position == board_pos) {
-                                commands.entity(entity).despawn();
+                            if let Some((entity, _)) =
+                                pieces.iter().find(|(_, p)| p.board_position == board_pos)
+                            {
+                                if let Some(mut entity_commands) = commands.get_entity(entity) {
+                                    entity_commands.despawn();
+                                }
                             }
-                            
+
                             println!("Created pit at {:?}", board_pos);
                             true
                         }
                         PowerType::Terraform => {
                             // Set specific tile height (set to height 0)
                             use crate::systems::terrain_height::set_tile_height;
-                            set_tile_height(board_pos.0, board_pos.1, 0, &mut tile_queries.p1(), &mut commands);
+                            set_tile_height(
+                                board_pos.0,
+                                board_pos.1,
+                                0,
+                                &mut tile_queries.p1(),
+                                &mut commands,
+                            );
                             println!("Terraformed tile at {:?} to height 0", board_pos);
                             true
                         }
-                        
+
                         // Meta Powers
                         PowerType::StealPower => {
                             // Steal random power from opponent
@@ -819,7 +978,7 @@ pub fn handle_power_activation(
                                 Player::Player1 => &game_state.player2_powers,
                                 Player::Player2 => &game_state.player1_powers,
                             };
-                            
+
                             if !opponent_powers.is_empty() {
                                 use rand::seq::SliceRandom;
                                 let mut rng = rand::thread_rng();
@@ -827,13 +986,21 @@ pub fn handle_power_activation(
                                     // Remove from opponent
                                     match game_state.current_player {
                                         Player::Player1 => {
-                                            if let Some(pos) = game_state.player2_powers.iter().position(|&p| p == stolen_power) {
+                                            if let Some(pos) = game_state
+                                                .player2_powers
+                                                .iter()
+                                                .position(|&p| p == stolen_power)
+                                            {
                                                 game_state.player2_powers.remove(pos);
                                             }
                                             game_state.player1_powers.push(stolen_power);
                                         }
                                         Player::Player2 => {
-                                            if let Some(pos) = game_state.player1_powers.iter().position(|&p| p == stolen_power) {
+                                            if let Some(pos) = game_state
+                                                .player1_powers
+                                                .iter()
+                                                .position(|&p| p == stolen_power)
+                                            {
                                                 game_state.player1_powers.remove(pos);
                                             }
                                             game_state.player2_powers.push(stolen_power);
@@ -856,7 +1023,9 @@ pub fn handle_power_activation(
                                 use rand::seq::SliceRandom;
                                 let mut rng = rand::thread_rng();
                                 if let Some(&copied_power) = current_powers.choose(&mut rng) {
-                                    game_state.get_current_player_powers_mut().push(copied_power);
+                                    game_state
+                                        .get_current_player_powers_mut()
+                                        .push(copied_power);
                                     println!("Copied power: {:?}", copied_power);
                                     true
                                 } else {
@@ -879,11 +1048,10 @@ pub fn handle_power_activation(
                             // Give random power to opponent
                             let current_powers = game_state.get_current_player_powers_mut();
                             if !current_powers.is_empty() {
-                                use rand::seq::SliceRandom;
                                 let mut rng = rand::thread_rng();
                                 let index = rng.gen_range(0..current_powers.len());
                                 let gifted_power = current_powers.remove(index);
-                                
+
                                 match game_state.current_player {
                                     Player::Player1 => game_state.player2_powers.push(gifted_power),
                                     Player::Player2 => game_state.player1_powers.push(gifted_power),
@@ -916,9 +1084,9 @@ pub fn handle_power_activation(
                             // Add reflection ability to current player's pieces
                             for (entity, piece) in pieces.iter() {
                                 if piece.player == game_state.current_player {
-                                    commands.entity(entity).insert(crate::components::power::Reflecting {
-                                        remaining_turns: 3,
-                                    });
+                                    commands.entity(entity).insert(
+                                        crate::components::power::Reflecting { remaining_turns: 3 },
+                                    );
                                 }
                             }
                             println!("Reflection activated - powers will be reflected for 3 turns");
@@ -928,20 +1096,26 @@ pub fn handle_power_activation(
                             // Add absorption ability to current player's pieces
                             for (entity, piece) in pieces.iter() {
                                 if piece.player == game_state.current_player {
-                                    commands.entity(entity).insert(crate::components::power::Absorbing {
-                                        remaining_turns: 3,
-                                    });
+                                    commands.entity(entity).insert(
+                                        crate::components::power::Absorbing { remaining_turns: 3 },
+                                    );
                                 }
                             }
-                            println!("Absorption activated - will gain powers when attacked for 3 turns");
+                            println!(
+                                "Absorption activated - will gain powers when attacked for 3 turns"
+                            );
                             true
                         }
                         PowerType::DoublePower => {
                             // Use the same power twice (simplified - add the power back)
                             if let Some(&power_type) = powers.get(power_index) {
-                                if power_type != PowerType::DoublePower { // Prevent infinite loop
+                                if power_type != PowerType::DoublePower {
+                                    // Prevent infinite loop
                                     game_state.get_current_player_powers_mut().push(power_type);
-                                    println!("Double Power activated - can use {:?} again", power_type);
+                                    println!(
+                                        "Double Power activated - can use {:?} again",
+                                        power_type
+                                    );
                                     true
                                 } else {
                                     println!("Cannot double the DoublePower itself");
@@ -955,9 +1129,17 @@ pub fn handle_power_activation(
                             // Get random power effect
                             use rand::seq::SliceRandom;
                             let all_powers = [
-                                PowerType::MoveDiagonal, PowerType::Teleport, PowerType::Jump, PowerType::MoveTwo,
-                                PowerType::Knight, PowerType::SmartBomb, PowerType::Sniper, PowerType::Shield,
-                                PowerType::Multiply, PowerType::RaiseColumn, PowerType::LowerColumn,
+                                PowerType::MoveDiagonal,
+                                PowerType::Teleport,
+                                PowerType::Jump,
+                                PowerType::MoveTwo,
+                                PowerType::Knight,
+                                PowerType::SmartBomb,
+                                PowerType::Sniper,
+                                PowerType::Shield,
+                                PowerType::Multiply,
+                                PowerType::RaiseColumn,
+                                PowerType::LowerColumn,
                             ];
                             let mut rng = rand::thread_rng();
                             if let Some(&random_power) = all_powers.choose(&mut rng) {
@@ -975,7 +1157,7 @@ pub fn handle_power_activation(
                                 Player::Player1 => &mut game_state.player2_powers,
                                 Player::Player2 => &mut game_state.player1_powers,
                             };
-                            
+
                             if !opponent_powers.is_empty() {
                                 use rand::Rng;
                                 let mut rng = rand::thread_rng();
@@ -990,9 +1172,17 @@ pub fn handle_power_activation(
                         }
                         PowerType::Bridge => {
                             // Create bridge connecting two areas (simplified - set tiles to height 0)
-                            for x in board_pos.0.saturating_sub(1)..=(board_pos.0 + 1).min(BOARD_SIZE - 1) {
+                            for x in board_pos.0.saturating_sub(1)
+                                ..=(board_pos.0 + 1).min(BOARD_SIZE - 1)
+                            {
                                 use crate::systems::terrain_height::set_tile_height;
-                                set_tile_height(x, board_pos.1, 0, &mut tile_queries.p1(), &mut commands);
+                                set_tile_height(
+                                    x,
+                                    board_pos.1,
+                                    0,
+                                    &mut tile_queries.p1(),
+                                    &mut commands,
+                                );
                             }
                             println!("Created bridge at {:?}", board_pos);
                             true
@@ -1002,21 +1192,27 @@ pub fn handle_power_activation(
                             // This is complex to implement properly, so using shuffle for now
                             let mut area_pieces = Vec::new();
                             let mut positions = Vec::new();
-                            
+
                             for dx in -1i8..=1 {
                                 for dy in -1i8..=1 {
                                     let target_x = board_pos.0 as i8 + dx;
                                     let target_y = board_pos.1 as i8 + dy;
-                                    if target_x >= 0 && target_x < BOARD_SIZE as i8 && target_y >= 0 && target_y < BOARD_SIZE as i8 {
+                                    if target_x >= 0
+                                        && target_x < BOARD_SIZE as i8
+                                        && target_y >= 0
+                                        && target_y < BOARD_SIZE as i8
+                                    {
                                         let pos = (target_x as u8, target_y as u8);
                                         positions.push(pos);
-                                        if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.board_position == pos) {
+                                        if let Some((entity, piece)) =
+                                            pieces.iter().find(|(_, p)| p.board_position == pos)
+                                        {
                                             area_pieces.push((entity, piece.player));
                                         }
                                     }
                                 }
                             }
-                            
+
                             // Simple rotation - move pieces clockwise
                             if area_pieces.len() > 1 {
                                 for (i, (entity, player)) in area_pieces.iter().enumerate() {
@@ -1027,19 +1223,17 @@ pub fn handle_power_activation(
                                             board_position: new_pos,
                                         });
                                         let world_pos = board_to_world_position(new_pos);
-                                        commands.entity(*entity).insert(Transform::from_xyz(world_pos.x, world_pos.y, 1.0));
+                                        commands.entity(*entity).insert(Transform::from_xyz(
+                                            world_pos.x,
+                                            world_pos.y,
+                                            1.0,
+                                        ));
                                     }
                                 }
                             }
-                            
+
                             println!("Rotated area around {:?}", board_pos);
                             true
-                        }
-
-                        // Powers that need specific targets will show indicators
-                        _ => {
-                            println!("Power {} not yet implemented", power_type.name());
-                            false
                         }
                     };
 
@@ -1071,7 +1265,9 @@ pub fn handle_power_activation(
 
                         // Clear indicators
                         for entity in indicators.iter() {
-                            commands.entity(entity).despawn();
+                            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                                entity_commands.despawn();
+                            }
                         }
 
                         println!("Power activated: {}", power_type.name());
@@ -1152,7 +1348,9 @@ fn activate_destroy_column(
     // Remove all pieces in the column
     for (entity, piece) in pieces.iter() {
         if piece.board_position.0 == column {
-            commands.entity(entity).despawn();
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+            }
         }
     }
 
@@ -1268,7 +1466,9 @@ pub fn cleanup_power_effects(
         // Fade out effect
         let alpha = sprite.color.a() - time.delta_seconds() * 0.5;
         if alpha <= 0.0 {
-            commands.entity(entity).despawn();
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+            }
         } else {
             sprite.color.set_a(alpha);
         }

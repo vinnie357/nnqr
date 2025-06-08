@@ -35,13 +35,17 @@ fn test_mass_despawn(commands: &mut Commands, pieces: &Query<(Entity, &GamePiece
     let mut count = 0;
 
     for (entity, _) in pieces.iter() {
-        commands.entity(entity).despawn();
-        count += 1;
+        if let Some(mut entity_commands) = commands.get_entity(entity) {
+            entity_commands.despawn();
+            count += 1;
+        }
     }
 
     // Try to despawn them again (this should trigger the warnings we see)
     for (entity, _) in pieces.iter() {
-        commands.entity(entity).despawn();
+        if let Some(mut entity_commands) = commands.get_entity(entity) {
+            entity_commands.despawn();
+        }
     }
 
     println!("   Attempted to despawn {} pieces twice", count);
@@ -151,7 +155,7 @@ pub fn validate_game_safety(
 }
 
 // Entity cleanup validator to prevent double-despawn warnings
-pub fn validate_entity_cleanup(mut removed: RemovedComponents<GamePiece>, mut commands: Commands) {
+pub fn validate_entity_cleanup(mut removed: RemovedComponents<GamePiece>, commands: Commands) {
     for entity in removed.read() {
         println!("🧹 GamePiece component removed from entity: {:?}", entity);
         // Ensure we don't try to despawn already removed entities

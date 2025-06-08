@@ -279,7 +279,9 @@ fn setup_test_scenario(
             let mut count = 0;
             for (entity, _) in pieces.iter() {
                 if count > 2 {
-                    commands.entity(entity).despawn();
+                    if let Some(mut entity_commands) = commands.get_entity(entity) {
+                        entity_commands.despawn();
+                    }
                 }
                 count += 1;
             }

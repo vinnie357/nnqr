@@ -1,4 +1,4 @@
-use crate::{components::*, resources::*};
+use crate::components::*;
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -140,7 +140,9 @@ pub fn update_particle_effects(
         particle.lifetime -= time.delta_seconds();
 
         if particle.lifetime <= 0.0 {
-            commands.entity(entity).despawn();
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+            }
             continue;
         }
 
@@ -170,7 +172,9 @@ pub fn update_floating_text(
         floating.lifetime -= time.delta_seconds();
 
         if floating.lifetime <= 0.0 {
-            commands.entity(entity).despawn();
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                entity_commands.despawn();
+            }
             continue;
         }
 

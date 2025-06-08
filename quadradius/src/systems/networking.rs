@@ -637,7 +637,9 @@ pub fn display_network_info(
 ) {
     // Remove existing UI
     for entity in existing_ui.iter() {
-        commands.entity(entity).despawn();
+        if let Some(mut entity_commands) = commands.get_entity(entity) {
+            entity_commands.despawn();
+        }
     }
     
     // Show network status in top-right corner
