@@ -16,6 +16,8 @@ pub mod isometric_camera;
 pub mod movement_powers;
 pub mod performance;
 pub mod piece_alignment;
+pub mod piece_debug;
+pub mod piece_visibility_fix;
 pub mod pieces;
 pub mod pieces_3d;
 pub mod power_activation_ui;
@@ -44,7 +46,10 @@ pub use automated_power_tests::*;
 pub use crash_debug::*;
 pub use depth_sorting::*;
 pub use enhanced_movement::*;
-pub use enhanced_ui::{setup_enhanced_ui, update_turn_indicator_enhanced, update_power_inventory_ui, animate_ui_elements, show_power_tooltips};
+pub use enhanced_ui::{
+    animate_ui_elements, setup_enhanced_ui, show_power_tooltips, update_power_inventory_ui,
+    update_turn_indicator_enhanced,
+};
 pub use feedback_animations::*;
 pub use game_balance::*;
 pub use game_menu::*;
@@ -52,6 +57,8 @@ pub use isometric_camera::*;
 pub use movement_powers::*;
 pub use performance::*;
 pub use piece_alignment::*;
+pub use piece_debug::*;
+pub use piece_visibility_fix::*;
 pub use pieces::*;
 pub use pieces_3d::*;
 pub use power_activation_ui::*;

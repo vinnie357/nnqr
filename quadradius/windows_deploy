@@ -1,0 +1,5 @@
+#!/bin/bash
+# Quick Windows deployment shortcut
+# Usage: ./windows_deploy [target]
+
+exec ./deploy_windows.sh "${1:-./windows}"

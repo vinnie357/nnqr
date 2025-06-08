@@ -23,7 +23,7 @@ impl Default for GameState {
             current_player: Player::Player1,
             player1_powers: Vec::new(),
             player2_powers: Vec::new(),
-            turn_phase: TurnPhase::PowerActivation,
+            turn_phase: TurnPhase::PieceMovement, // Start with piece movement for better UX
             selected_power: None,
         }
     }

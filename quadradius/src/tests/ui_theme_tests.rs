@@ -17,8 +17,14 @@ mod theme_tests {
     #[test]
     fn test_team_colors_different() {
         // Ensure team colors are distinct
-        assert_ne!(QuadradiusTheme::TEAM_1_PRIMARY, QuadradiusTheme::TEAM_2_PRIMARY);
-        assert_ne!(QuadradiusTheme::TEAM_1_ACCENT, QuadradiusTheme::TEAM_2_ACCENT);
+        assert_ne!(
+            QuadradiusTheme::TEAM_1_PRIMARY,
+            QuadradiusTheme::TEAM_2_PRIMARY
+        );
+        assert_ne!(
+            QuadradiusTheme::TEAM_1_ACCENT,
+            QuadradiusTheme::TEAM_2_ACCENT
+        );
     }
 
     #[test]
@@ -33,7 +39,7 @@ mod theme_tests {
         assert_ne!(base_color, elevated_color);
         assert_ne!(base_color, high_color);
         assert_ne!(base_color, depressed_color);
-        
+
         // Ensure progression makes sense (lighter for higher)
         assert!(elevated_color.r() >= base_color.r());
         assert!(high_color.r() >= elevated_color.r());

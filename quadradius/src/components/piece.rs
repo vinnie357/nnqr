@@ -30,3 +30,9 @@ pub struct InvalidMoveFlash {
     pub start_time: f32,
     pub duration: f32,
 }
+
+#[derive(Component)]
+pub struct Selected;
+
+#[derive(Component)]
+pub struct SelectionHighlight;

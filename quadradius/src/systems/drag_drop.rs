@@ -27,8 +27,14 @@ pub fn handle_drag_start(
         return;
     }
 
-    let window = windows.single();
-    let (camera, camera_transform) = camera_q.single();
+    let Ok(window) = windows.get_single() else {
+        warn!("No window available for 2D mouse input");
+        return;
+    };
+    let Ok((camera, camera_transform)) = camera_q.get_single() else {
+        warn!("No camera available for 2D coordinate conversion");
+        return;
+    };
 
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
@@ -72,8 +78,14 @@ pub fn handle_drag_update(
     camera_q: Query<(&Camera, &GlobalTransform)>,
     mut dragging_pieces: Query<(&Dragging, &mut Transform)>,
 ) {
-    let window = windows.single();
-    let (camera, camera_transform) = camera_q.single();
+    let Ok(window) = windows.get_single() else {
+        warn!("No window available for 2D mouse input");
+        return;
+    };
+    let Ok((camera, camera_transform)) = camera_q.get_single() else {
+        warn!("No camera available for 2D coordinate conversion");
+        return;
+    };
 
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
@@ -108,8 +120,14 @@ pub fn handle_drag_end(
         return;
     }
 
-    let window = windows.single();
-    let (camera, camera_transform) = camera_q.single();
+    let Ok(window) = windows.get_single() else {
+        warn!("No window available for 2D mouse input");
+        return;
+    };
+    let Ok((camera, camera_transform)) = camera_q.get_single() else {
+        warn!("No camera available for 2D coordinate conversion");
+        return;
+    };
 
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
@@ -263,7 +281,7 @@ fn is_valid_move_with_positions(
 
     let valid_move = if allow_diagonal {
         // Allow diagonal, horizontal, or vertical moves of distance 1
-        (dx == 1 && dy == 1) || (dx == 1 && dy == 0) || (dx == 0 && dy == 1)
+        (dx <= 1 && dy <= 1) && (dx + dy > 0)
     } else {
         // Only horizontal or vertical moves
         (dx == 1 && dy == 0) || (dx == 0 && dy == 1)

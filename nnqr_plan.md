@@ -11,51 +11,63 @@
 **Timeline**: Complete before any other work
 **Goal**: Playable basic game without power-ups
 
-### Step 1.1: Project Setup & Basic Board
+### Step 1.1: Project Setup & Isometric Board
 **Commands to execute**:
 ```bash
 cargo new quadradius --bin
 cd quadradius
 cargo add bevy
+cargo add bevy_ecs_tilemap  # For efficient isometric tilemap rendering
 ```
 
 **Implementation Tasks**:
 1. Create basic Bevy app with window
-2. Implement 8x8 board rendering system
-3. Add terrain height visualization (different colors/heights)
-4. Create board tile entities with coordinates and height components
+2. Implement 10x8 isometric board rendering system using 3D camera
+3. Set up isometric camera with orthographic projection
+4. Add terrain height visualization (color gradients, whiter = higher)
+5. Create board tile entities with coordinates and height components
+6. Implement isometric coordinate transformation system
 
 **Acceptance Criteria**:
-- [ ] Window opens showing 8x8 grid
-- [ ] Tiles display different heights visually
-- [ ] Board is centered and properly scaled
+- [ ] Window opens showing 10x8 isometric grid (80 tiles total)
+- [ ] Isometric camera positioned at correct angles (45° horizontal, ~35.264° vertical)
+- [ ] Tiles display different heights with color-coded elevation
+- [ ] Board is centered and properly scaled with 3D appearance
+- [ ] Mouse coordinates correctly map to isometric tile positions
 - [ ] No crashes or performance issues
 
 ### Step 1.2: Player Pieces & Selection
 **Implementation Tasks**:
-1. Create player piece entities (20 pieces each)
-2. Place pieces in starting positions (opposite sides)
-3. Implement piece selection via mouse clicks
-4. Add visual feedback for selected pieces
+1. Create player piece entities (20 pieces each - Blue and Teal)
+2. Place Blue pieces in bottom 2 rows, Teal pieces in top 2 rows
+3. Implement accurate mouse-to-isometric-tile coordinate conversion
+4. Add piece selection via mouse clicks with proper depth sorting
+5. Add visual feedback for selected pieces (rings, highlighting)
 
 **Acceptance Criteria**:
-- [ ] 40 total pieces visible on board (20 per player)
-- [ ] Clicking selects/deselects pieces
-- [ ] Selected pieces are visually highlighted
+- [ ] 40 total pieces visible: 20 Blue (bottom), 20 Teal (top)
+- [ ] Circular disc pieces clearly distinguishable by color
+- [ ] Mouse clicks accurately select pieces in isometric view
+- [ ] Selected pieces show clear visual feedback
+- [ ] Proper depth sorting prevents z-fighting issues
 - [ ] Only current player can select their pieces
 
 ### Step 1.3: Movement System
 **Implementation Tasks**:
-1. Implement movement validation (horizontal/vertical only)
-2. Add terrain height restrictions (down any levels, up one level max)
-3. Create move preview system (show valid moves)
-4. Handle piece movement and board updates
+1. Implement movement validation (orthogonal only: up/down/left/right)
+2. Add terrain height restrictions (down any levels, up max 1 level)
+3. Create move preview system showing valid moves in isometric view
+4. Handle smooth piece movement animation between isometric positions
+5. Update board state and piece positions correctly
 
 **Acceptance Criteria**:
-- [ ] Valid moves are highlighted when piece selected
-- [ ] Invalid moves are blocked (wrong direction, height, occupied)
-- [ ] Pieces move smoothly to new positions
+- [ ] Valid orthogonal moves highlighted when piece selected
+- [ ] Diagonal movement properly blocked (no diagonal unless power-up)
+- [ ] Height restrictions enforced (can't move up more than 1 level)
+- [ ] Pieces can move down any number of terrain levels
+- [ ] Smooth animation between isometric grid positions
 - [ ] Board state updates correctly after moves
+- [ ] Occupied squares properly block movement
 
 ### Step 1.4: Turn Management & Game Rules
 **Implementation Tasks**:
@@ -70,7 +82,7 @@ cargo add bevy
 - [ ] Game detects and announces winner
 - [ ] UI clearly shows whose turn it is
 
-**PHASE 1 COMPLETE WHEN**: Two humans can play a complete game from start to finish with all basic rules working correctly.
+**PHASE 1 COMPLETE WHEN**: Two humans can play a complete game on the 10x8 isometric board from start to finish with all basic rules working correctly.
 
 ---
 
@@ -79,29 +91,36 @@ cargo add bevy
 
 ### Step 2.1: Power Orb System
 **Implementation Tasks**:
-1. Create power orb spawning system (random empty tiles)
-2. Add visual representation of orbs on board
-3. Implement orb collection when pieces move over them
-4. Create power inventory system for players
+1. Create power orb spawning system (every 7 rounds, random empty tiles)
+2. Add metallic dome visual representation with futuristic aesthetic
+3. Implement territory-based spawn logic (more controlled area = more orbs)
+4. Add orb collection when pieces move over them
+5. Create per-piece power inventory system
+6. Track ~80 total orbs spawning over game duration
 
 **Acceptance Criteria**:
-- [ ] Power orbs appear randomly on empty tiles
-- [ ] Orbs are visually distinct and appealing
-- [ ] Moving over orbs adds them to player inventory
+- [ ] Power orbs spawn approximately every 7 rounds on empty tiles
+- [ ] Orbs appear as small metallic domes with sci-fi appearance
+- [ ] Territory control influences orb spawn locations
+- [ ] Moving over orbs adds them to that specific piece's inventory
 - [ ] Orbs disappear after collection
+- [ ] Spawn rate targets ~80 orbs per complete game
 
 ### Step 2.2: Power Activation Framework
 **Implementation Tasks**:
-1. Create power activation UI panel
-2. Implement "use power before move" turn phase
-3. Add power targeting system (select targets)
-4. Create power effect application framework
+1. Create power activation UI panel showing per-piece inventories
+2. Implement 3-phase turn system: Power Activation → Movement → Power Collection
+3. Add power targeting system for different target types
+4. Create modular power effect application framework
+5. Ensure powers must be used before movement phase
 
 **Acceptance Criteria**:
-- [ ] Players can see their collected powers
-- [ ] Powers can be activated before moving
-- [ ] Target selection works for different power types
-- [ ] Powers are consumed after use
+- [ ] UI clearly shows each piece's power inventory
+- [ ] Turn phases enforced: activate powers before moving
+- [ ] Target selection works for self/enemy/tile/area powers
+- [ ] Powers consumed after use (or decremented if multi-use)
+- [ ] Power Collection phase automatically triggers after movement
+- [ ] Phase transitions are clear to players
 
 ### Step 2.3: First 5 Powers Implementation
 **Powers to implement (in order)**:
@@ -231,6 +250,7 @@ cd quadradius
 
 # Add dependencies
 cargo add bevy
+cargo add bevy_ecs_tilemap    # For efficient isometric tilemap
 cargo add bevy_inspector_egui  # For debugging
 cargo add rand                 # For power orb spawning
 cargo add serde               # For game state serialization
@@ -267,11 +287,13 @@ app.add_plugins((
 ## SUCCESS CHECKPOINTS
 
 ### Phase 1 Success Criteria
-- [ ] Game runs without crashes
-- [ ] Complete games can be played start to finish
-- [ ] All movement rules work correctly
+- [ ] Game runs without crashes in isometric view
+- [ ] Complete games can be played on 10x8 board start to finish
+- [ ] All movement rules work correctly (orthogonal only, height restrictions)
+- [ ] Isometric mouse interaction works accurately
 - [ ] Win conditions are properly detected
 - [ ] Code is well-organized and documented
+- [ ] Proper depth sorting and visual clarity maintained
 
 ### Phase 2 Success Criteria
 - [ ] Power orbs spawn and can be collected

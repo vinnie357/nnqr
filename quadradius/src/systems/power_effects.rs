@@ -1449,7 +1449,7 @@ pub fn is_valid_move_with_diagonal(from: (u8, u8), to: (u8, u8), allow_diagonal:
 
     if allow_diagonal {
         // Allow diagonal moves (distance 1 in both x and y)
-        (dx == 1 && dy == 1) || (dx == 1 && dy == 0) || (dx == 0 && dy == 1)
+        (dx <= 1 && dy <= 1) && (dx + dy > 0)
     } else {
         // Normal movement - only horizontal or vertical
         (dx == 1 && dy == 0) || (dx == 0 && dy == 1)

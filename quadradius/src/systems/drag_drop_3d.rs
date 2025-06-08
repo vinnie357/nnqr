@@ -39,7 +39,10 @@ pub fn handle_drag_start_3d(
         return;
     }
 
-    let window = windows.single();
+    let Ok(window) = windows.get_single() else {
+        warn!("No window available for mouse input");
+        return;
+    };
     if let Some(cursor_pos) = window.cursor_position() {
         // Convert screen position to board coordinates
         if let Some(board_pos) = screen_to_board(&windows, &camera_q, cursor_pos) {
@@ -51,13 +54,20 @@ pub fn handle_drag_start_3d(
                         start_pos: board_pos,
                     });
 
+                    // Add selection highlighting
+                    commands.entity(entity).insert(Selected);
+
                     // Check if this piece can move diagonally
                     let can_move_diagonal = diagonal_pieces.iter().any(|e| e == entity);
 
                     // TODO: Show valid moves in 3D - needs to be a separate system
                     // For now, just log that we started dragging
 
-                    info!("Started dragging piece at {:?}", board_pos);
+                    // Debug logging disabled to prevent spam
+                    #[cfg(debug_assertions)]
+                    if false {
+                        info!("Started dragging piece at {:?}", board_pos);
+                    }
                     break;
                 }
             }
@@ -72,7 +82,10 @@ pub fn handle_drag_update_3d(
     camera_q: Query<(&Camera, &GlobalTransform), With<IsometricCamera>>,
     tiles: Query<&BoardTile>,
 ) {
-    let window = windows.single();
+    let Ok(window) = windows.get_single() else {
+        warn!("No window available for mouse input");
+        return;
+    };
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(board_pos) = screen_to_board(&windows, &camera_q, cursor_pos) {
             for (mut transform, _piece) in pieces.iter_mut() {
@@ -84,7 +97,8 @@ pub fn handle_drag_update_3d(
                     .unwrap_or(0) as f32;
 
                 // Update piece position to follow cursor
-                let world_pos = crate::systems::isometric_camera::board_to_isometric(board_pos, height);
+                let world_pos =
+                    crate::systems::isometric_camera::board_to_isometric(board_pos, height);
                 transform.translation = Vec3::new(
                     world_pos.x,
                     world_pos.y + TILE_SIZE * 0.5, // Float above tile
@@ -117,7 +131,10 @@ pub fn handle_drag_end_3d(
         commands.entity(entity).despawn();
     }
 
-    let window = windows.single();
+    let Ok(window) = windows.get_single() else {
+        warn!("No window available for mouse input");
+        return;
+    };
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(target_pos) = screen_to_board(&windows, &camera_q, cursor_pos) {
             for (entity, mut piece, mut transform, dragging) in pieces.iter_mut() {
@@ -137,30 +154,36 @@ pub fn handle_drag_end_3d(
                     // Perform capture if needed
                     if let Some(captured) = captured_entity {
                         commands.entity(captured).despawn_recursive();
-                        info!("Captured piece at {:?}", target_pos);
+                        // Debug logging disabled to prevent spam
+                        #[cfg(debug_assertions)]
+                        if false {
+                            info!("Captured piece at {:?}", target_pos);
+                        }
                     }
 
                     // Update piece position
                     piece.board_position = target_pos;
-                    
+
                     // Update transform to final position
                     let height = tiles
                         .iter()
                         .find(|tile| tile.coordinates == target_pos)
                         .map(|tile| tile.height)
                         .unwrap_or(0) as f32;
-                    
-                    let world_pos = crate::systems::isometric_camera::board_to_isometric(target_pos, height);
-                    transform.translation = Vec3::new(
-                        world_pos.x,
-                        world_pos.y + TILE_SIZE * 0.35,
-                        world_pos.z,
-                    );
+
+                    let world_pos =
+                        crate::systems::isometric_camera::board_to_isometric(target_pos, height);
+                    transform.translation =
+                        Vec3::new(world_pos.x, world_pos.y + TILE_SIZE * 0.35, world_pos.z);
 
                     // End turn
                     game_state.turn_phase = TurnPhase::PowerActivation;
 
-                    info!("Moved piece from {:?} to {:?}", start_pos, target_pos);
+                    // Debug logging disabled to prevent spam
+                    #[cfg(debug_assertions)]
+                    if false {
+                        info!("Moved piece from {:?} to {:?}", start_pos, target_pos);
+                    }
                 } else {
                     // Invalid move - return to original position
                     let height = tiles
@@ -168,19 +191,22 @@ pub fn handle_drag_end_3d(
                         .find(|tile| tile.coordinates == start_pos)
                         .map(|tile| tile.height)
                         .unwrap_or(0) as f32;
-                    
-                    let world_pos = crate::systems::isometric_camera::board_to_isometric(start_pos, height);
-                    transform.translation = Vec3::new(
-                        world_pos.x,
-                        world_pos.y + TILE_SIZE * 0.35,
-                        world_pos.z,
-                    );
 
-                    info!("Invalid move - returning piece to {:?}", start_pos);
+                    let world_pos =
+                        crate::systems::isometric_camera::board_to_isometric(start_pos, height);
+                    transform.translation =
+                        Vec3::new(world_pos.x, world_pos.y + TILE_SIZE * 0.35, world_pos.z);
+
+                    // Debug logging disabled to prevent spam
+                    #[cfg(debug_assertions)]
+                    if false {
+                        info!("Invalid move - returning piece to {:?}", start_pos);
+                    }
                 }
 
-                // Remove dragging component
+                // Remove dragging and selection components
                 commands.entity(entity).remove::<Dragging3D>();
+                commands.entity(entity).remove::<Selected>();
             }
         }
     }
@@ -246,34 +272,34 @@ fn get_valid_tiles_3d(
     _can_move_diagonal: bool,
 ) -> Vec<(u8, u8)> {
     let mut valid_tiles = Vec::new();
-    
+
     // Check all adjacent positions
     for dx in -1i32..=1 {
         for dy in -1i32..=1 {
             if dx == 0 && dy == 0 {
                 continue;
             }
-            
+
             let new_x = from.0 as i32 + dx;
             let new_y = from.1 as i32 + dy;
-            
-            if new_x >= 0 && new_x < BOARD_WIDTH as i32 && 
-               new_y >= 0 && new_y < BOARD_HEIGHT as i32 {
+
+            if new_x >= 0 && new_x < BOARD_WIDTH as i32 && new_y >= 0 && new_y < BOARD_HEIGHT as i32
+            {
                 let pos = (new_x as u8, new_y as u8);
-                
+
                 // Check height restrictions
                 let from_height = tiles
                     .iter()
                     .find(|t| t.coordinates == from)
                     .map(|t| t.height)
                     .unwrap_or(0);
-                
+
                 let to_height = tiles
                     .iter()
                     .find(|t| t.coordinates == pos)
                     .map(|t| t.height)
                     .unwrap_or(0);
-                
+
                 // Can't move up more than 1 level
                 if to_height <= from_height + 1 {
                     valid_tiles.push(pos);
@@ -281,7 +307,7 @@ fn get_valid_tiles_3d(
             }
         }
     }
-    
+
     valid_tiles
 }
 
@@ -308,7 +334,7 @@ fn is_valid_move(
         .find(|t| t.coordinates == from)
         .map(|t| t.height)
         .unwrap_or(0);
-    
+
     let to_height = tiles
         .iter()
         .find(|t| t.coordinates == to)
@@ -331,7 +357,7 @@ fn is_valid_move(
     // Check basic movement (adjacent tiles)
     let dx = (to.0 as i32 - from.0 as i32).abs();
     let dy = (to.1 as i32 - from.1 as i32).abs();
-    
+
     dx <= 1 && dy <= 1 && (dx + dy) > 0
 }
 

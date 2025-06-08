@@ -235,12 +235,12 @@ fn execute_power_test(
     let execution_time = start_time.elapsed().as_secs_f32();
 
     // Determine if test passed
-    let success = match (&test.expected_outcome, &outcome) {
-        (ExpectedOutcome::Success, TestOutcome::PowerActivated) => true,
-        (ExpectedOutcome::Failure, TestOutcome::PowerFailed) => true,
-        (ExpectedOutcome::NoEffect, TestOutcome::NoTargetSelected) => true,
-        _ => false,
-    };
+    let success = matches!(
+        (&test.expected_outcome, &outcome),
+        (ExpectedOutcome::Success, TestOutcome::PowerActivated)
+            | (ExpectedOutcome::Failure, TestOutcome::PowerFailed)
+            | (ExpectedOutcome::NoEffect, TestOutcome::NoTargetSelected)
+    );
 
     PowerTestResult {
         power_type: test.power_type,
@@ -276,14 +276,12 @@ fn setup_test_scenario(
         }
         TestScenario::EmptyBoard => {
             // Remove most pieces except minimum for testing
-            let mut count = 0;
-            for (entity, _) in pieces.iter() {
+            for (count, (entity, _)) in pieces.iter().enumerate() {
                 if count > 2 {
                     if let Some(mut entity_commands) = commands.get_entity(entity) {
                         entity_commands.despawn();
                     }
                 }
-                count += 1;
             }
         }
         TestScenario::FullBoard => {

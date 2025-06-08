@@ -241,7 +241,7 @@ fn setup_bottom_bar(parent: &mut ChildBuilder) {
         .with_children(|parent| {
             parent.spawn((
                 TextBundle::from_section(
-                    "Hover over powers for descriptions",
+                    "🖱️ Left Click: Select piece  |  🖱️ Right Click: Move/Use power  |  ⌨️ Q/E: Zoom  |  🔧 1-5: Debug powers",
                     TextStyle {
                         font_size: 14.0,
                         color: QuadradiusTheme::UI_TEXT,
@@ -267,6 +267,9 @@ pub struct TurnIndicatorText;
 pub struct HelpText;
 
 #[derive(Component)]
+pub struct PowerPanelText;
+
+#[derive(Component)]
 pub struct PowerIcon {
     pub power_type: PowerType,
     pub player: Player,
@@ -279,17 +282,35 @@ pub fn update_power_inventory_ui(
     player1_panel: Query<Entity, With<Player1PowerPanel>>,
     player2_panel: Query<Entity, With<Player2PowerPanel>>,
     existing_icons: Query<Entity, With<PowerIcon>>,
+    existing_texts: Query<Entity, With<PowerPanelText>>,
 ) {
-    // Clear existing power icons
+    // Clear existing power icons and text
     for entity in existing_icons.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+    for entity in existing_texts.iter() {
         commands.entity(entity).despawn_recursive();
     }
 
     // Update Player 1 powers
     if let Ok(panel) = player1_panel.get_single() {
         commands.entity(panel).with_children(|parent| {
-            for (i, power) in game_state.player1_powers.iter().enumerate() {
-                spawn_power_icon(parent, *power, Player::Player1, i);
+            if game_state.player1_powers.is_empty() {
+                parent.spawn((
+                    TextBundle::from_section(
+                        "No powers collected\n\n💫 Move over power orbs\n   to collect them!",
+                        TextStyle {
+                            font_size: 11.0,
+                            color: Color::rgba(1.0, 1.0, 1.0, 0.7),
+                            ..default()
+                        },
+                    ),
+                    PowerPanelText,
+                ));
+            } else {
+                for (i, power) in game_state.player1_powers.iter().enumerate() {
+                    spawn_power_icon(parent, *power, Player::Player1, i);
+                }
             }
         });
     }
@@ -297,8 +318,22 @@ pub fn update_power_inventory_ui(
     // Update Player 2 powers
     if let Ok(panel) = player2_panel.get_single() {
         commands.entity(panel).with_children(|parent| {
-            for (i, power) in game_state.player2_powers.iter().enumerate() {
-                spawn_power_icon(parent, *power, Player::Player2, i);
+            if game_state.player2_powers.is_empty() {
+                parent.spawn((
+                    TextBundle::from_section(
+                        "No powers collected\n\n💫 Move over power orbs\n   to collect them!",
+                        TextStyle {
+                            font_size: 11.0,
+                            color: Color::rgba(1.0, 1.0, 1.0, 0.7),
+                            ..default()
+                        },
+                    ),
+                    PowerPanelText,
+                ));
+            } else {
+                for (i, power) in game_state.player2_powers.iter().enumerate() {
+                    spawn_power_icon(parent, *power, Player::Player2, i);
+                }
             }
         });
     }

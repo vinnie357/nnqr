@@ -1,6 +1,6 @@
+use crate::systems::{isometric_camera::board_to_isometric, pieces_3d::GamePiece3D};
 use crate::{components::*, resources::*};
 use bevy::prelude::*;
-use crate::systems::{isometric_camera::board_to_isometric, pieces_3d::GamePiece3D};
 use rand::Rng;
 
 /// Component for 3D power orbs with glow effects
@@ -36,7 +36,7 @@ pub fn spawn_power_orbs_3d(
     last_turn.turn_count += 1;
 
     let mut rng = rand::thread_rng();
-    
+
     // 50% chance to spawn orb
     if rng.gen::<f32>() > 0.5 {
         return;
@@ -47,13 +47,13 @@ pub fn spawn_power_orbs_3d(
     for x in 0..BOARD_WIDTH {
         for y in 0..BOARD_HEIGHT {
             let pos = (x, y);
-            
+
             // Check if tile has a piece
             let has_piece = pieces.iter().any(|p| p.board_position == pos);
-            
+
             // Check if tile already has an orb
             let has_orb = orbs.iter().any(|o| o.board_position == pos);
-            
+
             if !has_piece && !has_orb {
                 empty_tiles.push(pos);
             }
@@ -117,7 +117,7 @@ fn spawn_orb_3d(
 
     // Get power type color
     let power_color = power_type.color();
-    
+
     // Create metallic orb material
     let orb_material = materials.add(StandardMaterial {
         base_color: QuadradiusTheme::ORB_BASE,
@@ -138,53 +138,54 @@ fn spawn_orb_3d(
     });
 
     // Spawn main orb entity with children
-    commands.spawn((
-        PowerOrb3D {
-            power_type,
-            board_position: position,
-            glow_intensity: 1.0,
-            pulse_timer: 0.0,
-        },
-        // Also add 2D PowerOrb for compatibility
-        PowerOrb {
-            power_type,
-            board_position: position,
-        },
-        Transform::from_xyz(world_pos.x, orb_y, world_pos.z),
-        GlobalTransform::default(),
-        Visibility::default(),
-        ViewVisibility::default(),
-    ))
-    .with_children(|parent| {
-        // Inner metallic orb
-        parent.spawn(PbrBundle {
-            mesh: orb_mesh,
-            material: orb_material,
-            transform: Transform::default(),
-            ..default()
-        });
-
-        // Outer glow effect
-        parent.spawn(PbrBundle {
-            mesh: glow_mesh,
-            material: glow_material,
-            transform: Transform::default(),
-            ..default()
-        });
-
-        // Add floating light source for illumination
-        parent.spawn(PointLightBundle {
-            point_light: PointLight {
-                color: power_color,
-                intensity: 200.0,
-                range: TILE_SIZE * 2.0,
-                shadows_enabled: false,
-                ..default()
+    commands
+        .spawn((
+            PowerOrb3D {
+                power_type,
+                board_position: position,
+                glow_intensity: 1.0,
+                pulse_timer: 0.0,
             },
-            transform: Transform::from_xyz(0.0, TILE_SIZE * 0.1, 0.0),
-            ..default()
+            // Also add 2D PowerOrb for compatibility
+            PowerOrb {
+                power_type,
+                board_position: position,
+            },
+            Transform::from_xyz(world_pos.x, orb_y, world_pos.z),
+            GlobalTransform::default(),
+            Visibility::default(),
+            ViewVisibility::default(),
+        ))
+        .with_children(|parent| {
+            // Inner metallic orb
+            parent.spawn(PbrBundle {
+                mesh: orb_mesh,
+                material: orb_material,
+                transform: Transform::default(),
+                ..default()
+            });
+
+            // Outer glow effect
+            parent.spawn(PbrBundle {
+                mesh: glow_mesh,
+                material: glow_material,
+                transform: Transform::default(),
+                ..default()
+            });
+
+            // Add floating light source for illumination
+            parent.spawn(PointLightBundle {
+                point_light: PointLight {
+                    color: power_color,
+                    intensity: 200.0,
+                    range: TILE_SIZE * 2.0,
+                    shadows_enabled: false,
+                    ..default()
+                },
+                transform: Transform::from_xyz(0.0, TILE_SIZE * 0.1, 0.0),
+                ..default()
+            });
         });
-    });
 }
 
 /// Animate 3D power orbs with pulsing glow
@@ -197,7 +198,7 @@ pub fn animate_power_orbs_3d(
 ) {
     for (mut orb, mut transform, children) in orbs.iter_mut() {
         orb.pulse_timer += time.delta_seconds() * 2.0;
-        
+
         // Pulsing glow effect
         let pulse = (orb.pulse_timer.sin() * 0.5 + 0.5).clamp(0.3, 1.0);
         orb.glow_intensity = pulse;
@@ -217,7 +218,7 @@ pub fn animate_power_orbs_3d(
                     material.emissive = power_color * pulse * 1.5;
                 }
             }
-            
+
             if let Ok(mut light) = lights.get_mut(child) {
                 light.intensity = 200.0 * pulse;
             }

@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::components::*;
+use bevy::prelude::*;
 
 /// Component for entities that need depth sorting in isometric view
 #[derive(Component)]
@@ -23,10 +23,10 @@ pub fn update_isometric_depth_sorting(
     for (mut transform, depth_sort) in query.iter_mut() {
         // Calculate depth: further back and lower objects render first
         // Formula: larger Y coordinates (further back) get smaller Z values (render first)
-        let base_depth = -((depth_sort.grid_y * 1000.0) + 
-                           (depth_sort.grid_x * 10.0) + 
-                           (depth_sort.height * 0.1));
-        
+        let base_depth = -((depth_sort.grid_y * 1000.0)
+            + (depth_sort.grid_x * 10.0)
+            + (depth_sort.height * 0.1));
+
         transform.translation.z = base_depth + depth_sort.layer_offset;
     }
 }
@@ -49,8 +49,17 @@ pub fn setup_tile_depth_sorting(
 /// Initialize depth sorting for pieces (both 2D and 3D)
 pub fn setup_piece_depth_sorting(
     mut commands: Commands,
-    pieces_2d: Query<(Entity, &GamePiece), (Without<IsometricDepthSort>, Without<crate::systems::pieces_3d::GamePiece3D>)>,
-    pieces_3d: Query<(Entity, &crate::systems::pieces_3d::GamePiece3D), Without<IsometricDepthSort>>,
+    pieces_2d: Query<
+        (Entity, &GamePiece),
+        (
+            Without<IsometricDepthSort>,
+            Without<crate::systems::pieces_3d::GamePiece3D>,
+        ),
+    >,
+    pieces_3d: Query<
+        (Entity, &crate::systems::pieces_3d::GamePiece3D),
+        Without<IsometricDepthSort>,
+    >,
     tiles: Query<&BoardTile>,
 ) {
     // Handle 2D pieces
@@ -60,7 +69,7 @@ pub fn setup_piece_depth_sorting(
             .find(|tile| tile.coordinates == piece.board_position)
             .map(|tile| tile.height as f32)
             .unwrap_or(0.0);
-            
+
         commands.entity(entity).insert(IsometricDepthSort {
             grid_x: piece.board_position.0 as f32,
             grid_y: piece.board_position.1 as f32,
@@ -68,7 +77,7 @@ pub fn setup_piece_depth_sorting(
             layer_offset: PIECE_LAYER,
         });
     }
-    
+
     // Handle 3D pieces
     for (entity, piece) in pieces_3d.iter() {
         let height = tiles
@@ -76,7 +85,7 @@ pub fn setup_piece_depth_sorting(
             .find(|tile| tile.coordinates == piece.board_position)
             .map(|tile| tile.height as f32)
             .unwrap_or(0.0);
-            
+
         commands.entity(entity).insert(IsometricDepthSort {
             grid_x: piece.board_position.0 as f32,
             grid_y: piece.board_position.1 as f32,
@@ -88,8 +97,20 @@ pub fn setup_piece_depth_sorting(
 
 /// Update piece depth sorting when pieces move
 pub fn update_piece_depth_sorting(
-    mut pieces_2d: Query<(&GamePiece, &mut IsometricDepthSort), (Changed<GamePiece>, Without<crate::systems::pieces_3d::GamePiece3D>)>,
-    mut pieces_3d: Query<(&crate::systems::pieces_3d::GamePiece3D, &mut IsometricDepthSort), Changed<crate::systems::pieces_3d::GamePiece3D>>,
+    mut pieces_2d: Query<
+        (&GamePiece, &mut IsometricDepthSort),
+        (
+            Changed<GamePiece>,
+            Without<crate::systems::pieces_3d::GamePiece3D>,
+        ),
+    >,
+    mut pieces_3d: Query<
+        (
+            &crate::systems::pieces_3d::GamePiece3D,
+            &mut IsometricDepthSort,
+        ),
+        Changed<crate::systems::pieces_3d::GamePiece3D>,
+    >,
     tiles: Query<&BoardTile>,
 ) {
     // Update 2D pieces
@@ -99,12 +120,12 @@ pub fn update_piece_depth_sorting(
             .find(|tile| tile.coordinates == piece.board_position)
             .map(|tile| tile.height as f32)
             .unwrap_or(0.0);
-            
+
         depth_sort.grid_x = piece.board_position.0 as f32;
         depth_sort.grid_y = piece.board_position.1 as f32;
         depth_sort.height = height;
     }
-    
+
     // Update 3D pieces
     for (piece, mut depth_sort) in pieces_3d.iter_mut() {
         let height = tiles
@@ -112,7 +133,7 @@ pub fn update_piece_depth_sorting(
             .find(|tile| tile.coordinates == piece.board_position)
             .map(|tile| tile.height as f32)
             .unwrap_or(0.0);
-            
+
         depth_sort.grid_x = piece.board_position.0 as f32;
         depth_sort.grid_y = piece.board_position.1 as f32;
         depth_sort.height = height;
@@ -123,7 +144,10 @@ pub fn update_piece_depth_sorting(
 pub fn setup_power_orb_depth_sorting(
     mut commands: Commands,
     orbs_2d: Query<(Entity, &PowerOrb), Without<IsometricDepthSort>>,
-    orbs_3d: Query<(Entity, &crate::systems::power_orbs_3d::PowerOrb3D), Without<IsometricDepthSort>>,
+    orbs_3d: Query<
+        (Entity, &crate::systems::power_orbs_3d::PowerOrb3D),
+        Without<IsometricDepthSort>,
+    >,
 ) {
     // Handle 2D power orbs
     for (entity, orb) in orbs_2d.iter() {
@@ -134,7 +158,7 @@ pub fn setup_power_orb_depth_sorting(
             layer_offset: EFFECT_LAYER,
         });
     }
-    
+
     // Handle 3D power orbs
     for (entity, orb) in orbs_3d.iter() {
         commands.entity(entity).insert(IsometricDepthSort {

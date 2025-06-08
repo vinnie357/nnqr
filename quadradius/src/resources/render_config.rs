@@ -18,7 +18,7 @@ impl RenderConfig {
     pub fn new_2d() -> Self {
         Self { use_3d: false }
     }
-    
+
     pub fn new_3d() -> Self {
         Self { use_3d: true }
     }

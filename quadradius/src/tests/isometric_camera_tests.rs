@@ -1,5 +1,5 @@
+use crate::components::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::systems::isometric_camera::*;
-use crate::components::{BOARD_WIDTH, BOARD_HEIGHT};
 
 #[cfg(test)]
 mod isometric_tests {
@@ -30,7 +30,7 @@ mod isometric_tests {
 
         // Higher tiles should have higher Y coordinates
         assert!(elevated_pos.y > base_pos.y);
-        
+
         // X and Z should remain the same
         assert_eq!(base_pos.x, elevated_pos.x);
         assert_eq!(base_pos.z, elevated_pos.z);
@@ -51,7 +51,7 @@ mod isometric_tests {
         for x in 0..BOARD_WIDTH {
             for y in 0..BOARD_HEIGHT {
                 let pos = board_to_isometric((x, y), 1.0);
-                
+
                 // Should produce finite values
                 assert!(pos.x.is_finite());
                 assert!(pos.y.is_finite());

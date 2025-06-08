@@ -51,17 +51,13 @@ fn main() {
                 // Camera systems - 3D takes precedence if enabled
                 setup_isometric_camera.run_if(|config: Res<RenderConfig>| config.use_3d),
                 setup_camera.run_if(|config: Res<RenderConfig>| !config.use_3d),
-                
                 // Board systems - 3D takes precedence if enabled
                 setup_board_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
                 setup_board.run_if(|config: Res<RenderConfig>| !config.use_3d),
-                
                 // Piece systems - 3D takes precedence if enabled
                 setup_pieces_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
                 setup_pieces.run_if(|config: Res<RenderConfig>| !config.use_3d),
-                
                 // Common systems
-                setup_ui,
                 setup_enhanced_ui,
                 setup_power_activation_ui,
                 initialize_terrain_heights,
@@ -77,15 +73,22 @@ fn main() {
                 // Input and movement systems - 2D
                 handle_drag_start.run_if(|config: Res<RenderConfig>| !config.use_3d),
                 handle_drag_update.run_if(|config: Res<RenderConfig>| !config.use_3d),
-                handle_drag_end.run_if(|config: Res<RenderConfig>| !config.use_3d).before(update_turn_indicator),
+                handle_drag_end
+                    .run_if(|config: Res<RenderConfig>| !config.use_3d)
+                    .before(update_turn_indicator),
                 cleanup_indicators.run_if(|config: Res<RenderConfig>| !config.use_3d),
-                
-                // Input and movement systems - 3D
+                // Input and movement systems - 3D (primary drag system)
                 handle_drag_start_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
                 handle_drag_update_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
-                handle_drag_end_3d.run_if(|config: Res<RenderConfig>| config.use_3d).before(update_turn_indicator),
+                handle_drag_end_3d
+                    .run_if(|config: Res<RenderConfig>| config.use_3d)
+                    .before(update_turn_indicator),
                 cleanup_indicators_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
-                
+                // Alternative raycast-based piece selection (backup system)
+                raycast_piece_selection.run_if(|config: Res<RenderConfig>| config.use_3d),
+                // Piece visibility fixes
+                fix_piece_visibility.run_if(|config: Res<RenderConfig>| config.use_3d),
+                ensure_piece_visibility.run_if(|config: Res<RenderConfig>| config.use_3d),
                 // Common systems
                 align_pieces_to_grid,
                 show_valid_moves_for_powers,
@@ -107,9 +110,7 @@ fn main() {
             (
                 // Game state and UI systems
                 check_win_condition,
-                update_turn_indicator,
                 update_turn_indicator_enhanced,
-                update_power_inventory,
                 update_power_inventory_ui,
                 update_power_activation_ui,
                 animate_ui_elements,
@@ -131,14 +132,16 @@ fn main() {
                 handle_power_selection,
                 handle_power_activation,
                 cleanup_power_effects,
-                
                 // Power orb systems - 2D
-                spawn_power_orbs.run_if(|config: Res<RenderConfig>| !config.use_3d).before(update_power_activation_ui),
+                spawn_power_orbs
+                    .run_if(|config: Res<RenderConfig>| !config.use_3d)
+                    .before(update_power_activation_ui),
                 collect_power_orbs.run_if(|config: Res<RenderConfig>| !config.use_3d),
                 animate_power_orbs.run_if(|config: Res<RenderConfig>| !config.use_3d),
-                
                 // Power orb systems - 3D
-                spawn_power_orbs_3d.run_if(|config: Res<RenderConfig>| config.use_3d).before(update_power_activation_ui),
+                spawn_power_orbs_3d
+                    .run_if(|config: Res<RenderConfig>| config.use_3d)
+                    .before(update_power_activation_ui),
                 collect_power_orbs_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
                 animate_power_orbs_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
             ),
@@ -225,12 +228,19 @@ fn main() {
                 spawn_height_indicators,
                 update_height_indicators,
                 // debug_terrain_commands, // Temporarily disabled due to query conflicts
-                
+
                 // 3D systems (conditional)
-                update_isometric_camera,
-                update_tile_heights,
-                highlight_board_tiles,
-                update_piece_positions_3d,
+                update_isometric_camera.run_if(|config: Res<RenderConfig>| config.use_3d),
+                update_tile_heights.run_if(|config: Res<RenderConfig>| config.use_3d),
+                highlight_board_tiles.run_if(|config: Res<RenderConfig>| config.use_3d),
+                update_piece_positions_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
+                update_selection_highlighting.run_if(|config: Res<RenderConfig>| config.use_3d),
+                // Depth sorting systems
+                setup_tile_depth_sorting,
+                setup_piece_depth_sorting,
+                setup_power_orb_depth_sorting,
+                update_piece_depth_sorting,
+                update_isometric_depth_sorting,
             ),
         )
         .add_systems(
@@ -242,6 +252,10 @@ fn main() {
                 cleanup_entities,
                 optimize_visual_effects,
                 analyze_system_performance,
+                // Debug systems
+                debug_piece_count,
+                debug_piece_selection,
+                debug_mouse_clicks,
                 auto_optimize_performance,
             ),
         )

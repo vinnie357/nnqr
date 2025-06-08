@@ -105,12 +105,12 @@ pub fn validate_game_safety(
 ) {
     // Check for obvious issues that could cause crashes
 
-    // 1. Check for pieces outside board bounds
+    // 1. Check for pieces outside board bounds (10×8 board)
     for piece in pieces.iter() {
-        if piece.board_position.0 >= 8 || piece.board_position.1 >= 8 {
+        if piece.board_position.0 >= BOARD_WIDTH || piece.board_position.1 >= BOARD_HEIGHT {
             println!(
-                "⚠️ SAFETY: Piece found outside board bounds: {:?}",
-                piece.board_position
+                "⚠️ SAFETY: Piece found outside board bounds: {:?} (max: {}×{})",
+                piece.board_position, BOARD_WIDTH, BOARD_HEIGHT
             );
         }
     }
@@ -146,10 +146,12 @@ pub fn validate_game_safety(
         println!("⚠️ SAFETY: High piece count: {}", piece_count);
     }
 
-    if tile_count != 64 {
+    // Expected tile count for 10×8 board
+    let expected_tile_count = BOARD_WIDTH as usize * BOARD_HEIGHT as usize;
+    if tile_count != expected_tile_count {
         println!(
-            "⚠️ SAFETY: Incorrect tile count: {} (expected 64)",
-            tile_count
+            "⚠️ SAFETY: Incorrect tile count: {} (expected {})",
+            tile_count, expected_tile_count
         );
     }
 }

@@ -71,7 +71,7 @@ pub fn validate_enhanced_movement(
     let allow_diagonal = diagonal_query.contains(entity);
     let valid_move = if allow_diagonal {
         // Allow diagonal, horizontal, or vertical moves of distance 1
-        (dx == 1 && dy == 1) || (dx == 1 && dy == 0) || (dx == 0 && dy == 1)
+        (dx <= 1 && dy <= 1) && (dx + dy > 0)
     } else {
         // Only horizontal or vertical moves
         (dx == 1 && dy == 0) || (dx == 0 && dy == 1)

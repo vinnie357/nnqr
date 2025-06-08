@@ -16,7 +16,7 @@ Implement a faithful recreation of the classic Flash game Quadradius using Rust 
 ## Game Mechanics Specification
 
 ### Board Structure
-- **Grid Size**: 8x8 board (64 squares total)
+- **Grid Size**: 10x8 board (80 squares total) - 10 columns by 8 rows
 - **Terrain Heights**: Multi-level terrain system where tiles can be raised or lowered
 - **Movement Rules**: 
   - Pieces can move down any number of levels
@@ -25,37 +25,43 @@ Implement a faithful recreation of the classic Flash game Quadradius using Rust 
 
 ### Player Setup
 - **Pieces per Player**: 20 pieces each
-- **Starting Positions**: Players start on opposite sides of the board
+- **Starting Positions**: Blue player occupies bottom two rows, Teal player occupies top two rows
+- **Initial Setup**: 40 pieces total on board, 40 empty squares in middle for gameplay
 - **Piece Types**: Basic checker-like pieces that can acquire powers
 
 ### Power-Up System
-- **Total Power-ups**: Approximately 70 different power-ups
-- **Spawn Mechanism**: Power-ups appear as randomly spawning orbs across the game board
-- **Usage**: Power-ups can only be activated before moving a piece during your turn
-- **Frequency**: Roughly 80 orbs spawn over the course of a complete game
+- **Total Power-ups**: Approximately 70-86 different power-ups
+- **Spawn Mechanism**: Power-ups appear as metallic dome orbs on random empty squares
+- **Spawn Frequency**: Approximately every 7 rounds, ~80 orbs total per game
+- **Territory Control**: More controlled territory = more orbs spawn on your side
+- **Usage**: Power-ups must be activated before moving during turn
+- **Storage**: Each piece maintains its own power-up inventory
 
-#### Known Power-Up Categories:
-**Movement Modifiers**:
-- Move Diagonal
-- Teleportation abilities
+#### Power-Up Categories (70-86 total powers):
 
-**Board Manipulation**:
-- Raise Column/Terrain
-- Lower Column/Terrain (Dredge Column)
-- Destroy Column
+**Movement Powers**:
+- Move Diagonal: Enables diagonal movement
+- Move Again: Grants additional movement
+- Relocate: Random teleportation
+- Invisible: Stealth capabilities
 
-**Piece Manipulation**:
-- Multiply (generate new piece)
-- Invisible (hide piece from opponent)
-- Recruit opposing pieces (flip allegiance)
-- Destroy opposing pieces
+**Offensive Powers (~1/3 of all powers)**:
+- Destroy Column/Row: Eliminates entire lines of pieces
+- Bombs: Drops 16 random bombs destroying pieces and depressing terrain
+- Snake Tunneling: Sends destructive snake across board while raising terrain 2 levels
+- Acid: Creates permanent holes in the board
 
-**Combat/Interaction**:
-- Smart Bombs
-- Side-switching abilities
-- Spy gadgetry
-- Steal opponent's powers
-- Learn copies of your own powers
+**Terrain Manipulation**:
+- Dredge Column: Sinks enemy pieces 2 levels while raising friendly pieces 2 levels
+- Lower/Raise Tile: Modifies individual tile heights
+- Scramble Column: Major terrain alterations affecting multiple columns
+
+**Strategic Powers**:
+- Jump Proof: Permanent immunity to capture
+- Recruit/Recruit Radial: Converts enemy pieces
+- Multiply: Generates new pieces
+- Teach Row/Radial: Shares powers with other pieces
+- Grow Quadradius: Massively extends kill power range (most powerful)
 
 ---
 
@@ -67,9 +73,9 @@ Implement a faithful recreation of the classic Flash game Quadradius using Rust 
 ```rust
 // Core data structures needed:
 struct Board {
-    grid: [[Tile; 8]; 8],
-    width: usize,
-    height: usize,
+    grid: [[Tile; 10]; 8],  // 10 columns, 8 rows
+    width: usize,  // 10
+    height: usize, // 8
 }
 
 struct Tile {
@@ -124,9 +130,9 @@ struct GameState {
 }
 
 enum TurnPhase {
-    PowerActivation,
-    Movement,
-    EndTurn,
+    PowerActivation,  // Must activate powers before moving
+    Movement,         // Move one piece one space
+    PowerCollection,  // Automatically collect orb on destination
 }
 ```
 
@@ -145,7 +151,7 @@ enum TurnPhase {
 **Timeline**: 2-3 weeks
 
 **Deliverables**:
-1. Basic 8x8 board rendering with Bevy
+1. Basic 10x8 board rendering with isometric view in Bevy
 2. Piece placement and basic movement (horizontal/vertical, one square)
 3. Turn-based gameplay loop
 4. Simple terrain height visualization
@@ -260,18 +266,21 @@ struct PowerUpDatabase {
 ## UI/UX Requirements
 
 ### Game Interface
-1. **Main Game View**: Isometric or top-down view of the 8x8 board
+1. **Main Game View**: 3D isometric view of the 10x8 board with height variations
+2. **Height Visualization**: Color gradients showing elevation (whiter = higher)
+3. **Power Orbs**: Small metallic domes with futuristic appearance
 2. **Piece Selection**: Click to select pieces, highlight valid moves
 3. **Power Activation**: UI panel showing available powers for selected piece
 4. **Turn Indicator**: Clear indication of whose turn it is
 5. **Game Status**: Score, remaining pieces, game phase
 
 ### Visual Design
-1. **Board Rendering**: Clear grid with height differences visible
-2. **Piece Visualization**: Distinct pieces for each player
-3. **Power Orbs**: Glowing orbs that stand out on the board
-4. **Terrain Heights**: 3D-like visualization or clear height indicators
-5. **Animations**: Smooth piece movement, power activation effects
+1. **Board Rendering**: Isometric 3D view with clear height differences
+2. **Piece Visualization**: Circular disc pieces (Blue vs Teal) with power modifications
+3. **Power Orbs**: Metallic dome orbs with futuristic sci-fi aesthetic
+4. **Terrain Heights**: Color-coded elevation with gradient-based visualization
+5. **Animations**: Smooth piece movement, complex cascade effects for area powers
+6. **Art Direction**: Clean geometric design with metallic textures
 
 ---
 
@@ -314,14 +323,14 @@ struct PowerUpDatabase {
 ## Success Criteria
 
 ### Minimum Viable Product (MVP)
-- [ ] Functional 8x8 board with piece movement
+- [ ] Functional 10x8 isometric board with piece movement
 - [ ] Basic power-up system (10+ powers working)
 - [ ] Turn-based gameplay for local play
 - [ ] Win condition detection
 - [ ] Terrain height system
 
 ### Full Release
-- [ ] All ~70 power-ups implemented and balanced
+- [ ] All ~70-86 power-ups implemented and balanced
 - [ ] Multiplayer networking functional
 - [ ] Polished UI/UX matching original game feel
 - [ ] Performance targets met
@@ -332,7 +341,7 @@ struct PowerUpDatabase {
 ## Development Notes for Claude Code
 
 ### Key Implementation Priorities
-1. Start with board and basic movement - get the foundation solid
+1. Start with isometric 10x8 board and basic movement - get the foundation solid
 2. Implement power-up system incrementally, testing each power thoroughly
 3. Focus on clear, modular code structure for the complex power interactions
 4. Use Bevy's ECS effectively - avoid putting too much logic in single systems
