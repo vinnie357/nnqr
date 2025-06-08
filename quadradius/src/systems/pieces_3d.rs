@@ -35,7 +35,7 @@ pub fn setup_pieces_3d(
     
     // Player 1 pieces (bottom two rows)
     for y in 0..2 {
-        for x in 0..BOARD_SIZE {
+        for x in 0..BOARD_WIDTH {
             if (x + y) % 2 == 0 {
                 spawn_piece_3d(
                     &mut commands,
@@ -50,8 +50,8 @@ pub fn setup_pieces_3d(
     }
     
     // Player 2 pieces (top two rows)
-    for y in (BOARD_SIZE - 2)..BOARD_SIZE {
-        for x in 0..BOARD_SIZE {
+    for y in (BOARD_HEIGHT - 2)..BOARD_HEIGHT {
+        for x in 0..BOARD_WIDTH {
             if (x + y) % 2 == 0 {
                 spawn_piece_3d(
                     &mut commands,

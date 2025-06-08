@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::resources::QuadradiusTheme;
-use crate::systems::isometric_camera::board_to_isometric;
+use crate::systems::{isometric_camera::board_to_isometric, depth_sorting::{IsometricDepthSort, TILE_LAYER}};
 
 /// 3D tile component with mesh information
 #[derive(Component)]
@@ -40,8 +40,8 @@ pub fn setup_board_3d(
     )));
     
     // Create tiles with varied heights
-    for x in 0..BOARD_SIZE {
-        for y in 0..BOARD_SIZE {
+    for x in 0..BOARD_WIDTH {
+        for y in 0..BOARD_HEIGHT {
             // Create interesting height pattern
             let height = match (x, y) {
                 (3, 3) | (4, 4) => 2,
@@ -91,18 +91,26 @@ pub fn setup_board_3d(
                     mesh: tile_mesh.clone(),
                     material: tile_material,
                     transform: Transform::from_translation(position),
+                    visibility: Visibility::Visible,
                     ..default()
+                },
+                IsometricDepthSort {
+                    grid_x: x as f32,
+                    grid_y: y as f32,
+                    height: height as f32,
+                    layer_offset: TILE_LAYER,
                 },
             ));
         }
     }
     
     // Add board base platform
-    let base_size = BOARD_SIZE as f32 * TILE_SIZE * 1.2;
+    let base_width = BOARD_WIDTH as f32 * TILE_SIZE * 1.2;
+    let base_height = BOARD_HEIGHT as f32 * TILE_SIZE * 1.2;
     let base_mesh = meshes.add(Mesh::from(shape::Box::new(
-        base_size,
+        base_width,
         TILE_SIZE * 0.2,
-        base_size,
+        base_height,
     )));
     
     commands.spawn(PbrBundle {

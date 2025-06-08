@@ -1,6 +1,5 @@
 use crate::systems::isometric_camera::*;
-use crate::components::BOARD_SIZE;
-use bevy::prelude::*;
+use crate::components::{BOARD_WIDTH, BOARD_HEIGHT};
 
 #[cfg(test)]
 mod isometric_tests {
@@ -9,13 +8,14 @@ mod isometric_tests {
     #[test]
     fn test_board_to_isometric_conversion() {
         // Test conversion from board coordinates to isometric world position
-        let center_pos = board_to_isometric((BOARD_SIZE / 2, BOARD_SIZE / 2), 0.0);
+        // For 10x8 board, center is (5, 4)
+        let center_pos = board_to_isometric((BOARD_WIDTH / 2, BOARD_HEIGHT / 2), 0.0);
         let corner_pos = board_to_isometric((0, 0), 0.0);
-        let opposite_corner = board_to_isometric((BOARD_SIZE - 1, BOARD_SIZE - 1), 0.0);
+        let opposite_corner = board_to_isometric((BOARD_WIDTH - 1, BOARD_HEIGHT - 1), 0.0);
 
         // Center should be near origin (allowing for isometric transform)
-        assert!(center_pos.x.abs() < 50.0);
-        assert!(center_pos.z.abs() < 50.0);
+        assert!(center_pos.x.abs() < 100.0); // Increased tolerance for 10x8 board
+        assert!(center_pos.z.abs() < 100.0);
         assert_eq!(center_pos.y, 0.0);
 
         // Corners should be different
@@ -48,8 +48,8 @@ mod isometric_tests {
     #[test]
     fn test_board_coordinate_bounds() {
         // Test that all valid board coordinates convert without panic
-        for x in 0..BOARD_SIZE {
-            for y in 0..BOARD_SIZE {
+        for x in 0..BOARD_WIDTH {
+            for y in 0..BOARD_HEIGHT {
                 let pos = board_to_isometric((x, y), 1.0);
                 
                 // Should produce finite values

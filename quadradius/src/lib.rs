@@ -22,4 +22,5 @@ mod tests {
     mod isometric_camera_tests;
     mod render_config_tests;
     mod power_orb_visual_tests;
+    mod integration_ui_tests;
 }

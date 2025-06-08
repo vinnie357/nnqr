@@ -1,0 +1,26 @@
+   Compiling wgpu v0.17.2
+   Compiling gltf-json v1.4.1
+   Compiling bevy_render v0.12.1
+   Compiling gltf v1.4.1
+   Compiling bevy_core_pipeline v0.12.1
+   Compiling bevy_animation v0.12.1
+   Compiling bevy_scene v0.12.1
+   Compiling bevy_sprite v0.12.1
+   Compiling bevy_pbr v0.12.1
+   Compiling bevy_text v0.12.1
+   Compiling bevy_ui v0.12.1
+   Compiling bevy_gizmos v0.12.1
+   Compiling bevy_gltf v0.12.1
+   Compiling bevy_internal v0.12.1
+   Compiling bevy v0.12.1
+   Compiling quadradius v0.1.0 (/home/vinnie/github/nnqr/quadradius)
+warning: unused imports: `Player1PowerPanel`, `Player2PowerPanel`, `PowerIcon`, `PowerTooltip`, `ScoreboardUI`, `TurnIndicatorText`, `TurnIndicatorUI`, `UIAnimationType`, `UIAnimation`, and `UIPanel`
+  --> src/systems/mod.rs:42:143
+   |
+42 | ...s, UIPanel, TurnIndicatorUI, ScoreboardUI, PowerTooltip, UIAnimation, UIAnimationType, PowerIcon, TurnIndicatorText, Player1PowerPanel, Player2PowerPanel};
+   |       ^^^^^^^  ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^  ^^^^^^^^^^^^  ^^^^^^^^^^^  ^^^^^^^^^^^^^^^  ^^^^^^^^^  ^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: `quadradius` (bin "quadradius") generated 1 warning (run `cargo fix --bin "quadradius"` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 6m 17s

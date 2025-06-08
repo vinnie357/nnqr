@@ -48,9 +48,19 @@ fn main() {
         .add_systems(
             Startup,
             (
-                setup_camera,
-                setup_board,
-                setup_pieces,
+                // Camera systems - 3D takes precedence if enabled
+                setup_isometric_camera.run_if(|config: Res<RenderConfig>| config.use_3d),
+                setup_camera.run_if(|config: Res<RenderConfig>| !config.use_3d),
+                
+                // Board systems - 3D takes precedence if enabled
+                setup_board_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
+                setup_board.run_if(|config: Res<RenderConfig>| !config.use_3d),
+                
+                // Piece systems - 3D takes precedence if enabled
+                setup_pieces_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
+                setup_pieces.run_if(|config: Res<RenderConfig>| !config.use_3d),
+                
+                // Common systems
                 setup_ui,
                 setup_enhanced_ui,
                 setup_power_activation_ui,
@@ -64,11 +74,19 @@ fn main() {
         .add_systems(
             Update,
             (
-                // Input and movement systems
-                handle_drag_start,
-                handle_drag_update,
-                handle_drag_end.before(update_turn_indicator),
-                cleanup_indicators,
+                // Input and movement systems - 2D
+                handle_drag_start.run_if(|config: Res<RenderConfig>| !config.use_3d),
+                handle_drag_update.run_if(|config: Res<RenderConfig>| !config.use_3d),
+                handle_drag_end.run_if(|config: Res<RenderConfig>| !config.use_3d).before(update_turn_indicator),
+                cleanup_indicators.run_if(|config: Res<RenderConfig>| !config.use_3d),
+                
+                // Input and movement systems - 3D
+                handle_drag_start_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
+                handle_drag_update_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
+                handle_drag_end_3d.run_if(|config: Res<RenderConfig>| config.use_3d).before(update_turn_indicator),
+                cleanup_indicators_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
+                
+                // Common systems
                 align_pieces_to_grid,
                 show_valid_moves_for_powers,
                 cleanup_movement_powers,
@@ -113,9 +131,16 @@ fn main() {
                 handle_power_selection,
                 handle_power_activation,
                 cleanup_power_effects,
-                spawn_power_orbs.before(update_power_activation_ui),
-                collect_power_orbs,
-                animate_power_orbs,
+                
+                // Power orb systems - 2D
+                spawn_power_orbs.run_if(|config: Res<RenderConfig>| !config.use_3d).before(update_power_activation_ui),
+                collect_power_orbs.run_if(|config: Res<RenderConfig>| !config.use_3d),
+                animate_power_orbs.run_if(|config: Res<RenderConfig>| !config.use_3d),
+                
+                // Power orb systems - 3D
+                spawn_power_orbs_3d.run_if(|config: Res<RenderConfig>| config.use_3d).before(update_power_activation_ui),
+                collect_power_orbs_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
+                animate_power_orbs_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
             ),
         )
         .add_systems(
