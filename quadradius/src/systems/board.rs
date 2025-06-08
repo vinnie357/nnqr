@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::resources::QuadradiusTheme;
 use bevy::prelude::*;
 
 pub fn setup_board(mut commands: Commands) {
@@ -6,8 +7,8 @@ pub fn setup_board(mut commands: Commands) {
     commands.spawn((Board, Transform::from_xyz(0.0, 0.0, 0.0)));
 
     // Create tiles
-    for x in 0..BOARD_SIZE {
-        for y in 0..BOARD_SIZE {
+    for x in 0..BOARD_WIDTH {
+        for y in 0..BOARD_HEIGHT {
             // Create more varied height pattern for testing
             let height = match (x, y) {
                 (3, 3) | (4, 4) => 2,                                     // Center high points
@@ -15,15 +16,10 @@ pub fn setup_board(mut commands: Commands) {
                 _ => 0,                                                   // Rest are low
             };
 
-            let tile_x = (x as f32 - BOARD_SIZE as f32 / 2.0 + 0.5) * TILE_SIZE;
-            let tile_y = (y as f32 - BOARD_SIZE as f32 / 2.0 + 0.5) * TILE_SIZE;
+            let tile_x = (x as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * TILE_SIZE;
+            let tile_y = (y as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * TILE_SIZE;
 
-            let color = match height {
-                0 => Color::rgb(0.3, 0.5, 0.3), // Dark green for low
-                1 => Color::rgb(0.5, 0.5, 0.2), // Yellow-green for medium
-                2 => Color::rgb(0.6, 0.3, 0.2), // Brown-red for high
-                _ => Color::rgb(0.7, 0.3, 0.3), // Red for very high
-            };
+            let color = QuadradiusTheme::tile_color_for_height(height);
 
             commands.spawn((
                 BoardTile {

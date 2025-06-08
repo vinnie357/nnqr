@@ -79,7 +79,7 @@ pub fn spawn_power_orbs(
             },
             SpriteBundle {
                 sprite: Sprite {
-                    color: power_type.color(),
+                    color: QuadradiusTheme::ORB_BASE,
                     custom_size: Some(Vec2::splat(ORB_SIZE)),
                     ..default()
                 },

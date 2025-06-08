@@ -1,3 +1,8 @@
+#![allow(unused_variables)]
+#![allow(dead_code)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::type_complexity)]
+
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 
@@ -25,6 +30,7 @@ fn main() {
         ))
         .init_resource::<GameState>()
         .init_resource::<GameResult>()
+        .init_resource::<RenderConfig>()
         .init_resource::<ScreenShake>()
         .init_resource::<MatchTimer>()
         .init_resource::<TurnCounter>()
@@ -43,7 +49,6 @@ fn main() {
             Startup,
             (
                 setup_camera,
-                // setup_board_background, // Temporarily disabled
                 setup_board,
                 setup_pieces,
                 setup_ui,
@@ -195,6 +200,12 @@ fn main() {
                 spawn_height_indicators,
                 update_height_indicators,
                 // debug_terrain_commands, // Temporarily disabled due to query conflicts
+                
+                // 3D systems (conditional)
+                update_isometric_camera,
+                update_tile_heights,
+                highlight_board_tiles,
+                update_piece_positions_3d,
             ),
         )
         .add_systems(

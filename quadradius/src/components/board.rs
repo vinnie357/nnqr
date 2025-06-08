@@ -9,5 +9,7 @@ pub struct BoardTile {
 #[derive(Component)]
 pub struct Board;
 
-pub const BOARD_SIZE: u8 = 8;
+pub const BOARD_WIDTH: u8 = 10;
+pub const BOARD_HEIGHT: u8 = 8;
+pub const BOARD_SIZE: u8 = 8; // Keep for compatibility, but prefer BOARD_WIDTH/HEIGHT
 pub const TILE_SIZE: f32 = 64.0;

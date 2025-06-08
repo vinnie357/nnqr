@@ -35,7 +35,7 @@ pub enum UIAnimationType {
 }
 
 // Enhanced UI setup with modern design
-pub fn setup_enhanced_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn setup_enhanced_ui(mut commands: Commands, _asset_server: Res<AssetServer>) {
     // Main UI container
     commands
         .spawn((
@@ -76,7 +76,7 @@ fn setup_top_bar(parent: &mut ChildBuilder) {
                 align_items: AlignItems::Center,
                 ..default()
             },
-            background_color: BackgroundColor(Color::rgba(0.1, 0.1, 0.15, 0.9)),
+            background_color: BackgroundColor(QuadradiusTheme::UI_BACKGROUND),
             ..default()
         })
         .with_children(|parent| {
@@ -85,7 +85,7 @@ fn setup_top_bar(parent: &mut ChildBuilder) {
                 "QUADRADIUS",
                 TextStyle {
                     font_size: 32.0,
-                    color: Color::rgb(0.8, 0.8, 0.9),
+                    color: QuadradiusTheme::UI_TEXT_HIGHLIGHT,
                     ..default()
                 },
             ));
@@ -99,8 +99,8 @@ fn setup_top_bar(parent: &mut ChildBuilder) {
                             border: UiRect::all(Val::Px(2.0)),
                             ..default()
                         },
-                        background_color: BackgroundColor(Color::rgba(0.2, 0.2, 0.3, 0.8)),
-                        border_color: BorderColor(Color::rgb(0.5, 0.5, 0.6)),
+                        background_color: BackgroundColor(QuadradiusTheme::UI_PANEL),
+                        border_color: BorderColor(QuadradiusTheme::UI_BORDER),
                         ..default()
                     },
                     TurnIndicatorUI,
@@ -111,7 +111,7 @@ fn setup_top_bar(parent: &mut ChildBuilder) {
                             "Player 1's Turn",
                             TextStyle {
                                 font_size: 24.0,
-                                color: Color::rgb(0.9, 0.9, 0.9),
+                                color: QuadradiusTheme::UI_TEXT,
                                 ..default()
                             },
                         ),
@@ -138,7 +138,7 @@ fn setup_top_bar(parent: &mut ChildBuilder) {
                         "P1: 20",
                         TextStyle {
                             font_size: 20.0,
-                            color: Color::rgb(0.9, 0.3, 0.3),
+                            color: QuadradiusTheme::TEAM_1_ACCENT,
                             ..default()
                         },
                     ));
@@ -148,7 +148,7 @@ fn setup_top_bar(parent: &mut ChildBuilder) {
                         "P2: 20",
                         TextStyle {
                             font_size: 20.0,
-                            color: Color::rgb(0.3, 0.3, 0.9),
+                            color: QuadradiusTheme::TEAM_2_ACCENT,
                             ..default()
                         },
                     ));
@@ -172,7 +172,7 @@ fn setup_side_panels(parent: &mut ChildBuilder) {
                     row_gap: Val::Px(5.0),
                     ..default()
                 },
-                background_color: BackgroundColor(Color::rgba(0.15, 0.1, 0.1, 0.8)),
+                background_color: BackgroundColor(QuadradiusTheme::UI_PANEL),
                 ..default()
             },
             PowerInventoryUI,
@@ -183,7 +183,7 @@ fn setup_side_panels(parent: &mut ChildBuilder) {
                 "P1 Powers",
                 TextStyle {
                     font_size: 16.0,
-                    color: Color::rgb(0.9, 0.5, 0.5),
+                    color: QuadradiusTheme::TEAM_1_ACCENT,
                     ..default()
                 },
             ));
@@ -204,7 +204,7 @@ fn setup_side_panels(parent: &mut ChildBuilder) {
                     row_gap: Val::Px(5.0),
                     ..default()
                 },
-                background_color: BackgroundColor(Color::rgba(0.1, 0.1, 0.15, 0.8)),
+                background_color: BackgroundColor(QuadradiusTheme::UI_PANEL),
                 ..default()
             },
             PowerInventoryUI,
@@ -215,7 +215,7 @@ fn setup_side_panels(parent: &mut ChildBuilder) {
                 "P2 Powers",
                 TextStyle {
                     font_size: 16.0,
-                    color: Color::rgb(0.5, 0.5, 0.9),
+                    color: QuadradiusTheme::TEAM_2_ACCENT,
                     ..default()
                 },
             ));
@@ -235,7 +235,7 @@ fn setup_bottom_bar(parent: &mut ChildBuilder) {
                 align_items: AlignItems::Center,
                 ..default()
             },
-            background_color: BackgroundColor(Color::rgba(0.1, 0.1, 0.15, 0.9)),
+            background_color: BackgroundColor(QuadradiusTheme::UI_BACKGROUND),
             ..default()
         })
         .with_children(|parent| {
@@ -244,7 +244,7 @@ fn setup_bottom_bar(parent: &mut ChildBuilder) {
                     "Hover over powers for descriptions",
                     TextStyle {
                         font_size: 14.0,
-                        color: Color::rgb(0.6, 0.6, 0.7),
+                        color: QuadradiusTheme::UI_TEXT,
                         ..default()
                     },
                 ),
@@ -376,7 +376,7 @@ pub fn animate_ui_elements(
                 style.top = Val::Px(current_offset.y);
             }
             UIAnimationType::Pulse => {
-                let scale = 1.0 + (progress * std::f32::consts::PI * 2.0).sin() * 0.1;
+                let _scale = 1.0 + (progress * std::f32::consts::PI * 2.0).sin() * 0.1;
                 // In a real implementation, we'd apply scale transform
             }
             UIAnimationType::Bounce => {

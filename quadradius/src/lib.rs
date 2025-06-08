@@ -1,3 +1,9 @@
+#![allow(unused_variables)]
+#![allow(dead_code)]
+#![allow(ambiguous_glob_reexports)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::type_complexity)]
+
 pub mod components;
 pub mod events;
 pub mod resources;
@@ -10,4 +16,10 @@ mod tests {
     mod power_orb_tests;
     mod turn_tests;
     mod win_condition_tests;
+    
+    // New UI theme tests
+    mod ui_theme_tests;
+    mod isometric_camera_tests;
+    mod render_config_tests;
+    mod power_orb_visual_tests;
 }

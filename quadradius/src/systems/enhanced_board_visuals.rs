@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::resources::QuadradiusTheme;
 use bevy::prelude::*;
 
 // Component for animated board tiles
@@ -21,13 +22,8 @@ pub fn setup_enhanced_board(
     tiles: Query<(Entity, &BoardTile), Without<AnimatedTile>>,
 ) {
     for (entity, tile) in tiles.iter() {
-        // Calculate color based on height for visual depth
-        let height_factor = (tile.height as f32 + 2.0) / 4.0; // Normalize height to 0-1 range
-        let base_color = Color::rgb(
-            0.2 + height_factor * 0.3,
-            0.3 + height_factor * 0.3,
-            0.4 + height_factor * 0.2,
-        );
+        // Use theme colors based on height
+        let base_color = QuadradiusTheme::tile_color_for_height(tile.height);
 
         commands.entity(entity).insert((
             AnimatedTile {
@@ -55,7 +51,7 @@ pub fn setup_board_background(mut commands: Commands) {
     // Background gradient
     commands.spawn(SpriteBundle {
         sprite: Sprite {
-            color: Color::rgb(0.05, 0.05, 0.1),
+            color: QuadradiusTheme::METAL_GUNMETAL.with_a(0.95),
             custom_size: Some(Vec2::new(1000.0, 1000.0)),
             ..default()
         },
@@ -70,7 +66,7 @@ pub fn setup_board_background(mut commands: Commands) {
     // Top frame
     commands.spawn(SpriteBundle {
         sprite: Sprite {
-            color: Color::rgb(0.3, 0.25, 0.2),
+            color: QuadradiusTheme::METAL_BRONZE,
             custom_size: Some(Vec2::new(board_size, frame_thickness)),
             ..default()
         },
@@ -81,7 +77,7 @@ pub fn setup_board_background(mut commands: Commands) {
     // Bottom frame
     commands.spawn(SpriteBundle {
         sprite: Sprite {
-            color: Color::rgb(0.3, 0.25, 0.2),
+            color: QuadradiusTheme::METAL_BRONZE,
             custom_size: Some(Vec2::new(board_size, frame_thickness)),
             ..default()
         },
@@ -92,7 +88,7 @@ pub fn setup_board_background(mut commands: Commands) {
     // Left frame
     commands.spawn(SpriteBundle {
         sprite: Sprite {
-            color: Color::rgb(0.3, 0.25, 0.2),
+            color: QuadradiusTheme::METAL_BRONZE,
             custom_size: Some(Vec2::new(frame_thickness, board_size)),
             ..default()
         },
@@ -103,7 +99,7 @@ pub fn setup_board_background(mut commands: Commands) {
     // Right frame
     commands.spawn(SpriteBundle {
         sprite: Sprite {
-            color: Color::rgb(0.3, 0.25, 0.2),
+            color: QuadradiusTheme::METAL_BRONZE,
             custom_size: Some(Vec2::new(frame_thickness, board_size)),
             ..default()
         },
