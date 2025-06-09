@@ -13,7 +13,10 @@ pub mod systems;
 mod tests {
     mod board_10x8_tests;
     mod board_tests;
+    mod coordinate_conversion_tests;
     mod movement_tests;
+    mod movement_validation_tests;
+    mod piece_selection_tests;
     mod power_orb_tests;
     mod turn_tests;
     mod win_condition_tests;

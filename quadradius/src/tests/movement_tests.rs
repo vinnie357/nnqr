@@ -10,9 +10,9 @@ fn test_basic_movement_rules() {
 
     let mut world = app.world;
 
-    // Create test board tiles
-    for x in 0..BOARD_SIZE {
-        for y in 0..BOARD_SIZE {
+    // Create test board tiles for 10x8 board
+    for x in 0..BOARD_WIDTH {
+        for y in 0..BOARD_HEIGHT {
             world.spawn(BoardTile {
                 coordinates: (x, y),
                 height: 0,
@@ -31,9 +31,9 @@ fn test_basic_movement_rules() {
     assert!(!is_valid_basic_move((0, 0), (0, 2)));
     assert!(!is_valid_basic_move((0, 0), (2, 0)));
 
-    // Test out of bounds
-    assert!(!is_valid_basic_move((7, 7), (8, 7)));
-    assert!(!is_valid_basic_move((7, 7), (7, 8)));
+    // Test out of bounds for 10x8 board
+    assert!(!is_valid_basic_move((9, 7), (10, 7))); // Beyond width
+    assert!(!is_valid_basic_move((9, 7), (9, 8))); // Beyond height
 }
 
 #[test]
@@ -100,8 +100,8 @@ fn test_occupied_tile_blocking() {
 
 // Helper functions for testing
 fn is_valid_basic_move(from: (u8, u8), to: (u8, u8)) -> bool {
-    // Check bounds
-    if to.0 >= BOARD_SIZE || to.1 >= BOARD_SIZE {
+    // Check bounds for 10x8 board
+    if to.0 >= BOARD_WIDTH || to.1 >= BOARD_HEIGHT {
         return false;
     }
 

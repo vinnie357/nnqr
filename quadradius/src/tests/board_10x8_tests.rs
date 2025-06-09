@@ -5,19 +5,22 @@ mod board_10x8_tests {
     use super::*;
 
     #[test]
-    fn test_board_dimensions_8x8() {
-        // Verify board constants are correct
-        assert_eq!(BOARD_WIDTH, 8, "Board width should be 8");
+    fn test_board_dimensions_10x8() {
+        // Verify board constants are correct for Quadradius
+        assert_eq!(BOARD_WIDTH, 10, "Board width should be 10");
         assert_eq!(BOARD_HEIGHT, 8, "Board height should be 8");
 
-        // Total tiles should be 64
+        // Total tiles should be 80
         let expected_tiles = BOARD_WIDTH as usize * BOARD_HEIGHT as usize;
-        assert_eq!(expected_tiles, 64, "Total tiles should be 64 for 8×8 board");
+        assert_eq!(
+            expected_tiles, 80,
+            "Total tiles should be 80 for 10×8 board"
+        );
     }
 
     #[test]
     fn test_valid_board_coordinates() {
-        // Test all valid coordinates for 8×8 board
+        // Test all valid coordinates for 10×8 board
         for x in 0..BOARD_WIDTH {
             for y in 0..BOARD_HEIGHT {
                 assert!(
@@ -35,18 +38,24 @@ mod board_10x8_tests {
             }
         }
 
-        // Test invalid coordinates
-        assert!(BOARD_WIDTH == 8, "Width should be exactly 8");
-        assert!(BOARD_HEIGHT == 8, "Height should be exactly 8");
+        // Test correct dimensions
+        assert!(
+            BOARD_WIDTH == 10,
+            "Width should be exactly 10 for Quadradius"
+        );
+        assert!(
+            BOARD_HEIGHT == 8,
+            "Height should be exactly 8 for Quadradius"
+        );
     }
 
     #[test]
-    fn test_piece_starting_positions_8x8() {
-        // For 8×8 board, pieces should be at:
-        // Player 1: (0,0), (2,0), (4,0), (6,0) on first row
-        //           (1,1), (3,1), (5,1), (7,1) on second row
-        // Player 2: (0,6), (2,6), (4,6), (6,6) on seventh row
-        //           (1,7), (3,7), (5,7), (7,7) on eighth row
+    fn test_piece_starting_positions_10x8() {
+        // For 10×8 board, pieces should be at:
+        // Player 1: (0,0), (2,0), (4,0), (6,0), (8,0) on first row
+        //           (1,1), (3,1), (5,1), (7,1), (9,1) on second row
+        // Player 2: (1,6), (3,6), (5,6), (7,6), (9,6) on seventh row
+        //           (0,7), (2,7), (4,7), (6,7), (8,7) on eighth row
 
         let mut expected_positions = Vec::new();
 
@@ -68,11 +77,11 @@ mod board_10x8_tests {
             }
         }
 
-        // Should have 16 total pieces (8 per player)
+        // Should have 20 total pieces (10 per player)
         assert_eq!(
             expected_positions.len(),
-            16,
-            "Should have exactly 16 pieces for 8×8 board"
+            20,
+            "Should have exactly 20 pieces for 10×8 board"
         );
 
         // Verify no pieces are outside board bounds
@@ -153,8 +162,8 @@ mod board_10x8_tests {
             );
         }
 
-        // Invalid positions should fail
-        let invalid_positions = [(8, 0), (0, 8), (8, 8), (255, 255)];
+        // Invalid positions should fail for 10x8 board
+        let invalid_positions = [(10, 0), (0, 8), (10, 8), (255, 255)];
 
         for (x, y) in invalid_positions {
             assert!(
@@ -190,11 +199,11 @@ mod board_10x8_tests {
             }
         }
 
-        // Should have exactly 16 pieces
+        // Should have exactly 20 pieces for 10x8 board (10 per player)
         assert_eq!(
             piece_positions.len(),
-            16,
-            "8×8 board should have exactly 16 pieces"
+            20,
+            "10×8 board should have exactly 20 pieces"
         );
 
         // Verify all positions are valid
@@ -208,11 +217,11 @@ mod board_10x8_tests {
 
     #[test]
     fn test_tile_count_validation() {
-        // Total tiles for 8×8 board
+        // Total tiles for 10×8 board
         let expected_tile_count = BOARD_WIDTH as usize * BOARD_HEIGHT as usize;
         assert_eq!(
-            expected_tile_count, 64,
-            "8×8 board should have exactly 64 tiles"
+            expected_tile_count, 80,
+            "10×8 board should have exactly 80 tiles"
         );
 
         // Simulate tile creation

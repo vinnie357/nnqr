@@ -6,6 +6,9 @@
 # having git ignore such leftovers. You can use `.git/info/exclude` to
 # configure your local ignore list.
 
+#debugging
+quadradius/*.log
+
 # windows builds
 *.exe
 quadradius/*.exe

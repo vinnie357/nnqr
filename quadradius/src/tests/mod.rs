@@ -1,6 +1,9 @@
 pub mod board_tests;
 pub mod board_10x8_tests;
 pub mod movement_tests;
+pub mod movement_validation_tests;
+pub mod coordinate_conversion_tests;
+pub mod piece_selection_tests;
 pub mod power_orb_tests;
 pub mod turn_tests;
 pub mod win_condition_tests;

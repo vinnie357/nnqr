@@ -165,26 +165,27 @@ fn main() {
             ),
         )
         // Debug and testing systems only in debug builds - disabled for release
-        .add_systems(
-            Update,
-            (
-                // Debug systems
-                debug_spawn_powers,
-                debug_display_powers,
-                generate_power_test_report,
-                test_individual_power,
-                // Crash debug systems
-                debug_crash_scenarios,
-                validate_game_safety,
-                validate_entity_cleanup,
-                detect_performance_crashes,
-                show_debug_controls,
-                // Automated testing systems
-                start_automated_power_tests,
-                run_automated_power_tests,
-                show_automated_test_controls,
-            ),
-        )
+        // Commented out for release builds to improve performance
+        //.add_systems(
+        //    Update,
+        //    (
+        //        // Debug systems
+        //        debug_spawn_powers,
+        //        debug_display_powers,
+        //        generate_power_test_report,
+        //        test_individual_power,
+        //        // Crash debug systems
+        //        debug_crash_scenarios,
+        //        validate_game_safety,
+        //        validate_entity_cleanup,
+        //        detect_performance_crashes,
+        //        show_debug_controls,
+        //        // Automated testing systems
+        //        start_automated_power_tests,
+        //        run_automated_power_tests,
+        //        show_automated_test_controls,
+        //    ),
+        //)
         // Balance and testing systems - disabled for release
         //.add_systems(
         //    Update,
@@ -234,7 +235,7 @@ fn main() {
                 update_tile_heights.run_if(|config: Res<RenderConfig>| config.use_3d),
                 highlight_board_tiles.run_if(|config: Res<RenderConfig>| config.use_3d),
                 update_piece_positions_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
-                update_selection_highlighting.run_if(|config: Res<RenderConfig>| config.use_3d),
+                // update_selection_highlighting.run_if(|config: Res<RenderConfig>| config.use_3d), // Temporarily disabled due to crash
                 // Depth sorting systems
                 setup_tile_depth_sorting,
                 setup_piece_depth_sorting,

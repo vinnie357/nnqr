@@ -12,11 +12,11 @@ pub const CAMERA_SCALE: f32 = 1.5; // Zoom level for the camera
 
 /// Setup the isometric camera system
 pub fn setup_isometric_camera(mut commands: Commands) {
-    // Calculate proper isometric camera position
-    // Need much larger distance to see the full board (board spans ~320 units)
-    let distance = 500.0;
+    // Calculate proper isometric camera position for 10x8 board
+    // Position camera higher and further back to see entire board
+    let distance = 800.0; // Increased distance for better overview
     let horizontal_angle = 45.0_f32.to_radians();
-    let vertical_angle = 35.264_f32.to_radians(); // arcsin(1/√3) for true isometric
+    let vertical_angle = 45.0_f32.to_radians(); // Higher angle for more overhead view
 
     let camera_pos = Vec3::new(
         distance * horizontal_angle.cos() * vertical_angle.cos(),
@@ -24,13 +24,13 @@ pub fn setup_isometric_camera(mut commands: Commands) {
         distance * horizontal_angle.sin() * vertical_angle.cos(),
     );
 
-    // Use modern Camera3d setup with proper scaling
+    // Use modern Camera3d setup with proper scaling for 10x8 board
     commands.spawn((
         Camera3dBundle {
             projection: Projection::Orthographic(OrthographicProjection {
-                scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(350.0), // Scale to see 8×8 board
-                near: -1000.0,
-                far: 1000.0,
+                scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(600.0), // Larger scale for 10x8 board
+                near: -1500.0,
+                far: 1500.0,
                 ..default()
             }),
             transform: Transform::from_translation(camera_pos).looking_at(Vec3::ZERO, Vec3::Y),
@@ -109,11 +109,20 @@ pub fn screen_to_board(
     let world_pos = ray.origin + ray.direction * distance;
 
     // Convert world position back to board coordinates using inverse transformation
-    // Account for TILE_SIZE scaling
-    let board_x_f =
-        (2.0 * world_pos.x + 4.0 * world_pos.z) / TILE_SIZE + (BOARD_WIDTH as f32 / 2.0);
-    let board_y_f =
-        (4.0 * world_pos.z - 2.0 * world_pos.x) / TILE_SIZE + (BOARD_HEIGHT as f32 / 2.0);
+    // Reverse the isometric transformation: 
+    // iso_x = (centered_x - centered_z) * TILE_SIZE * 0.5
+    // iso_z = (centered_x + centered_z) * TILE_SIZE * 0.25
+    // 
+    // Solving for centered_x and centered_z:
+    // centered_x = (iso_x / (TILE_SIZE * 0.5) + iso_z / (TILE_SIZE * 0.25)) / 2.0
+    // centered_z = (iso_z / (TILE_SIZE * 0.25) - iso_x / (TILE_SIZE * 0.5)) / 2.0
+    
+    let centered_x = (world_pos.x / (TILE_SIZE * 0.5) + world_pos.z / (TILE_SIZE * 0.25)) / 2.0;
+    let centered_z = (world_pos.z / (TILE_SIZE * 0.25) - world_pos.x / (TILE_SIZE * 0.5)) / 2.0;
+    
+    // Convert back to board coordinates
+    let board_x_f = centered_x + (BOARD_WIDTH as f32 / 2.0) - 0.5;
+    let board_y_f = centered_z + (BOARD_HEIGHT as f32 / 2.0) - 0.5;
 
     let board_x = board_x_f.round() as i32;
     let board_y = board_y_f.round() as i32;
@@ -127,21 +136,96 @@ pub fn screen_to_board(
     }
 }
 
-/// Update system to handle camera controls (optional zoom/pan)
+/// Update system to handle camera controls (zoom and rotation)
 pub fn update_isometric_camera(
     keyboard: Res<Input<KeyCode>>,
-    mut camera_query: Query<&mut Projection, With<IsometricCamera>>,
+    mut camera_query: Query<&mut Transform, With<IsometricCamera>>,
+    mut projection_query: Query<&mut Projection, With<IsometricCamera>>,
     time: Res<Time>,
 ) {
-    if let Ok(mut projection) = camera_query.get_single_mut() {
+    // Handle zoom controls
+    if let Ok(mut projection) = projection_query.get_single_mut() {
         if let Projection::Orthographic(ref mut ortho) = projection.as_mut() {
-            // Zoom controls
             if keyboard.pressed(KeyCode::Q) {
                 ortho.scale = (ortho.scale - 0.5 * time.delta_seconds()).max(0.5);
             }
             if keyboard.pressed(KeyCode::E) {
                 ortho.scale = (ortho.scale + 0.5 * time.delta_seconds()).min(3.0);
             }
+        }
+    }
+
+    // Handle camera rotation controls
+    if let Ok(mut transform) = camera_query.get_single_mut() {
+        let rotation_speed = 60.0_f32.to_radians(); // degrees per second
+        let mut rotation_changed = false;
+
+        // A/D keys for horizontal rotation around Y-axis
+        if keyboard.pressed(KeyCode::A) {
+            transform.rotate_around(
+                Vec3::ZERO,
+                Quat::from_rotation_y(rotation_speed * time.delta_seconds()),
+            );
+            rotation_changed = true;
+        }
+        if keyboard.pressed(KeyCode::D) {
+            transform.rotate_around(
+                Vec3::ZERO,
+                Quat::from_rotation_y(-rotation_speed * time.delta_seconds()),
+            );
+            rotation_changed = true;
+        }
+
+        // W/S keys for vertical rotation (limited range to prevent flipping)
+        if keyboard.pressed(KeyCode::W) {
+            let current_angle = transform
+                .translation
+                .y
+                .atan2((transform.translation.x.powi(2) + transform.translation.z.powi(2)).sqrt());
+            if current_angle < 80.0_f32.to_radians() {
+                let axis = transform.translation.cross(Vec3::Y).normalize();
+                transform.rotate_around(
+                    Vec3::ZERO,
+                    Quat::from_axis_angle(axis, rotation_speed * time.delta_seconds()),
+                );
+                rotation_changed = true;
+            }
+        }
+        if keyboard.pressed(KeyCode::S) {
+            let current_angle = transform
+                .translation
+                .y
+                .atan2((transform.translation.x.powi(2) + transform.translation.z.powi(2)).sqrt());
+            if current_angle > 10.0_f32.to_radians() {
+                let axis = transform.translation.cross(Vec3::Y).normalize();
+                transform.rotate_around(
+                    Vec3::ZERO,
+                    Quat::from_axis_angle(axis, -rotation_speed * time.delta_seconds()),
+                );
+                rotation_changed = true;
+            }
+        }
+
+        // R key to reset camera to default position
+        if keyboard.just_pressed(KeyCode::R) {
+            let distance = 800.0; // Match the setup camera distance
+            let horizontal_angle = 45.0_f32.to_radians();
+            let vertical_angle = 45.0_f32.to_radians(); // Match the setup camera angle
+
+            let camera_pos = Vec3::new(
+                distance * horizontal_angle.cos() * vertical_angle.cos(),
+                distance * vertical_angle.sin(),
+                distance * horizontal_angle.sin() * vertical_angle.cos(),
+            );
+
+            transform.translation = camera_pos;
+            transform.look_at(Vec3::ZERO, Vec3::Y);
+            rotation_changed = true;
+        }
+
+        // Always look at the center when rotation changes
+        if rotation_changed {
+            transform.look_at(Vec3::ZERO, Vec3::Y);
         }
     }
 }

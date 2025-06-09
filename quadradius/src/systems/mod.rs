@@ -38,12 +38,12 @@ pub mod win_condition;
 
 pub use board::*;
 pub use board_3d::*;
-pub use debug_powers::*;
+// pub use debug_powers::*; // Disabled for production builds
 pub use drag_drop::*;
 pub use drag_drop_3d::*;
 // pub use enhanced_board_visuals::*; // Temporarily disabled due to HeightIndicator conflict
 pub use automated_power_tests::*;
-pub use crash_debug::*;
+// pub use crash_debug::*; // Disabled for production builds
 pub use depth_sorting::*;
 pub use enhanced_movement::*;
 pub use enhanced_ui::{
@@ -66,7 +66,7 @@ pub use power_balance::*;
 pub use power_effects::*;
 pub use power_orbs::*;
 pub use power_orbs_3d::*;
-pub use power_test_report::*;
+// pub use power_test_report::*; // Disabled for production builds
 pub use power_testing::*;
 pub use scoreboard::*;
 pub use terrain_height::*;

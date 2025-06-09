@@ -17,11 +17,11 @@ impl QuadradiusTheme {
     pub const INDUSTRIAL_GREEN: Color = Color::rgb(0.35, 0.55, 0.35);
     pub const INDUSTRIAL_RED: Color = Color::rgb(0.75, 0.25, 0.25);
 
-    // Team colors with metallic finish
-    pub const TEAM_1_PRIMARY: Color = Color::rgb(0.15, 0.35, 0.65); // Deep metallic blue
-    pub const TEAM_1_ACCENT: Color = Color::rgb(0.35, 0.55, 0.85); // Lighter blue accent
-    pub const TEAM_2_PRIMARY: Color = Color::rgb(0.65, 0.15, 0.15); // Deep metallic red
-    pub const TEAM_2_ACCENT: Color = Color::rgb(0.85, 0.35, 0.35); // Lighter red accent
+    // Team colors with metallic finish - enhanced contrast
+    pub const TEAM_1_PRIMARY: Color = Color::rgb(0.1, 0.3, 0.8); // Bright metallic blue
+    pub const TEAM_1_ACCENT: Color = Color::rgb(0.4, 0.6, 1.0); // Bright blue accent
+    pub const TEAM_2_PRIMARY: Color = Color::rgb(0.8, 0.1, 0.1); // Bright metallic red  
+    pub const TEAM_2_ACCENT: Color = Color::rgb(1.0, 0.4, 0.4); // Bright red accent
 
     // Board and tile colors
     pub const TILE_BASE: Color = Color::rgb(0.18, 0.20, 0.22); // Dark gunmetal base

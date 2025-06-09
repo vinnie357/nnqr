@@ -36,8 +36,14 @@ pub fn handle_drag_start_3d(
 
     // Only allow dragging during piece movement phase
     if game_state.turn_phase != TurnPhase::PieceMovement {
+        println!("Not in piece movement phase: {:?}", game_state.turn_phase);
         return;
     }
+
+    println!(
+        "Mouse clicked - attempting piece selection (current player: {:?})",
+        game_state.current_player
+    );
 
     let Ok(window) = windows.get_single() else {
         warn!("No window available for mouse input");
@@ -46,32 +52,51 @@ pub fn handle_drag_start_3d(
     if let Some(cursor_pos) = window.cursor_position() {
         // Convert screen position to board coordinates
         if let Some(board_pos) = screen_to_board(&windows, &camera_q, cursor_pos) {
+            println!("Board position: {:?}", board_pos);
             // Check if there's a piece at this position
+            let mut found_piece = false;
             for (entity, piece) in pieces.iter() {
-                if piece.board_position == board_pos && piece.player == game_state.current_player {
-                    // Start dragging this piece
-                    commands.entity(entity).insert(Dragging3D {
-                        start_pos: board_pos,
-                    });
+                if piece.board_position == board_pos {
+                    println!(
+                        "Found piece at {:?} belonging to {:?}",
+                        board_pos, piece.player
+                    );
+                    if piece.player == game_state.current_player {
+                        found_piece = true;
+                        // Start dragging this piece
+                        commands.entity(entity).insert(Dragging3D {
+                            start_pos: board_pos,
+                        });
 
-                    // Add selection highlighting
-                    commands.entity(entity).insert(Selected);
+                        // Add selection highlighting
+                        commands.entity(entity).insert(Selected);
 
-                    // Check if this piece can move diagonally
-                    let can_move_diagonal = diagonal_pieces.iter().any(|e| e == entity);
+                        // Check if this piece can move diagonally
+                        let can_move_diagonal = diagonal_pieces.iter().any(|e| e == entity);
 
-                    // TODO: Show valid moves in 3D - needs to be a separate system
-                    // For now, just log that we started dragging
+                        // TODO: Show valid moves in 3D - needs to be a separate system
+                        // For now, just log that we started dragging
 
-                    // Debug logging disabled to prevent spam
-                    #[cfg(debug_assertions)]
-                    if false {
-                        info!("Started dragging piece at {:?}", board_pos);
+                        // Debug logging disabled to prevent spam
+                        #[cfg(debug_assertions)]
+                        if false {
+                            info!("Started dragging piece at {:?}", board_pos);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
+            if !found_piece {
+                println!(
+                    "No piece found at {:?} for current player {:?}",
+                    board_pos, game_state.current_player
+                );
+            }
+        } else {
+            println!("Could not convert cursor position to board coordinates");
         }
+    } else {
+        println!("No cursor position available");
     }
 }
 

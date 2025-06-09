@@ -9,11 +9,11 @@ mod integration_tests {
 
     #[test]
     fn test_correct_board_dimensions() {
-        // Verify the board uses correct current dimensions (8x8)
-        assert_eq!(BOARD_WIDTH, 8);
+        // Verify the board uses correct Quadradius dimensions (10x8)
+        assert_eq!(BOARD_WIDTH, 10);
         assert_eq!(BOARD_HEIGHT, 8);
 
-        // Square board size for compatibility
+        // BOARD_SIZE is deprecated but kept for compatibility
         assert_eq!(BOARD_SIZE, 8);
     }
 
@@ -65,8 +65,8 @@ mod integration_tests {
         // Should have same number of pieces for each player
         assert_eq!(player1_positions.len(), player2_positions.len());
 
-        // Should have reasonable number of pieces (8 for 8x8 board, 2 rows each)
-        assert_eq!(player1_positions.len(), 8);
+        // Should have reasonable number of pieces (10 for 10x8 board, 2 rows each)
+        assert_eq!(player1_positions.len(), 10);
 
         // No overlapping positions
         for p1_pos in &player1_positions {

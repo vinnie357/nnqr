@@ -28,18 +28,18 @@ pub fn setup_board_3d(
         ViewVisibility::default(),
     ));
 
-    // Create tile mesh (cube with adjusted proportions)
+    // Create tile mesh (cube with adjusted proportions for more visible gaps)
     let tile_mesh = meshes.add(Mesh::from(shape::Box::new(
-        TILE_SIZE * 0.95, // Slightly smaller for gaps
+        TILE_SIZE * 0.85, // Smaller for larger gaps
         TILE_SIZE * 0.5,  // Height of tile
-        TILE_SIZE * 0.95, // Depth
+        TILE_SIZE * 0.85, // Depth
     )));
 
-    // Create border mesh for tile edges
+    // Create border mesh for tile edges (much more prominent)
     let border_mesh = meshes.add(Mesh::from(shape::Box::new(
-        TILE_SIZE * 0.98,
-        TILE_SIZE * 0.52,
-        TILE_SIZE * 0.98,
+        TILE_SIZE * 1.0,  // Full tile size for clear borders
+        TILE_SIZE * 0.55, // Slightly higher than tile
+        TILE_SIZE * 1.0,  // Full depth
     )));
 
     // Create tiles with varied heights
@@ -55,25 +55,25 @@ pub fn setup_board_3d(
             let position = board_to_isometric((x, y), height as f32);
             let tile_color = QuadradiusTheme::tile_color_for_height(height);
 
-            // Create material with metallic properties
+            // Create material with proper metallic grey appearance
             let tile_material = materials.add(StandardMaterial {
-                base_color: tile_color,
-                metallic: QuadradiusTheme::METALLIC_VALUE * 0.5, // Less metallic for tiles
-                perceptual_roughness: QuadradiusTheme::ROUGHNESS_VALUE * 1.5, // Rougher surface
+                base_color: QuadradiusTheme::METAL_GUNMETAL, // Use the metallic grey base
+                metallic: QuadradiusTheme::METALLIC_VALUE, // Full metallic value
+                perceptual_roughness: QuadradiusTheme::ROUGHNESS_VALUE, // Standard roughness
                 ..default()
             });
 
-            // Spawn tile border (darker outline)
+            // Spawn tile border (much more contrasting outline)
             commands.spawn((PbrBundle {
                 mesh: border_mesh.clone(),
                 material: materials.add(StandardMaterial {
-                    base_color: QuadradiusTheme::METAL_GUNMETAL,
-                    metallic: 0.8,
-                    perceptual_roughness: 0.4,
+                    base_color: Color::rgb(0.05, 0.05, 0.05), // Much darker, almost black
+                    metallic: 0.9,
+                    perceptual_roughness: 0.2,
                     ..default()
                 }),
                 transform: Transform::from_translation(
-                    position - Vec3::Y * 0.01, // Slightly lower
+                    position - Vec3::Y * 0.02, // Slightly lower than tile
                 ),
                 ..default()
             },));

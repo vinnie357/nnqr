@@ -6,32 +6,32 @@ use bevy::math::Vec2;
 // Test basic coordinate conversion functions
 #[test]
 fn test_board_to_isometric_conversion() {
-    // Test center of board (3.5, 3.5 is the actual center of an 8x8 board indexed 0-7)
+    // Test near center of board (4, 4 on a 10x8 board)
     let center_pos = board_to_isometric((4, 4), 0.0);
 
     // Based on the isometric transformation formula in the code:
-    // centered_x = 4 - 4 + 0.5 = 0.5
-    // centered_z = 4 - 4 + 0.5 = 0.5
-    // iso_x = (0.5 - 0.5) * 64 * 0.5 = 0
-    // iso_z = (0.5 + 0.5) * 64 * 0.25 = 16
+    // For 10x8 board (BOARD_WIDTH=10, BOARD_HEIGHT=8):
+    // centered_x = 4 - (10/2) + 0.5 = 4 - 5 + 0.5 = -0.5
+    // centered_z = 4 - (8/2) + 0.5 = 4 - 4 + 0.5 = 0.5
+    // iso_x = (-0.5 - 0.5) * 64 * 0.5 = -1.0 * 32 = -32.0
+    // iso_z = (-0.5 + 0.5) * 64 * 0.25 = 0.0 * 16 = 0.0
 
     assert_eq!(
-        center_pos.x, 0.0,
-        "Center X should be 0 for isometric center"
+        center_pos.x, -32.0,
+        "Center X should be -32.0 for board position (4,4)"
     );
     assert_eq!(
-        center_pos.z, 16.0,
-        "Center Z should be 16 for board position (4,4)"
+        center_pos.z, 0.0,
+        "Center Z should be 0.0 for board position (4,4)"
     );
     assert_eq!(center_pos.y, 0.0, "Center Y should be 0 for height 0");
 }
 
 #[test]
 fn test_coordinate_system_constants() {
-    // Basic sanity checks
-    assert_eq!(BOARD_SIZE, 8);
-    assert_eq!(BOARD_WIDTH, 8);
-    assert_eq!(BOARD_HEIGHT, 8);
+    // Basic sanity checks for 10x8 Quadradius board
+    assert_eq!(BOARD_WIDTH, 10, "Quadradius uses 10x8 board");
+    assert_eq!(BOARD_HEIGHT, 8, "Quadradius uses 10x8 board");
     assert!(TILE_SIZE > 0.0);
 
     // Isometric constants
