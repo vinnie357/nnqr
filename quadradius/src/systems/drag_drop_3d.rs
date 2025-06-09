@@ -201,8 +201,18 @@ pub fn handle_drag_end_3d(
                     transform.translation =
                         Vec3::new(world_pos.x, world_pos.y + TILE_SIZE * 0.35, world_pos.z);
 
-                    // End turn
+                    // Switch turns - Fix for bug where Player1 turn doesn't end
+                    game_state.current_player = match game_state.current_player {
+                        Player::Player1 => Player::Player2,
+                        Player::Player2 => Player::Player1,
+                    };
+
+                    // Reset to power activation phase for next player
                     game_state.turn_phase = TurnPhase::PowerActivation;
+                    game_state.selected_power = None;
+
+                    // Force the resource to be marked as changed
+                    game_state.set_changed();
 
                     // Debug logging disabled to prevent spam
                     #[cfg(debug_assertions)]

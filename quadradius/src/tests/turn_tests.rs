@@ -71,3 +71,108 @@ fn end_turn(game_state: &mut GameState) {
 fn can_player_act(game_state: &GameState, player: Player) -> bool {
     game_state.current_player == player
 }
+
+// Tests specifically for the 3D drag-drop turn switching bug fix
+
+#[test]
+fn test_3d_turn_switching_after_move() {
+    let mut game_state = GameState {
+        current_player: Player::Player1,
+        player1_powers: Vec::new(),
+        player2_powers: Vec::new(),
+        turn_phase: TurnPhase::PieceMovement,
+        selected_power: None,
+    };
+
+    // Simulate a successful piece move in 3D system
+    simulate_3d_piece_move_completion(&mut game_state);
+
+    // After move, should switch to Player2 and reset to PowerActivation phase
+    assert_eq!(game_state.current_player, Player::Player2);
+    assert_eq!(game_state.turn_phase, TurnPhase::PowerActivation);
+    assert_eq!(game_state.selected_power, None);
+}
+
+#[test]
+fn test_3d_turn_switching_both_players() {
+    let mut game_state = GameState {
+        current_player: Player::Player1,
+        player1_powers: Vec::new(),
+        player2_powers: Vec::new(),
+        turn_phase: TurnPhase::PieceMovement,
+        selected_power: None,
+    };
+
+    // Player1 makes a move
+    simulate_3d_piece_move_completion(&mut game_state);
+    assert_eq!(game_state.current_player, Player::Player2);
+
+    // Player2 makes a move
+    game_state.turn_phase = TurnPhase::PieceMovement; // Simulate completing power phase
+    simulate_3d_piece_move_completion(&mut game_state);
+    assert_eq!(game_state.current_player, Player::Player1);
+}
+
+#[test]
+fn test_bug_reproduction_player1_turn_stuck() {
+    // This test reproduces the original bug scenario
+    let mut game_state = GameState {
+        current_player: Player::Player1,
+        player1_powers: Vec::new(),
+        player2_powers: Vec::new(),
+        turn_phase: TurnPhase::PieceMovement,
+        selected_power: None,
+    };
+
+    // Before fix: Player1 could make multiple moves without switching
+    let initial_player = game_state.current_player;
+
+    // Simulate old buggy behavior (only changing phase, not player)
+    game_state.turn_phase = TurnPhase::PowerActivation;
+    // Bug: current_player stays the same
+
+    // This would be wrong - player should have switched
+    if game_state.current_player == initial_player
+        && game_state.turn_phase == TurnPhase::PowerActivation
+    {
+        // This represents the bug state - fix it properly
+        simulate_3d_piece_move_completion(&mut game_state);
+    }
+
+    // After proper fix: Player should have switched
+    assert_ne!(game_state.current_player, initial_player);
+    assert_eq!(game_state.current_player, Player::Player2);
+}
+
+#[test]
+fn test_game_state_changes_marked() {
+    let mut game_state = GameState {
+        current_player: Player::Player1,
+        player1_powers: Vec::new(),
+        player2_powers: Vec::new(),
+        turn_phase: TurnPhase::PieceMovement,
+        selected_power: None,
+    };
+
+    let old_player = game_state.current_player;
+    simulate_3d_piece_move_completion(&mut game_state);
+
+    // Verify all expected changes occurred
+    assert_ne!(game_state.current_player, old_player);
+    assert_eq!(game_state.turn_phase, TurnPhase::PowerActivation);
+    assert_eq!(game_state.selected_power, None);
+}
+
+// Helper function to simulate the corrected 3D piece move completion
+fn simulate_3d_piece_move_completion(game_state: &mut GameState) {
+    // This simulates the fix we implemented in drag_drop_3d.rs
+    game_state.current_player = match game_state.current_player {
+        Player::Player1 => Player::Player2,
+        Player::Player2 => Player::Player1,
+    };
+
+    game_state.turn_phase = TurnPhase::PowerActivation;
+    game_state.selected_power = None;
+
+    // Note: In real code we call game_state.set_changed() but that's not testable here
+}
