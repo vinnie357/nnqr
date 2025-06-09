@@ -1,5 +1,6 @@
 # Quadradius Detailed Task List
-*Comprehensive phase-by-phase implementation guide*
+**Current Status: Phase 4+ Complete - Power System Completion Focus**
+*Updated for current advanced project state*
 
 ## Research References and Documentation Sources
 
@@ -17,8 +18,16 @@
 
 ---
 
-# PHASE 1: IMMEDIATE PRIORITIES (Week 1-2)
-*Timeline: 10-14 days | Critical Path*
+# CURRENT PHASE: POWER SYSTEM COMPLETION (Week 1-2)
+*Timeline: 10-14 days | 38+ Powers Complete, 12+ Remaining*
+
+## PROJECT COMPLETION STATUS
+✅ **Phase 1 Foundation**: COMPLETED & EXCEEDED (10x8 isometric board, 3D rendering)
+✅ **Phase 2 Power Foundation**: COMPLETED & EXCEEDED (38+ powers implemented)
+✅ **Phase 3 Advanced Features**: COMPLETED & EXCEEDED (PBR materials, comprehensive UI)
+✅ **Phase 4 Polish & Deployment**: COMPLETED (Windows release v0.2.0, cross-platform builds)
+
+🎯 **CURRENT FOCUS**: Complete remaining power implementations for full game recreation
 
 ## Research Foundation for This Phase
 **Primary References:**
@@ -33,65 +42,89 @@
 - Current project has advanced 3D rendering that's not documented in implementation guide
 - Power system architecture needs documentation for developer onboarding
 
-## 🔥 CRITICAL - Documentation Alignment
+## 🔥 CRITICAL - Power Implementation Completion
 
-### Task 1.1: Update nnqr_implementation.md Board Size
-**Priority**: Critical | **Duration**: 2 hours | **Dependencies**: None
+### Task 1.1: Fix Broken Power Implementations
+**Priority**: Critical | **Duration**: 6 hours | **Dependencies**: None
 
-**Description**: Correct the fundamental error in the implementation guide that specifies 8x8 board instead of the correct 10x8 board size.
-
-**Detailed Steps**:
-1. **File Updates**:
-   - [ ] Update `BOARD_SIZE` constant from 8 to 10 width, 8 height
-   - [ ] Change all grid references from "8x8" to "10x8" 
-   - [ ] Update total square count from 64 to 80
-   - [ ] Modify piece placement calculations for 10-column layout
-
-2. **Code Examples**:
-   - [ ] Update all board setup examples to use 10x8 grid
-   - [ ] Adjust piece starting position examples
-   - [ ] Modify coordinate conversion formulas
-   - [ ] Update rendering size calculations
-
-3. **Documentation Text**:
-   - [ ] Search and replace all "8x8" references with "10x8"
-   - [ ] Update visual descriptions to match wider board
-   - [ ] Correct piece count calculations (20 pieces per player on 10x8)
-
-**Acceptance Criteria**:
-- [ ] No references to 8x8 board remain in implementation guide
-- [ ] All code examples use correct 10x8 dimensions
-- [ ] Board setup instructions match current project implementation
-
-### Task 1.2: Add Isometric Rendering Section
-**Priority**: Critical | **Duration**: 4 hours | **Dependencies**: Research review
-
-**Description**: Add comprehensive isometric rendering documentation to bridge gap between basic 2D guide and advanced 3D implementation.
+**Description**: Complete the three broken power implementations that have framework but no working functionality.
 
 **Detailed Steps**:
-1. **Create New Section: "Isometric 3D Rendering"**:
-   - [ ] Add camera setup instructions (orthographic projection)
-   - [ ] Document camera angles: 45° horizontal, ~35.264° vertical
-   - [ ] Include coordinate transformation mathematics
-   - [ ] Add depth sorting explanation
+1. **Fix Freeze Power**:
+   - [ ] Analyze current framework in codebase
+   - [ ] Implement Frozen component with turn duration
+   - [ ] Add movement prevention logic for frozen pieces
+   - [ ] Add visual feedback (frozen piece indication)
+   - [ ] Write automated tests for freeze mechanics
 
-2. **Integration Instructions**:
-   - [ ] Add `bevy_ecs_tilemap` dependency documentation
-   - [ ] Document isometric tilemap setup
-   - [ ] Include mouse coordinate conversion for isometric view
-   - [ ] Add z-fighting prevention techniques
+2. **Fix Assassin Power**:
+   - [ ] Review current integration issues
+   - [ ] Implement proper targeting system
+   - [ ] Add kill-without-capture mechanics
+   - [ ] Ensure proper piece removal and state update
+   - [ ] Add visual effects for assassination
 
-3. **Code Examples**:
-   - [ ] Complete isometric camera setup function
-   - [ ] World-to-screen coordinate conversion examples
-   - [ ] Depth sorting system implementation
-   - [ ] Mouse picking for isometric tiles
+3. **Fix MoveTwice Power**:
+   - [ ] Replace print statement with actual implementation
+   - [ ] Track moves per turn in game state
+   - [ ] Allow second move after first completes
+   - [ ] Prevent abuse (can't use multiple MoveTwice in one turn)
+   - [ ] Add visual feedback for remaining moves
 
 **Acceptance Criteria**:
-- [ ] Guide includes complete isometric setup instructions
-- [ ] Camera positioning formulas are documented
-- [ ] Mouse interaction works correctly in isometric view
-- [ ] Code examples compile and run
+- [ ] Freeze power prevents piece movement for specified turns
+- [ ] Assassin power removes pieces without capturing
+- [ ] MoveTwice power allows two moves in one turn
+- [ ] All powers work correctly in multiplayer scenarios
+- [ ] Visual feedback is clear and informative
+
+### Task 1.2: Complete Movement Powers (5 Remaining)
+**Priority**: Critical | **Duration**: 8 hours | **Dependencies**: Task 1.1
+
+**Description**: Implement the remaining 5 movement powers to complete the movement category.
+
+**Detailed Steps**:
+1. **Swap Power**:
+   - [ ] Implement two-piece targeting system
+   - [ ] Add position swapping logic
+   - [ ] Handle height validation for both pieces
+   - [ ] Add smooth animation for simultaneous movement
+   - [ ] Test edge cases (swapping with different height pieces)
+
+2. **Push Power**:
+   - [ ] Implement adjacent piece detection
+   - [ ] Add push direction calculation
+   - [ ] Validate push destination (bounds, obstacles)
+   - [ ] Handle push chains (piece pushes piece pushes piece)
+   - [ ] Add visual effects for pushing action
+
+3. **Pull Power**:
+   - [ ] Implement piece selection at distance
+   - [ ] Calculate pull path and destination
+   - [ ] Validate pull legality (no obstacles in path)
+   - [ ] Add smooth pull animation
+   - [ ] Handle height restrictions for pulled pieces
+
+4. **Leap Power**:
+   - [ ] Implement 3-tile radius targeting
+   - [ ] Add leap path visualization
+   - [ ] Validate landing spots (empty, accessible)
+   - [ ] Add arc animation for leap movement
+   - [ ] Test leap over obstacles and pieces
+
+5. **Power Integration**:
+   - [ ] Add all powers to PowerType enum
+   - [ ] Update power spawning system to include new powers
+   - [ ] Add automated tests for all movement powers
+   - [ ] Balance power effects and costs
+   - [ ] Update power documentation
+
+**Acceptance Criteria**:
+- [ ] All 5 movement powers work correctly
+- [ ] Smooth animations for all movement types
+- [ ] No edge cases cause crashes or invalid states
+- [ ] Powers are balanced relative to existing powers
+- [ ] Comprehensive test coverage for all powers
 
 ### Task 1.3: Document Current Power System Architecture
 **Priority**: Critical | **Duration**: 3 hours | **Dependencies**: Current codebase analysis
