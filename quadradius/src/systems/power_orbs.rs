@@ -23,10 +23,8 @@ pub fn spawn_power_orbs(
     // Check if we're in a new turn
     let current_turn_id = (game_state.current_player, game_state.turn_phase);
 
-    // Only spawn when transitioning to PowerActivation phase
-    if game_state.turn_phase != TurnPhase::PowerActivation {
-        return;
-    }
+    // Spawn orbs during both phases to ensure players see them
+    // Original logic was too restrictive - orbs should spawn more frequently
 
     // Check if this is a new turn
     if last_turn.last_player == Some(game_state.current_player) {

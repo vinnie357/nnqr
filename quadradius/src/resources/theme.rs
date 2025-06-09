@@ -20,7 +20,7 @@ impl QuadradiusTheme {
     // Team colors with metallic finish - enhanced contrast
     pub const TEAM_1_PRIMARY: Color = Color::rgb(0.1, 0.3, 0.8); // Bright metallic blue
     pub const TEAM_1_ACCENT: Color = Color::rgb(0.4, 0.6, 1.0); // Bright blue accent
-    pub const TEAM_2_PRIMARY: Color = Color::rgb(0.8, 0.1, 0.1); // Bright metallic red  
+    pub const TEAM_2_PRIMARY: Color = Color::rgb(0.8, 0.1, 0.1); // Bright metallic red
     pub const TEAM_2_ACCENT: Color = Color::rgb(1.0, 0.4, 0.4); // Bright red accent
 
     // Board and tile colors

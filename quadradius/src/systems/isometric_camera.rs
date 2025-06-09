@@ -109,17 +109,17 @@ pub fn screen_to_board(
     let world_pos = ray.origin + ray.direction * distance;
 
     // Convert world position back to board coordinates using inverse transformation
-    // Reverse the isometric transformation: 
+    // Reverse the isometric transformation:
     // iso_x = (centered_x - centered_z) * TILE_SIZE * 0.5
     // iso_z = (centered_x + centered_z) * TILE_SIZE * 0.25
-    // 
+    //
     // Solving for centered_x and centered_z:
     // centered_x = (iso_x / (TILE_SIZE * 0.5) + iso_z / (TILE_SIZE * 0.25)) / 2.0
     // centered_z = (iso_z / (TILE_SIZE * 0.25) - iso_x / (TILE_SIZE * 0.5)) / 2.0
-    
+
     let centered_x = (world_pos.x / (TILE_SIZE * 0.5) + world_pos.z / (TILE_SIZE * 0.25)) / 2.0;
     let centered_z = (world_pos.z / (TILE_SIZE * 0.25) - world_pos.x / (TILE_SIZE * 0.5)) / 2.0;
-    
+
     // Convert back to board coordinates
     let board_x_f = centered_x + (BOARD_WIDTH as f32 / 2.0) - 0.5;
     let board_y_f = centered_z + (BOARD_HEIGHT as f32 / 2.0) - 0.5;

@@ -23,10 +23,8 @@ pub fn spawn_power_orbs_3d(
     game_state: Res<GameState>,
     mut last_turn: Local<crate::systems::power_orbs::LastTurnTracker>,
 ) {
-    // Use same logic as 2D version but spawn 3D orbs
-    if game_state.turn_phase != TurnPhase::PowerActivation {
-        return;
-    }
+    // Spawn orbs during both phases to ensure players see them
+    // Original logic was too restrictive - orbs should spawn more frequently
 
     if last_turn.last_player == Some(game_state.current_player) {
         return;
@@ -37,8 +35,8 @@ pub fn spawn_power_orbs_3d(
 
     let mut rng = rand::thread_rng();
 
-    // 50% chance to spawn orb
-    if rng.gen::<f32>() > 0.5 {
+    // 70% chance to spawn orb (increased from 50% for better gameplay)
+    if rng.gen::<f32>() > 0.7 {
         return;
     }
 
@@ -101,16 +99,16 @@ fn spawn_orb_3d(
     let world_pos = board_to_isometric(position, height);
     let orb_y = world_pos.y + TILE_SIZE * 0.6; // Float above tile
 
-    // Create orb sphere mesh
+    // Create larger, more visible orb sphere mesh
     let orb_mesh = meshes.add(Mesh::from(shape::UVSphere {
-        radius: TILE_SIZE * 0.2,
+        radius: TILE_SIZE * 0.35, // Increased from 0.2 for better visibility
         sectors: 24,
         stacks: 16,
     }));
 
     // Create glow sphere mesh (larger, transparent)
     let glow_mesh = meshes.add(Mesh::from(shape::UVSphere {
-        radius: TILE_SIZE * 0.35,
+        radius: TILE_SIZE * 0.5, // Increased from 0.35 for better visibility
         sectors: 16,
         stacks: 12,
     }));
@@ -118,20 +116,20 @@ fn spawn_orb_3d(
     // Get power type color
     let power_color = power_type.color();
 
-    // Create metallic orb material
+    // Create much brighter, more visible orb material
     let orb_material = materials.add(StandardMaterial {
-        base_color: QuadradiusTheme::ORB_BASE,
-        emissive: power_color * 0.5, // Moderate glow
-        metallic: QuadradiusTheme::METALLIC_VALUE,
-        perceptual_roughness: 0.1, // Very smooth
-        reflectance: 0.8,
+        base_color: power_color, // Use power color directly instead of muted metallic
+        emissive: power_color * 2.0, // Much brighter emission
+        metallic: 0.0,           // Reduce metallic for better visibility
+        perceptual_roughness: 0.0, // Very smooth for reflection
+        reflectance: 1.0,        // Maximum reflectance
         ..default()
     });
 
-    // Create intense glow material
+    // Create even more intense glow material
     let glow_material = materials.add(StandardMaterial {
-        base_color: Color::rgba(power_color.r(), power_color.g(), power_color.b(), 0.3),
-        emissive: power_color * 2.0, // Intense glow
+        base_color: Color::rgba(power_color.r(), power_color.g(), power_color.b(), 0.5),
+        emissive: power_color * 5.0, // Very intense glow for visibility
         alpha_mode: AlphaMode::Blend,
         unlit: true, // Unlit for pure emission
         ..default()
@@ -173,12 +171,12 @@ fn spawn_orb_3d(
                 ..default()
             });
 
-            // Add floating light source for illumination
+            // Add bright light source for illumination
             parent.spawn(PointLightBundle {
                 point_light: PointLight {
                     color: power_color,
-                    intensity: 200.0,
-                    range: TILE_SIZE * 2.0,
+                    intensity: 2000.0,      // Much brighter for visibility
+                    range: TILE_SIZE * 4.0, // Larger range
                     shadows_enabled: false,
                     ..default()
                 },

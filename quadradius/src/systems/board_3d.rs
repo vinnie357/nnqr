@@ -58,7 +58,7 @@ pub fn setup_board_3d(
             // Create material with proper metallic grey appearance
             let tile_material = materials.add(StandardMaterial {
                 base_color: QuadradiusTheme::METAL_GUNMETAL, // Use the metallic grey base
-                metallic: QuadradiusTheme::METALLIC_VALUE, // Full metallic value
+                metallic: QuadradiusTheme::METALLIC_VALUE,   // Full metallic value
                 perceptual_roughness: QuadradiusTheme::ROUGHNESS_VALUE, // Standard roughness
                 ..default()
             });
