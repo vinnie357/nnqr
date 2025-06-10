@@ -91,7 +91,9 @@ fn main() {
                 ensure_piece_visibility.run_if(|config: Res<RenderConfig>| config.use_3d),
                 // Common systems
                 align_pieces_to_grid,
-                show_valid_moves_for_powers,
+                // Enhanced 3D move indicators - 3D takes precedence if enabled
+                show_valid_moves_for_powers_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
+                show_valid_moves_for_powers.run_if(|config: Res<RenderConfig>| !config.use_3d),
                 cleanup_movement_powers,
             ),
         )
@@ -294,5 +296,11 @@ fn main() {
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle {
+        projection: OrthographicProjection {
+            scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(750.0), // Enhanced zoom for better tile visibility
+            ..default()
+        },
+        ..default()
+    });
 }

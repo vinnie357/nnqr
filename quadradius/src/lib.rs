@@ -32,4 +32,8 @@ mod tests {
 
     // Mouse interaction tests
     mod mouse_interaction_tests;
+
+    // UI and interaction fix tests
+    mod move_highlighting_3d_tests;
+    mod ui_turn_indicator_tests;
 }

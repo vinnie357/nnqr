@@ -7,6 +7,7 @@ pub mod depth_sorting;
 pub mod drag_drop;
 pub mod drag_drop_3d;
 pub mod enhanced_board_visuals;
+pub mod enhanced_move_indicators_3d;
 pub mod enhanced_movement;
 pub mod enhanced_ui;
 pub mod feedback_animations;
@@ -45,6 +46,7 @@ pub use drag_drop_3d::*;
 pub use automated_power_tests::*;
 // pub use crash_debug::*; // Disabled for production builds
 pub use depth_sorting::*;
+pub use enhanced_move_indicators_3d::*;
 pub use enhanced_movement::*;
 pub use enhanced_ui::{
     animate_ui_elements, setup_enhanced_ui, show_power_tooltips, update_power_inventory_ui,

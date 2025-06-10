@@ -22,6 +22,8 @@ pub struct ValidMoveIndicator3D;
 /// Handle drag start for 3D pieces
 pub fn handle_drag_start_3d(
     mut commands: Commands,
+    meshes: ResMut<Assets<Mesh>>,
+    materials: ResMut<Assets<StandardMaterial>>,
     mouse_input: Res<Input<MouseButton>>,
     windows: Query<&Window>,
     camera_q: Query<(&Camera, &GlobalTransform), With<IsometricCamera>>,
@@ -74,8 +76,17 @@ pub fn handle_drag_start_3d(
                         // Check if this piece can move diagonally
                         let can_move_diagonal = diagonal_pieces.iter().any(|e| e == entity);
 
-                        // TODO: Show valid moves in 3D - needs to be a separate system
-                        // For now, just log that we started dragging
+                        // Show valid moves in 3D
+                        info!("Showing valid moves for piece at {:?}", board_pos);
+                        show_valid_moves_3d(
+                            commands,
+                            meshes,
+                            materials,
+                            board_pos,
+                            &tiles,
+                            &game_state,
+                            can_move_diagonal,
+                        );
 
                         // Debug logging disabled to prevent spam
                         #[cfg(debug_assertions)]
@@ -258,6 +269,7 @@ pub fn show_valid_moves_3d(
     can_move_diagonal: bool,
 ) {
     let valid_tiles = get_valid_tiles_3d(from, tiles, can_move_diagonal);
+    info!("Found {} valid moves from {:?}", valid_tiles.len(), from);
 
     // Create shared mesh and material for indicators
     let indicator_mesh = meshes.add(Mesh::from(shape::Cylinder {
@@ -268,8 +280,8 @@ pub fn show_valid_moves_3d(
     }));
 
     let indicator_material = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.2, 1.0, 0.2, 0.5),
-        emissive: Color::rgb(0.0, 1.0, 0.0),
+        base_color: Color::rgba(0.2, 1.0, 0.2, 0.7), // More opaque green
+        emissive: Color::rgb(0.1, 0.8, 0.1),         // Brighter glow
         alpha_mode: AlphaMode::Blend,
         ..default()
     });

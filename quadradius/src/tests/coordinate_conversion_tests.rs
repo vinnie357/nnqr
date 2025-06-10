@@ -90,11 +90,11 @@ fn test_isometric_projection_consistency() {
 
     // Center should be close to world origin after centering offset
     assert!(
-        center_pos.x.abs() < TILE_SIZE as f32 * 2.0,
+        center_pos.x.abs() < TILE_SIZE * 2.0,
         "Center X should be near origin"
     );
     assert!(
-        center_pos.z.abs() < TILE_SIZE as f32 * 2.0,
+        center_pos.z.abs() < TILE_SIZE * 2.0,
         "Center Z should be near origin"
     );
 
@@ -109,7 +109,7 @@ fn test_isometric_projection_consistency() {
     // Allow some tolerance for floating point math
     let diff = (dist1 - dist2).abs();
     assert!(
-        diff < TILE_SIZE as f32,
+        diff < TILE_SIZE,
         "Opposite corners should be roughly equidistant from center"
     );
 }

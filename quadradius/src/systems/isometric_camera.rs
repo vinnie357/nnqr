@@ -12,11 +12,10 @@ pub const CAMERA_SCALE: f32 = 1.5; // Zoom level for the camera
 
 /// Setup the isometric camera system
 pub fn setup_isometric_camera(mut commands: Commands) {
-    // Calculate proper isometric camera position for 10x8 board
-    // Position camera higher and further back to see entire board
-    let distance = 800.0; // Increased distance for better overview
+    // Calculate optimal isometric camera position for 10x8 board with enhanced visibility
+    let distance = 900.0; // Increased distance for better overview of larger tiles
     let horizontal_angle = 45.0_f32.to_radians();
-    let vertical_angle = 45.0_f32.to_radians(); // Higher angle for more overhead view
+    let vertical_angle = 35.0_f32.to_radians(); // Better isometric angle for board visibility
 
     let camera_pos = Vec3::new(
         distance * horizontal_angle.cos() * vertical_angle.cos(),
@@ -24,13 +23,13 @@ pub fn setup_isometric_camera(mut commands: Commands) {
         distance * horizontal_angle.sin() * vertical_angle.cos(),
     );
 
-    // Use modern Camera3d setup with proper scaling for 10x8 board
+    // Use modern Camera3d setup with optimal scaling for enhanced 10x8 board
     commands.spawn((
         Camera3dBundle {
             projection: Projection::Orthographic(OrthographicProjection {
-                scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(600.0), // Larger scale for 10x8 board
-                near: -1500.0,
-                far: 1500.0,
+                scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(750.0), // Larger scale to accommodate bigger tiles
+                near: -2000.0,
+                far: 2000.0,
                 ..default()
             }),
             transform: Transform::from_translation(camera_pos).looking_at(Vec3::ZERO, Vec3::Y),
@@ -76,13 +75,11 @@ pub fn board_to_isometric(board_pos: (u8, u8), height: f32) -> Vec3 {
     let centered_x = board_pos.0 as f32 - (BOARD_WIDTH as f32 / 2.0) + 0.5;
     let centered_z = board_pos.1 as f32 - (BOARD_HEIGHT as f32 / 2.0) + 0.5;
 
-    // Use isometric transformation with larger scale for visibility
-    // Scale up by TILE_SIZE for proper spacing
-    let iso_x = (centered_x - centered_z) * TILE_SIZE * 0.5;
-    let iso_z = (centered_x + centered_z) * TILE_SIZE * 0.25;
-    let iso_y = height * TILE_SIZE * 0.125; // Height scaling
-
-    // Debug output removed - was causing excessive logging
+    // Use isometric transformation with enhanced tile size for better visibility
+    let enhanced_tile_size = TILE_SIZE * 1.2; // Match the enhanced tile size from board_3d
+    let iso_x = (centered_x - centered_z) * enhanced_tile_size * 0.5;
+    let iso_z = (centered_x + centered_z) * enhanced_tile_size * 0.25;
+    let iso_y = height * enhanced_tile_size * 0.15; // Slightly enhanced height scaling
 
     Vec3::new(iso_x, iso_y, iso_z)
 }
@@ -108,17 +105,23 @@ pub fn screen_to_board(
 
     let world_pos = ray.origin + ray.direction * distance;
 
-    // Convert world position back to board coordinates using inverse transformation
+    // Convert world position back to board coordinates using inverse transformation with enhanced tile size
+    let enhanced_tile_size = TILE_SIZE * 1.2; // Match the enhanced tile size
+
     // Reverse the isometric transformation:
-    // iso_x = (centered_x - centered_z) * TILE_SIZE * 0.5
-    // iso_z = (centered_x + centered_z) * TILE_SIZE * 0.25
+    // iso_x = (centered_x - centered_z) * enhanced_tile_size * 0.5
+    // iso_z = (centered_x + centered_z) * enhanced_tile_size * 0.25
     //
     // Solving for centered_x and centered_z:
-    // centered_x = (iso_x / (TILE_SIZE * 0.5) + iso_z / (TILE_SIZE * 0.25)) / 2.0
-    // centered_z = (iso_z / (TILE_SIZE * 0.25) - iso_x / (TILE_SIZE * 0.5)) / 2.0
+    // centered_x = (iso_x / (enhanced_tile_size * 0.5) + iso_z / (enhanced_tile_size * 0.25)) / 2.0
+    // centered_z = (iso_z / (enhanced_tile_size * 0.25) - iso_x / (enhanced_tile_size * 0.5)) / 2.0
 
-    let centered_x = (world_pos.x / (TILE_SIZE * 0.5) + world_pos.z / (TILE_SIZE * 0.25)) / 2.0;
-    let centered_z = (world_pos.z / (TILE_SIZE * 0.25) - world_pos.x / (TILE_SIZE * 0.5)) / 2.0;
+    let centered_x = (world_pos.x / (enhanced_tile_size * 0.5)
+        + world_pos.z / (enhanced_tile_size * 0.25))
+        / 2.0;
+    let centered_z = (world_pos.z / (enhanced_tile_size * 0.25)
+        - world_pos.x / (enhanced_tile_size * 0.5))
+        / 2.0;
 
     // Convert back to board coordinates
     let board_x_f = centered_x + (BOARD_WIDTH as f32 / 2.0) - 0.5;
@@ -208,9 +211,9 @@ pub fn update_isometric_camera(
 
         // R key to reset camera to default position
         if keyboard.just_pressed(KeyCode::R) {
-            let distance = 800.0; // Match the setup camera distance
+            let distance = 900.0; // Match the enhanced setup camera distance
             let horizontal_angle = 45.0_f32.to_radians();
-            let vertical_angle = 45.0_f32.to_radians(); // Match the setup camera angle
+            let vertical_angle = 35.0_f32.to_radians(); // Match the enhanced setup camera angle
 
             let camera_pos = Vec3::new(
                 distance * horizontal_angle.cos() * vertical_angle.cos(),

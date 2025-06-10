@@ -16,11 +16,25 @@ pub fn setup_board(mut commands: Commands) {
                 _ => 0,                                                   // Rest are low
             };
 
-            let tile_x = (x as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * TILE_SIZE;
-            let tile_y = (y as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * TILE_SIZE;
+            // Enhanced tile size for better visibility
+            let enhanced_tile_size = TILE_SIZE * 1.2;
+            let tile_x = (x as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
+            let tile_y = (y as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * enhanced_tile_size;
 
             let color = QuadradiusTheme::tile_color_for_height(height);
 
+            // Spawn grid line background (darker) for clear tile separation
+            commands.spawn(SpriteBundle {
+                sprite: Sprite {
+                    color: Color::rgb(0.15, 0.15, 0.20), // Dark grid lines
+                    custom_size: Some(Vec2::splat(enhanced_tile_size)),
+                    ..default()
+                },
+                transform: Transform::from_xyz(tile_x, tile_y, -0.1),
+                ..default()
+            });
+
+            // Spawn main tile with better contrast
             commands.spawn((
                 BoardTile {
                     coordinates: (x, y),
@@ -29,7 +43,7 @@ pub fn setup_board(mut commands: Commands) {
                 SpriteBundle {
                     sprite: Sprite {
                         color,
-                        custom_size: Some(Vec2::splat(TILE_SIZE - 2.0)), // Small gap between tiles
+                        custom_size: Some(Vec2::splat(enhanced_tile_size * 0.88)), // Visible gap for grid lines
                         ..default()
                     },
                     transform: Transform::from_xyz(tile_x, tile_y, 0.0),

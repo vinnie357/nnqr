@@ -9,16 +9,17 @@ fn test_board_to_isometric_conversion() {
     // Test near center of board (4, 4 on a 10x8 board)
     let center_pos = board_to_isometric((4, 4), 0.0);
 
-    // Based on the isometric transformation formula in the code:
-    // For 10x8 board (BOARD_WIDTH=10, BOARD_HEIGHT=8):
+    // Based on the enhanced isometric transformation formula in the code:
+    // For 10x8 board (BOARD_WIDTH=10, BOARD_HEIGHT=8) with enhanced tile size:
+    // enhanced_tile_size = 64 * 1.2 = 76.8
     // centered_x = 4 - (10/2) + 0.5 = 4 - 5 + 0.5 = -0.5
     // centered_z = 4 - (8/2) + 0.5 = 4 - 4 + 0.5 = 0.5
-    // iso_x = (-0.5 - 0.5) * 64 * 0.5 = -1.0 * 32 = -32.0
-    // iso_z = (-0.5 + 0.5) * 64 * 0.25 = 0.0 * 16 = 0.0
+    // iso_x = (-0.5 - 0.5) * 76.8 * 0.5 = -1.0 * 38.4 = -38.4
+    // iso_z = (-0.5 + 0.5) * 76.8 * 0.25 = 0.0 * 19.2 = 0.0
 
     assert_eq!(
-        center_pos.x, -32.0,
-        "Center X should be -32.0 for board position (4,4)"
+        center_pos.x, -38.4,
+        "Center X should be -38.4 for board position (4,4) with enhanced tile size"
     );
     assert_eq!(
         center_pos.z, 0.0,

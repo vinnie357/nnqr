@@ -23,13 +23,13 @@ impl QuadradiusTheme {
     pub const TEAM_2_PRIMARY: Color = Color::rgb(0.8, 0.1, 0.1); // Bright metallic red
     pub const TEAM_2_ACCENT: Color = Color::rgb(1.0, 0.4, 0.4); // Bright red accent
 
-    // Board and tile colors
-    pub const TILE_BASE: Color = Color::rgb(0.18, 0.20, 0.22); // Dark gunmetal base
-    pub const TILE_ELEVATED_1: Color = Color::rgb(0.25, 0.28, 0.32); // Slightly lighter for height 1
-    pub const TILE_ELEVATED_2: Color = Color::rgb(0.32, 0.36, 0.42); // Medium for height 2
-    pub const TILE_ELEVATED_3: Color = Color::rgb(0.40, 0.44, 0.52); // Lighter for height 3
-    pub const TILE_ELEVATED_4: Color = Color::rgb(0.48, 0.52, 0.62); // Even lighter for height 4
-    pub const TILE_DEPRESSED: Color = Color::rgb(0.10, 0.11, 0.12); // Darker for bomb craters
+    // Board and tile colors - Made significantly lighter while maintaining metallic look
+    pub const TILE_BASE: Color = Color::rgb(0.45, 0.47, 0.50); // Light metallic base - much lighter
+    pub const TILE_ELEVATED_1: Color = Color::rgb(0.52, 0.55, 0.58); // Lighter for height 1
+    pub const TILE_ELEVATED_2: Color = Color::rgb(0.60, 0.63, 0.66); // Medium-light for height 2
+    pub const TILE_ELEVATED_3: Color = Color::rgb(0.68, 0.71, 0.74); // Bright for height 3
+    pub const TILE_ELEVATED_4: Color = Color::rgb(0.75, 0.78, 0.82); // Very bright for height 4
+    pub const TILE_DEPRESSED: Color = Color::rgb(0.25, 0.27, 0.30); // Darker for bomb craters but not black
 
     // UI element colors
     pub const UI_BACKGROUND: Color = Color::rgba(0.12, 0.14, 0.16, 0.95); // Dark semi-transparent

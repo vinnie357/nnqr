@@ -444,8 +444,8 @@ pub fn update_turn_indicator_enhanced(
 
         text.sections[0].value = format!("{}'s Turn - {}", player_name, phase);
         text.sections[0].style.color = match game_state.current_player {
-            Player::Player1 => Color::rgb(0.9, 0.3, 0.3),
-            Player::Player2 => Color::rgb(0.3, 0.3, 0.9),
+            Player::Player1 => QuadradiusTheme::TEAM_1_PRIMARY, // Blue for Player 1
+            Player::Player2 => QuadradiusTheme::TEAM_2_PRIMARY, // Red for Player 2
         };
     }
 }
