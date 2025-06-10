@@ -1,4 +1,5 @@
 use crate::{components::*, resources::*};
+use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -126,8 +127,8 @@ pub fn collect_power_orbs(
 }
 
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
-    let x = (board_pos.0 as f32 - BOARD_SIZE as f32 / 2.0 + 0.5) * TILE_SIZE;
-    let y = (board_pos.1 as f32 - BOARD_SIZE as f32 / 2.0 + 0.5) * TILE_SIZE;
+    let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * TILE_SIZE;
+    let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * TILE_SIZE;
     Vec2::new(x, y)
 }
 

@@ -1,4 +1,5 @@
 use crate::{components::*, resources::*};
+use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::*;
 
 // Components for movement power effects
@@ -117,7 +118,7 @@ pub fn activate_push(
             );
 
             // Check if destination is valid and empty
-            if push_to.0 < BOARD_SIZE && push_to.1 < BOARD_SIZE {
+            if push_to.0 < BOARD_WIDTH && push_to.1 < BOARD_HEIGHT {
                 let occupied = pieces.iter().any(|(_, p)| p.board_position == push_to);
                 if !occupied {
                     // Apply push effect
@@ -153,7 +154,7 @@ pub fn activate_pull(
     );
 
     // Check if destination is valid and empty
-    if pull_to.0 < BOARD_SIZE && pull_to.1 < BOARD_SIZE {
+    if pull_to.0 < BOARD_WIDTH && pull_to.1 < BOARD_HEIGHT {
         let occupied = pieces.iter().any(|(_, p)| p.board_position == pull_to);
         if !occupied {
             println!("Pulling piece from {:?} to {:?}", target_pos, pull_to);

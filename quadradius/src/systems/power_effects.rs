@@ -1,5 +1,6 @@
 use crate::systems::TerrainHeight;
 use crate::{components::*, resources::*};
+use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -101,8 +102,8 @@ fn spawn_power_ready_indicator(commands: &mut Commands) {
 }
 
 fn spawn_column_target_indicators(commands: &mut Commands) {
-    for x in 0..BOARD_SIZE {
-        for y in 0..BOARD_SIZE {
+    for x in 0..BOARD_WIDTH {
+        for y in 0..BOARD_HEIGHT {
             let world_pos = board_to_world_position((x, y));
             commands.spawn((
                 PowerTargetIndicator,
@@ -123,8 +124,8 @@ fn spawn_column_target_indicators(commands: &mut Commands) {
 fn spawn_piece_target_indicators(commands: &mut Commands, game_state: &GameState) {
     // For now, show indicators on all tiles since we need piece positions
     // In a real implementation, we'd query for piece positions and only show indicators there
-    for x in 0..BOARD_SIZE {
-        for y in 0..BOARD_SIZE {
+    for x in 0..BOARD_WIDTH {
+        for y in 0..BOARD_HEIGHT {
             let world_pos = board_to_world_position((x, y));
             commands.spawn((
                 PowerTargetIndicator,
@@ -144,8 +145,8 @@ fn spawn_piece_target_indicators(commands: &mut Commands, game_state: &GameState
 
 fn spawn_area_target_indicators(commands: &mut Commands) {
     // Highlight 3x3 areas for area-effect powers
-    for x in 1..BOARD_SIZE - 1 {
-        for y in 1..BOARD_SIZE - 1 {
+    for x in 1..BOARD_WIDTH - 1 {
+        for y in 1..BOARD_HEIGHT - 1 {
             let world_pos = board_to_world_position((x, y));
             commands.spawn((
                 PowerTargetIndicator,
@@ -328,13 +329,13 @@ pub fn handle_power_activation(
                                 pieces.iter().find(|(_, p)| p.board_position == board_pos)
                             {
                                 // Calculate push direction from center of board
-                                let center = (BOARD_SIZE / 2, BOARD_SIZE / 2);
+                                let center = (BOARD_WIDTH / 2, BOARD_HEIGHT / 2);
                                 let dx = if board_pos.0 > center.0 { 1 } else { -1 };
                                 let dy = if board_pos.1 > center.1 { 1 } else { -1 };
 
                                 let push_to = (
-                                    (board_pos.0 as i8 + dx).clamp(0, BOARD_SIZE as i8 - 1) as u8,
-                                    (board_pos.1 as i8 + dy).clamp(0, BOARD_SIZE as i8 - 1) as u8,
+                                    (board_pos.0 as i8 + dx).clamp(0, BOARD_WIDTH as i8 - 1) as u8,
+                                    (board_pos.1 as i8 + dy).clamp(0, BOARD_HEIGHT as i8 - 1) as u8,
                                 );
 
                                 // Check if destination is empty
@@ -380,9 +381,9 @@ pub fn handle_power_activation(
                                         .signum();
 
                                     let pull_to = (
-                                        (board_pos.0 as i8 + dx).clamp(0, BOARD_SIZE as i8 - 1)
+                                        (board_pos.0 as i8 + dx).clamp(0, BOARD_WIDTH as i8 - 1)
                                             as u8,
-                                        (board_pos.1 as i8 + dy).clamp(0, BOARD_SIZE as i8 - 1)
+                                        (board_pos.1 as i8 + dy).clamp(0, BOARD_HEIGHT as i8 - 1)
                                             as u8,
                                     );
 
@@ -540,9 +541,9 @@ pub fn handle_power_activation(
                                     let target_y = board_pos.1 as i8 + dy;
 
                                     if target_x >= 0
-                                        && target_x < BOARD_SIZE as i8
+                                        && target_x < BOARD_WIDTH as i8
                                         && target_y >= 0
-                                        && target_y < BOARD_SIZE as i8
+                                        && target_y < BOARD_HEIGHT as i8
                                     {
                                         let target = (target_x as u8, target_y as u8);
 
@@ -770,9 +771,9 @@ pub fn handle_power_activation(
                                     let target_x = board_pos.0 as i8 + dx;
                                     let target_y = board_pos.1 as i8 + dy;
                                     if target_x >= 0
-                                        && target_x < BOARD_SIZE as i8
+                                        && target_x < BOARD_WIDTH as i8
                                         && target_y >= 0
-                                        && target_y < BOARD_SIZE as i8
+                                        && target_y < BOARD_HEIGHT as i8
                                     {
                                         // Use terrain height system to raise
                                         use crate::systems::terrain_height::raise_single_tile;
@@ -795,9 +796,9 @@ pub fn handle_power_activation(
                                     let target_x = board_pos.0 as i8 + dx;
                                     let target_y = board_pos.1 as i8 + dy;
                                     if target_x >= 0
-                                        && target_x < BOARD_SIZE as i8
+                                        && target_x < BOARD_WIDTH as i8
                                         && target_y >= 0
-                                        && target_y < BOARD_SIZE as i8
+                                        && target_y < BOARD_HEIGHT as i8
                                     {
                                         // Use terrain height system to lower
                                         use crate::systems::terrain_height::lower_single_tile;
@@ -856,9 +857,9 @@ pub fn handle_power_activation(
                                     let target_x = board_pos.0 as i8 + dx;
                                     let target_y = board_pos.1 as i8 + dy;
                                     if target_x >= 0
-                                        && target_x < BOARD_SIZE as i8
+                                        && target_x < BOARD_WIDTH as i8
                                         && target_y >= 0
-                                        && target_y < BOARD_SIZE as i8
+                                        && target_y < BOARD_HEIGHT as i8
                                     {
                                         let target_pos = (target_x as u8, target_y as u8);
                                         area_positions.push(target_pos);
@@ -906,8 +907,8 @@ pub fn handle_power_activation(
                             let mut rng = rand::thread_rng();
                             let mut changed = 0;
 
-                            for x in 0..BOARD_SIZE {
-                                for y in 0..BOARD_SIZE {
+                            for x in 0..BOARD_WIDTH {
+                                for y in 0..BOARD_HEIGHT {
                                     if rng.gen::<f32>() < 0.3 {
                                         // 30% chance for each tile
                                         if rng.gen::<bool>() {
@@ -1174,7 +1175,7 @@ pub fn handle_power_activation(
                         PowerType::Bridge => {
                             // Create bridge connecting two areas (simplified - set tiles to height 0)
                             for x in board_pos.0.saturating_sub(1)
-                                ..=(board_pos.0 + 1).min(BOARD_SIZE - 1)
+                                ..=(board_pos.0 + 1).min(BOARD_WIDTH - 1)
                             {
                                 use crate::systems::terrain_height::set_tile_height;
                                 set_tile_height(
@@ -1199,9 +1200,9 @@ pub fn handle_power_activation(
                                     let target_x = board_pos.0 as i8 + dx;
                                     let target_y = board_pos.1 as i8 + dy;
                                     if target_x >= 0
-                                        && target_x < BOARD_SIZE as i8
+                                        && target_x < BOARD_WIDTH as i8
                                         && target_y >= 0
-                                        && target_y < BOARD_SIZE as i8
+                                        && target_y < BOARD_HEIGHT as i8
                                     {
                                         let pos = (target_x as u8, target_y as u8);
                                         positions.push(pos);
@@ -1409,7 +1410,7 @@ fn activate_multiply(
                 let new_x = target_pos.0 as i8 + dx;
                 let new_y = target_pos.1 as i8 + dy;
 
-                if new_x >= 0 && new_x < BOARD_SIZE as i8 && new_y >= 0 && new_y < BOARD_SIZE as i8
+                if new_x >= 0 && new_x < BOARD_WIDTH as i8 && new_y >= 0 && new_y < BOARD_HEIGHT as i8
                 {
                     let new_pos = (new_x as u8, new_y as u8);
 
@@ -1483,17 +1484,17 @@ pub fn cleanup_power_effects(
 }
 
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
-    let x = (board_pos.0 as f32 - BOARD_SIZE as f32 / 2.0 + 0.5) * TILE_SIZE;
-    let y = (board_pos.1 as f32 - BOARD_SIZE as f32 / 2.0 + 0.5) * TILE_SIZE;
+    let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * TILE_SIZE;
+    let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * TILE_SIZE;
     Vec2::new(x, y)
 }
 
 fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
-    let x = ((world_pos.x / TILE_SIZE) + BOARD_SIZE as f32 / 2.0).round() as i8;
-    let y = ((world_pos.y / TILE_SIZE) + BOARD_SIZE as f32 / 2.0).round() as i8;
+    let x = ((world_pos.x / TILE_SIZE) + BOARD_WIDTH as f32 / 2.0).round() as i8;
+    let y = ((world_pos.y / TILE_SIZE) + BOARD_HEIGHT as f32 / 2.0).round() as i8;
 
-    let x = x.max(0).min(BOARD_SIZE as i8 - 1) as u8;
-    let y = y.max(0).min(BOARD_SIZE as i8 - 1) as u8;
+    let x = x.max(0).min(BOARD_WIDTH as i8 - 1) as u8;
+    let y = y.max(0).min(BOARD_HEIGHT as i8 - 1) as u8;
 
     (x, y)
 }

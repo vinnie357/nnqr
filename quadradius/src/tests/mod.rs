@@ -4,6 +4,7 @@ pub mod movement_tests;
 pub mod movement_validation_tests;
 pub mod coordinate_conversion_tests;
 pub mod piece_selection_tests;
+pub mod piece_movement_integration_tests;
 pub mod power_orb_tests;
 pub mod power_orb_spawning_tests;
 pub mod integration_orb_visibility_tests;

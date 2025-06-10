@@ -1,4 +1,5 @@
 use crate::{components::*, resources::*, systems::*};
+use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::*;
 
 // Enhanced movement validation that checks for active movement powers
@@ -16,7 +17,7 @@ pub fn validate_enhanced_movement(
     knight_query: &Query<Entity, With<KnightMoveActive>>,
 ) -> bool {
     // Check bounds
-    if to.0 >= BOARD_SIZE || to.1 >= BOARD_SIZE {
+    if to.0 >= BOARD_WIDTH || to.1 >= BOARD_HEIGHT {
         return false;
     }
 
@@ -128,8 +129,8 @@ pub fn show_valid_moves_for_powers(
             .collect();
 
         // Check all possible positions
-        for x in 0..BOARD_SIZE {
-            for y in 0..BOARD_SIZE {
+        for x in 0..BOARD_WIDTH {
+            for y in 0..BOARD_HEIGHT {
                 let to = (x, y);
 
                 if validate_enhanced_movement(
@@ -166,8 +167,8 @@ pub fn show_valid_moves_for_powers(
 }
 
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
-    let x = (board_pos.0 as f32 - BOARD_SIZE as f32 / 2.0 + 0.5) * TILE_SIZE;
-    let y = (board_pos.1 as f32 - BOARD_SIZE as f32 / 2.0 + 0.5) * TILE_SIZE;
+    let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * TILE_SIZE;
+    let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * TILE_SIZE;
     Vec2::new(x, y)
 }
 

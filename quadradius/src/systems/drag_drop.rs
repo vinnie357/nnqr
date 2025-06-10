@@ -3,6 +3,7 @@ use crate::{
     resources::*,
     systems::{JumpActive, KnightMoveActive, MoveDiagonalActive, MoveTwoActive, TeleportActive, settings::Camera2D},
 };
+use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -258,7 +259,7 @@ fn is_valid_move_with_positions(
     allow_diagonal: bool,
 ) -> bool {
     // Check bounds
-    if to.0 >= BOARD_SIZE || to.1 >= BOARD_SIZE {
+    if to.0 >= BOARD_WIDTH || to.1 >= BOARD_HEIGHT {
         return false;
     }
 
@@ -309,18 +310,18 @@ fn get_tile_height(pos: (u8, u8), tiles: &Query<&BoardTile>) -> i8 {
 }
 
 fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
-    let x = ((world_pos.x / TILE_SIZE) + BOARD_SIZE as f32 / 2.0).round() as i8;
-    let y = ((world_pos.y / TILE_SIZE) + BOARD_SIZE as f32 / 2.0).round() as i8;
+    let x = ((world_pos.x / TILE_SIZE) + BOARD_WIDTH as f32 / 2.0).round() as i8;
+    let y = ((world_pos.y / TILE_SIZE) + BOARD_HEIGHT as f32 / 2.0).round() as i8;
 
-    let x = x.max(0).min(BOARD_SIZE as i8 - 1) as u8;
-    let y = y.max(0).min(BOARD_SIZE as i8 - 1) as u8;
+    let x = x.max(0).min(BOARD_WIDTH as i8 - 1) as u8;
+    let y = y.max(0).min(BOARD_HEIGHT as i8 - 1) as u8;
 
     (x, y)
 }
 
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
-    let x = (board_pos.0 as f32 - BOARD_SIZE as f32 / 2.0 + 0.5) * TILE_SIZE;
-    let y = (board_pos.1 as f32 - BOARD_SIZE as f32 / 2.0 + 0.5) * TILE_SIZE;
+    let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * TILE_SIZE;
+    let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * TILE_SIZE;
     Vec2::new(x, y)
 }
 
@@ -363,8 +364,8 @@ fn find_best_valid_target_enhanced(
     let mut best_distance = f32::MAX;
 
     // Check all positions within 2 tiles for special moves
-    for x in 0..BOARD_SIZE {
-        for y in 0..BOARD_SIZE {
+    for x in 0..BOARD_WIDTH {
+        for y in 0..BOARD_HEIGHT {
             let target = (x, y);
             let world_pos = board_to_world_position(target);
             let distance = drop_world_pos.distance(world_pos);
@@ -415,7 +416,7 @@ fn get_valid_moves(
         let new_x = from.0 as i8 + dx;
         let new_y = from.1 as i8 + dy;
 
-        if new_x >= 0 && new_x < BOARD_SIZE as i8 && new_y >= 0 && new_y < BOARD_SIZE as i8 {
+        if new_x >= 0 && new_x < BOARD_WIDTH as i8 && new_y >= 0 && new_y < BOARD_HEIGHT as i8 {
             let target_pos = (new_x as u8, new_y as u8);
             if is_valid_move_with_positions(
                 from,
@@ -456,7 +457,7 @@ fn spawn_valid_move_indicators(
         let new_x = from_pos.0 as i8 + dx;
         let new_y = from_pos.1 as i8 + dy;
 
-        if new_x >= 0 && new_x < BOARD_SIZE as i8 && new_y >= 0 && new_y < BOARD_SIZE as i8 {
+        if new_x >= 0 && new_x < BOARD_WIDTH as i8 && new_y >= 0 && new_y < BOARD_HEIGHT as i8 {
             let target_pos = (new_x as u8, new_y as u8);
 
             // Get height of target position
