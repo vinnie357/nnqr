@@ -36,6 +36,7 @@ pub fn setup_isometric_camera(mut commands: Commands) {
             ..default()
         },
         IsometricCamera,
+        crate::systems::settings::Camera3D,
     ));
 
     // Add ambient lighting for the 3D scene - brighter for better visibility

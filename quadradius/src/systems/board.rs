@@ -4,7 +4,13 @@ use bevy::prelude::*;
 
 pub fn setup_board(mut commands: Commands) {
     // Create board entity
-    commands.spawn((Board, Transform::from_xyz(0.0, 0.0, 0.0)));
+    commands.spawn((
+        Board, 
+        Transform::from_xyz(0.0, 0.0, 0.0),
+        Visibility::Visible, // Explicitly set visibility
+    ));
+
+    info!("🎯 Setting up 2D board with {} x {} tiles", BOARD_WIDTH, BOARD_HEIGHT);
 
     // Create tiles
     for x in 0..BOARD_WIDTH {
@@ -17,22 +23,38 @@ pub fn setup_board(mut commands: Commands) {
             };
 
             // Enhanced tile size for better visibility
-            let enhanced_tile_size = TILE_SIZE * 1.2;
+            let enhanced_tile_size = TILE_SIZE * 0.8;
             let tile_x = (x as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
             let tile_y = (y as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * enhanced_tile_size;
+            
+            // Debug log first few tiles (commented for production)
+            // if x < 2 && y < 2 {
+            //     info!("🎲 Creating tile at ({}, {}) -> world pos ({:.1}, {:.1}), height {}", 
+            //           x, y, tile_x, tile_y, height);
+            // }
 
-            let color = QuadradiusTheme::tile_color_for_height(height);
+            // Use theme colors but brighter for better visibility
+            let theme_color = QuadradiusTheme::tile_color_for_height(height);
+            let color = Color::rgb(
+                (theme_color.r() * 1.5).min(1.0),
+                (theme_color.g() * 1.5).min(1.0), 
+                (theme_color.b() * 1.5).min(1.0),
+            );
 
             // Spawn grid line background (darker) for clear tile separation
-            commands.spawn(SpriteBundle {
-                sprite: Sprite {
-                    color: Color::rgb(0.15, 0.15, 0.20), // Dark grid lines
-                    custom_size: Some(Vec2::splat(enhanced_tile_size)),
+            commands.spawn((
+                SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::rgb(0.1, 0.1, 0.1), // Very dark grid lines for contrast
+                        custom_size: Some(Vec2::splat(enhanced_tile_size)),
+                        ..default()
+                    },
+                    transform: Transform::from_xyz(tile_x, tile_y, -0.1),
+                    visibility: Visibility::Visible, // Explicitly set visibility
                     ..default()
                 },
-                transform: Transform::from_xyz(tile_x, tile_y, -0.1),
-                ..default()
-            });
+                Board, // Add Board component so visibility system can find it
+            ));
 
             // Spawn main tile with better contrast
             commands.spawn((
@@ -47,9 +69,13 @@ pub fn setup_board(mut commands: Commands) {
                         ..default()
                     },
                     transform: Transform::from_xyz(tile_x, tile_y, 0.0),
+                    visibility: Visibility::Visible, // Explicitly set visibility
                     ..default()
                 },
+                Board, // Add Board component so visibility system can find it
             ));
         }
     }
+    
+    info!("✅ 2D board setup complete: {} tiles created", BOARD_WIDTH * BOARD_HEIGHT);
 }

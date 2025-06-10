@@ -28,6 +28,7 @@ fn main() {
             FrameTimeDiagnosticsPlugin,
             // LogDiagnosticsPlugin::default(), // Uncomment for console diagnostics
         ))
+        .insert_resource(ClearColor(Color::rgb(0.05, 0.05, 0.1))) // Dark background to show light tiles
         .init_resource::<GameState>()
         .init_resource::<GameResult>()
         .init_resource::<RenderConfig>()
@@ -43,25 +44,28 @@ fn main() {
         .init_resource::<AutomatedTestRunner>()
         .init_resource::<systems::power_orbs::LastTurnTracker>()
         .add_state::<GameMenuState>()
+        .add_state::<SettingsMenuState>()
         .add_event::<PowerUsageEvent>()
         .add_event::<GameEndEvent>()
         .add_systems(
             Startup,
             (
-                // Camera systems - 3D takes precedence if enabled
-                setup_isometric_camera.run_if(|config: Res<RenderConfig>| config.use_3d),
-                setup_camera.run_if(|config: Res<RenderConfig>| !config.use_3d),
-                // Board systems - 3D takes precedence if enabled
-                setup_board_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
-                setup_board.run_if(|config: Res<RenderConfig>| !config.use_3d),
-                // Piece systems - 3D takes precedence if enabled
-                setup_pieces_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
-                setup_pieces.run_if(|config: Res<RenderConfig>| !config.use_3d),
+                // Always spawn both camera types
+                setup_isometric_camera,
+                setup_camera,
+                // Always spawn both board types
+                setup_board_3d,
+                setup_board,
+                // Always spawn both piece types
+                setup_pieces_3d,
+                setup_pieces,
                 // Common systems
                 setup_enhanced_ui,
                 setup_power_activation_ui,
                 initialize_terrain_heights,
                 setup_entity_pools,
+                // Initial visibility setup based on render config
+                setup_initial_visibility,
                 // setup_networking,
                 // setup_client_server,
                 // setup_lobby_system,
@@ -288,10 +292,15 @@ fn main() {
         .add_systems(OnExit(GameMenuState::MainMenu), cleanup_menu)
         .add_systems(OnExit(GameMenuState::Paused), cleanup_menu)
         .add_systems(OnExit(GameMenuState::GameOver), cleanup_menu)
+        .add_systems(OnEnter(SettingsMenuState::Visible), setup_settings_menu)
+        .add_systems(OnExit(SettingsMenuState::Visible), cleanup_settings_menu)
         .add_systems(
             Update,
             (
                 handle_menu_buttons.run_if(not(in_state(GameMenuState::Playing))),
+                handle_settings_buttons.run_if(in_state(SettingsMenuState::Visible)),
+                handle_board_view_change,
+                synchronize_piece_representations,
                 handle_pause_input,
             ),
         )
@@ -299,11 +308,15 @@ fn main() {
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        projection: OrthographicProjection {
-            scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(750.0), // Enhanced zoom for better tile visibility
+    commands.spawn((
+        Camera2dBundle {
+            projection: OrthographicProjection {
+                scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(600.0), // Reduced to zoom in closer to board
+                ..default()
+            },
+            transform: Transform::from_xyz(0.0, 0.0, 999.9), // Center camera on board
             ..default()
         },
-        ..default()
-    });
+        crate::systems::settings::Camera2D,
+    ));
 }

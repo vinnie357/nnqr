@@ -1,0 +1,24 @@
+warning: unused import: `crate::resources::QuadradiusTheme`
+ --> src/systems/board.rs:2:5
+  |
+2 | use crate::resources::QuadradiusTheme;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `quadradius` (lib) generated 1 warning (run `cargo fix --lib -p quadradius` to apply 1 suggestion)
+   Compiling quadradius v0.1.0 (/Users/vinnie/github/nnqr/quadradius)
+warning: `quadradius` (bin "quadradius") generated 1 warning (1 duplicate)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.96s
+     Running `target/debug/quadradius`
+[2m2025-06-10T03:07:33.473994Z[0m [32m INFO[0m [2mbevy_render::renderer[0m[2m:[0m AdapterInfo { name: "Apple M4 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+[2m2025-06-10T03:07:33.764573Z[0m [32m INFO[0m [2mbevy_winit::system[0m[2m:[0m Creating new window "Quadradius" (0v0)
+[2m2025-06-10T03:07:33.793788Z[0m [32m INFO[0m [2mquadradius::systems::board[0m[2m:[0m 🎯 Setting up 2D board with 10 x 8 tiles
+[2m2025-06-10T03:07:33.793848Z[0m [32m INFO[0m [2mquadradius::systems::board[0m[2m:[0m 🎲 Creating tile at (0, 0) -> world pos (-576.0, -448.0), height 0
+[2m2025-06-10T03:07:33.793961Z[0m [32m INFO[0m [2mquadradius::systems::board[0m[2m:[0m 🎲 Creating tile at (0, 1) -> world pos (-576.0, -320.0), height 0
+[2m2025-06-10T03:07:33.793971Z[0m [32m INFO[0m [2mquadradius::systems::board[0m[2m:[0m 🎲 Creating tile at (1, 0) -> world pos (-448.0, -448.0), height 0
+[2m2025-06-10T03:07:33.793977Z[0m [32m INFO[0m [2mquadradius::systems::board[0m[2m:[0m 🎲 Creating tile at (1, 1) -> world pos (-448.0, -320.0), height 0
+[2m2025-06-10T03:07:33.794005Z[0m [32m INFO[0m [2mquadradius::systems::board[0m[2m:[0m ✅ 2D board setup complete: 80 tiles created
+[2m2025-06-10T03:07:33.794008Z[0m [32m INFO[0m [2mbevy_diagnostic::system_information_diagnostics_plugin::internal[0m[2m:[0m SystemInfo { os: "MacOS 15.5 ", kernel: "24.5.0", cpu: "Apple M4 Max", core_count: "16", memory: "64.0 GiB" }
+🏔️ Terrain height system initialized - all tiles at ground level
+Turn 1 - checking power orb spawn for Player1

@@ -1,7 +1,7 @@
 use crate::{
     components::*,
     resources::*,
-    systems::{JumpActive, KnightMoveActive, MoveDiagonalActive, MoveTwoActive, TeleportActive},
+    systems::{JumpActive, KnightMoveActive, MoveDiagonalActive, MoveTwoActive, TeleportActive, settings::Camera2D},
 };
 use bevy::prelude::*;
 
@@ -12,7 +12,7 @@ pub fn handle_drag_start(
     mut commands: Commands,
     mouse_input: Res<Input<MouseButton>>,
     windows: Query<&Window>,
-    camera_q: Query<(&Camera, &GlobalTransform)>,
+    camera_q: Query<(&Camera, &GlobalTransform), (With<Camera2D>, With<Camera>)>,
     game_state: Res<GameState>,
     pieces: Query<(Entity, &GamePiece, &Transform), Without<Dragging>>,
     diagonal_pieces: Query<Entity, With<MoveDiagonalActive>>,
@@ -75,7 +75,7 @@ pub fn handle_drag_start(
 
 pub fn handle_drag_update(
     windows: Query<&Window>,
-    camera_q: Query<(&Camera, &GlobalTransform)>,
+    camera_q: Query<(&Camera, &GlobalTransform), (With<Camera2D>, With<Camera>)>,
     mut dragging_pieces: Query<(&Dragging, &mut Transform)>,
 ) {
     let Ok(window) = windows.get_single() else {
@@ -104,7 +104,7 @@ pub fn handle_drag_end(
     mut commands: Commands,
     mouse_input: Res<Input<MouseButton>>,
     windows: Query<&Window>,
-    camera_q: Query<(&Camera, &GlobalTransform)>,
+    camera_q: Query<(&Camera, &GlobalTransform), (With<Camera2D>, With<Camera>)>,
     mut game_state: ResMut<GameState>,
     tiles: Query<&BoardTile>,
     mut dragging_pieces: Query<(Entity, &mut GamePiece, &mut Transform, &Dragging)>,

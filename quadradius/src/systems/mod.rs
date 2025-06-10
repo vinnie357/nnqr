@@ -29,6 +29,7 @@ pub mod power_orbs_3d;
 pub mod power_test_report;
 pub mod power_testing;
 pub mod scoreboard;
+pub mod settings;
 pub mod terrain_height;
 pub mod ui;
 pub mod visual_effects;
@@ -71,6 +72,7 @@ pub use power_orbs_3d::*;
 // pub use power_test_report::*; // Disabled for production builds
 pub use power_testing::*;
 pub use scoreboard::*;
+pub use settings::*;
 pub use terrain_height::*;
 pub use ui::*;
 pub use visual_effects::*;

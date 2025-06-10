@@ -1,0 +1,7 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running `target/debug/quadradius`
+[2m2025-06-10T03:08:45.153496Z[0m [32m INFO[0m [2mbevy_render::renderer[0m[2m:[0m AdapterInfo { name: "Apple M4 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+[2m2025-06-10T03:08:45.418316Z[0m [32m INFO[0m [2mbevy_winit::system[0m[2m:[0m Creating new window "Quadradius" (0v0)
+🏔️ Terrain height system initialized - all tiles at ground level
+[2m2025-06-10T03:08:45.451820Z[0m [32m INFO[0m [2mbevy_diagnostic::system_information_diagnostics_plugin::internal[0m[2m:[0m SystemInfo { os: "MacOS 15.5 ", kernel: "24.5.0", cpu: "Apple M4 Max", core_count: "16", memory: "64.0 GiB" }
+Turn 1 - checking power orb spawn for Player1

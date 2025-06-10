@@ -152,6 +152,7 @@ pub fn handle_menu_buttons(
         Changed<Interaction>,
     >,
     mut next_state: ResMut<NextState<GameMenuState>>,
+    mut next_settings_state: ResMut<NextState<crate::systems::settings::SettingsMenuState>>,
     mut app_exit_events: EventWriter<AppExit>,
 ) {
     for (interaction, button, mut background) in interaction_query.iter_mut() {
@@ -160,6 +161,10 @@ pub fn handle_menu_buttons(
                 match button.action {
                     MenuAction::StartGame => {
                         next_state.set(GameMenuState::Playing);
+                    }
+                    MenuAction::Settings => {
+                        next_settings_state
+                            .set(crate::systems::settings::SettingsMenuState::Visible);
                     }
                     MenuAction::Quit => {
                         app_exit_events.send(AppExit);
@@ -174,7 +179,6 @@ pub fn handle_menu_buttons(
                         // Reset game state and start playing
                         next_state.set(GameMenuState::Playing);
                     }
-                    _ => {}
                 }
             }
             Interaction::Hovered => {
