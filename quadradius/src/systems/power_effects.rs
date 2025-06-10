@@ -176,6 +176,7 @@ pub fn handle_power_activation(
     pieces: Query<(Entity, &GamePiece)>,
     walls: Query<(Entity, &crate::components::power::Wall)>,
     indicators: Query<Entity, With<PowerTargetIndicator>>,
+    screen_shake: Option<ResMut<ScreenShake>>,
 ) {
     // Only handle during power phase with selected power
     if game_state.turn_phase != TurnPhase::PowerActivation || game_state.selected_power.is_none() {
@@ -1246,12 +1247,18 @@ pub fn handle_power_activation(
                             power_type,
                         );
 
-                        // Spawn floating text
-                        crate::systems::visual_effects::spawn_floating_text(
+                        // Spawn enhanced floating text for power activation
+                        crate::systems::visual_effects::spawn_enhanced_power_text(
                             &mut commands,
                             Vec3::new(world_pos.x, world_pos.y, 0.0),
-                            format!("{} Activated!", power_type.name()),
-                            power_type.color(),
+                            power_type,
+                        );
+
+                        // Trigger screen shake for dramatic powers
+                        crate::systems::visual_effects::trigger_power_screen_shake(
+                            &mut commands,
+                            screen_shake,
+                            power_type,
                         );
 
                         // Remove the used power from inventory

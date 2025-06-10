@@ -154,6 +154,7 @@ fn main() {
                 // Visual effects systems
                 update_particle_effects,
                 update_floating_text,
+                update_power_activation_text,
                 update_animated_scale,
                 update_pulse_effects,
                 update_screen_shake,
@@ -237,7 +238,9 @@ fn main() {
                 update_tile_heights.run_if(|config: Res<RenderConfig>| config.use_3d),
                 highlight_board_tiles.run_if(|config: Res<RenderConfig>| config.use_3d),
                 update_piece_positions_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
-                // update_selection_highlighting.run_if(|config: Res<RenderConfig>| config.use_3d), // Temporarily disabled due to crash
+                update_piece_outlines.run_if(|config: Res<RenderConfig>| config.use_3d),
+                animate_piece_outlines.run_if(|config: Res<RenderConfig>| config.use_3d),
+                update_selection_highlighting.run_if(|config: Res<RenderConfig>| config.use_3d),
                 // Depth sorting systems
                 setup_tile_depth_sorting,
                 setup_piece_depth_sorting,
