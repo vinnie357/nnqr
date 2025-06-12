@@ -266,7 +266,7 @@ pub fn handle_board_view_change(
             for mut visibility in visibility_queries.p5().iter_mut() {
                 *visibility = Visibility::Visible;
             }
-            
+
             // Enable 3D camera, disable 2D camera
             for mut camera in camera_2d_query.iter_mut() {
                 camera.is_active = false;
@@ -294,7 +294,7 @@ pub fn handle_board_view_change(
             for mut visibility in visibility_queries.p5().iter_mut() {
                 *visibility = Visibility::Hidden;
             }
-            
+
             // Enable 2D camera, disable 3D camera
             for mut camera in camera_2d_query.iter_mut() {
                 camera.is_active = true;
@@ -347,7 +347,7 @@ pub fn setup_initial_visibility(
         for mut visibility in visibility_queries.p5().iter_mut() {
             *visibility = Visibility::Visible;
         }
-        
+
         // Enable 3D camera, disable 2D camera
         for mut camera in camera_2d_query.iter_mut() {
             camera.is_active = false;
@@ -375,7 +375,7 @@ pub fn setup_initial_visibility(
         for mut visibility in visibility_queries.p5().iter_mut() {
             *visibility = Visibility::Hidden;
         }
-        
+
         // Enable 2D camera, disable 3D camera
         for mut camera in camera_2d_query.iter_mut() {
             camera.is_active = true;
@@ -391,32 +391,37 @@ pub fn synchronize_piece_representations(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    pieces_2d: Query<(Entity, &crate::components::GamePiece), Without<crate::systems::pieces_3d::GamePiece3D>>,
-    pieces_3d: Query<(Entity, &crate::systems::pieces_3d::GamePiece3D), Without<crate::components::GamePiece>>,
+    pieces_2d: Query<
+        (Entity, &crate::components::GamePiece),
+        Without<crate::systems::pieces_3d::GamePiece3D>,
+    >,
+    pieces_3d: Query<
+        (Entity, &crate::systems::pieces_3d::GamePiece3D),
+        Without<crate::components::GamePiece>,
+    >,
     all_pieces_2d: Query<&crate::components::GamePiece>,
     all_pieces_3d: Query<&crate::systems::pieces_3d::GamePiece3D>,
     render_config: Res<RenderConfig>,
 ) {
-    
     // Create missing 3D pieces for existing 2D pieces
     for (entity_2d, piece_2d) in pieces_2d.iter() {
         // Check if a 3D version already exists at this position
         let has_3d_counterpart = all_pieces_3d.iter().any(|p3d| {
             p3d.board_position == piece_2d.board_position && p3d.player == piece_2d.player
         });
-        
+
         if !has_3d_counterpart {
             spawn_3d_piece_for_2d(&mut commands, &mut meshes, &mut materials, piece_2d);
         }
     }
-    
-    // Create missing 2D pieces for existing 3D pieces  
+
+    // Create missing 2D pieces for existing 3D pieces
     for (entity_3d, piece_3d) in pieces_3d.iter() {
         // Check if a 2D version already exists at this position
         let has_2d_counterpart = all_pieces_2d.iter().any(|p2d| {
             p2d.board_position == piece_3d.board_position && p2d.player == piece_3d.player
         });
-        
+
         if !has_2d_counterpart {
             spawn_2d_piece_for_3d(&mut commands, piece_3d);
         }
@@ -431,10 +436,10 @@ fn spawn_3d_piece_for_2d(
 ) {
     use crate::components::TILE_SIZE;
     use crate::resources::QuadradiusTheme;
+    use crate::systems::depth_sorting::{IsometricDepthSort, PIECE_LAYER};
     use crate::systems::isometric_camera::board_to_isometric;
     use crate::systems::pieces_3d::GamePiece3D;
-    use crate::systems::depth_sorting::{IsometricDepthSort, PIECE_LAYER};
-    
+
     // Create meshes for the 3D piece
     let piece_mesh = meshes.add(Mesh::from(shape::Cylinder {
         radius: TILE_SIZE * 0.35,
@@ -442,37 +447,40 @@ fn spawn_3d_piece_for_2d(
         resolution: 32,
         segments: 1,
     }));
-    
+
     let rim_mesh = meshes.add(Mesh::from(shape::Torus {
         radius: TILE_SIZE * 0.32,
         ring_radius: TILE_SIZE * 0.03,
         subdivisions_segments: 24,
         subdivisions_sides: 12,
     }));
-    
+
     // Create materials
     let base_color = match piece_2d.player {
         crate::components::Player::Player1 => QuadradiusTheme::TEAM_1_PRIMARY,
         crate::components::Player::Player2 => QuadradiusTheme::TEAM_2_PRIMARY,
     };
-    
+
     let piece_material = materials.add(StandardMaterial {
         base_color,
         metallic: 0.8,
         perceptual_roughness: 0.2,
         ..default()
     });
-    
+
     let rim_material = materials.add(StandardMaterial {
         base_color: Color::rgb(0.9, 0.9, 0.95),
         metallic: 0.9,
         perceptual_roughness: 0.1,
         ..default()
     });
-    
-    // Calculate 3D position
+
+    // Calculate 3D position with proper Y offset for enhanced tiles
     let world_pos = board_to_isometric(piece_2d.board_position, 0.0);
-    
+    let enhanced_tile_size = TILE_SIZE * 1.5; // TILE_SIZE_MULTIPLIER_3D
+    let piece_y_offset = enhanced_tile_size * (0.6 / 2.0 + 0.2 / 2.0 + 0.2); // tile_height/2 + piece_height/2 + clearance
+    let piece_position = Vec3::new(world_pos.x, world_pos.y + piece_y_offset, world_pos.z);
+
     // Spawn the 3D piece
     commands.spawn((
         GamePiece3D {
@@ -482,11 +490,11 @@ fn spawn_3d_piece_for_2d(
         PbrBundle {
             mesh: piece_mesh,
             material: piece_material,
-            transform: Transform::from_translation(world_pos),
+            transform: Transform::from_translation(piece_position),
             visibility: Visibility::Hidden, // Start hidden, will be shown by visibility system if needed
             ..default()
         },
-        IsometricDepthSort { 
+        IsometricDepthSort {
             grid_x: piece_2d.board_position.0 as f32,
             grid_y: piece_2d.board_position.1 as f32,
             height: 0.0,
@@ -499,19 +507,21 @@ fn spawn_2d_piece_for_3d(
     commands: &mut Commands,
     piece_3d: &crate::systems::pieces_3d::GamePiece3D,
 ) {
-    use crate::components::{TILE_SIZE, BOARD_WIDTH, BOARD_HEIGHT, GamePiece};
+    use crate::components::{GamePiece, BOARD_HEIGHT, BOARD_WIDTH, TILE_SIZE};
     use crate::resources::QuadradiusTheme;
-    
+
     let color = match piece_3d.player {
         crate::components::Player::Player1 => QuadradiusTheme::TEAM_1_PRIMARY,
         crate::components::Player::Player2 => QuadradiusTheme::TEAM_2_PRIMARY,
     };
-    
-    // Use same enhanced tile size as board for proper alignment
-    let enhanced_tile_size = TILE_SIZE * 0.8;
-    let world_x = (piece_3d.board_position.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
-    let world_y = (piece_3d.board_position.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * enhanced_tile_size;
-    
+
+    // Use same enhanced tile size as board for proper alignment - match 3D version
+    let enhanced_tile_size = TILE_SIZE * 1.2;
+    let world_x =
+        (piece_3d.board_position.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
+    let world_y =
+        (piece_3d.board_position.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * enhanced_tile_size;
+
     commands.spawn((
         GamePiece {
             player: piece_3d.player,

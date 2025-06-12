@@ -1,5 +1,5 @@
+use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::{components::*, resources::*, systems::*};
-use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::*;
 
 // Enhanced movement validation that checks for active movement powers
@@ -153,7 +153,7 @@ pub fn show_valid_moves_for_powers(
                         SpriteBundle {
                             sprite: Sprite {
                                 color: Color::rgba(0.0, 1.0, 0.0, 0.3),
-                                custom_size: Some(Vec2::splat(TILE_SIZE * 0.8)),
+                                custom_size: Some(Vec2::splat(TILE_SIZE * 1.2)),
                                 ..default()
                             },
                             transform: Transform::from_xyz(world_pos.x, world_pos.y, 2.0),

@@ -1,6 +1,6 @@
+use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::systems::TerrainHeight;
 use crate::{components::*, resources::*};
-use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -622,7 +622,7 @@ pub fn handle_power_activation(
                                     commands.entity(entity).insert(SpriteBundle {
                                         sprite: Sprite {
                                             color: new_color,
-                                            custom_size: Some(Vec2::splat(TILE_SIZE * 0.8)),
+                                            custom_size: Some(Vec2::splat(TILE_SIZE * 1.2)),
                                             ..default()
                                         },
                                         transform: Transform::from_xyz(
@@ -744,7 +744,7 @@ pub fn handle_power_activation(
                                                 Player::Player1 => Color::rgb(0.8, 0.2, 0.2),
                                                 Player::Player2 => Color::rgb(0.2, 0.2, 0.8),
                                             },
-                                            custom_size: Some(Vec2::splat(TILE_SIZE * 0.8)),
+                                            custom_size: Some(Vec2::splat(TILE_SIZE * 1.2)),
                                             ..default()
                                         },
                                         transform: Transform::from_xyz(
@@ -1237,6 +1237,57 @@ pub fn handle_power_activation(
                             println!("Rotated area around {:?}", board_pos);
                             true
                         }
+
+                        // Missing research powers - placeholder implementations for now
+                        PowerType::GrowQuadradius => {
+                            println!(
+                                "Grow Quadradius activated - extending kill range to entire board"
+                            );
+                            // Implementation will be added later
+                            false
+                        }
+                        PowerType::JumpProof => {
+                            println!("Jump Proof activated - piece is now immune to capture");
+                            // Implementation will be added later
+                            false
+                        }
+                        PowerType::Bombs => {
+                            println!("Bombs activated - dropping 16 random bombs");
+                            // Implementation will be added later
+                            false
+                        }
+                        PowerType::SnakeTunneling => {
+                            println!("Snake Tunneling activated - destructive snake across board");
+                            // Implementation will be added later
+                            false
+                        }
+                        PowerType::DredgeColumn => {
+                            println!(
+                                "Dredge Column activated - sinking enemies, raising friendlies"
+                            );
+                            // Implementation will be added later
+                            false
+                        }
+                        PowerType::TeachRow => {
+                            println!("Teach Row activated - sharing powers with row");
+                            // Implementation will be added later
+                            false
+                        }
+                        PowerType::TeachRadial => {
+                            println!("Teach Radial activated - sharing powers with 3x3 area");
+                            // Implementation will be added later
+                            false
+                        }
+                        PowerType::Acid => {
+                            println!("Acid activated - creating permanent holes in board");
+                            // Implementation will be added later
+                            false
+                        }
+                        PowerType::RecruitRadial => {
+                            println!("Recruit Radial activated - converting enemies in 3x3 area");
+                            // Implementation will be added later
+                            false
+                        }
                     };
 
                     if activated {
@@ -1410,7 +1461,10 @@ fn activate_multiply(
                 let new_x = target_pos.0 as i8 + dx;
                 let new_y = target_pos.1 as i8 + dy;
 
-                if new_x >= 0 && new_x < BOARD_WIDTH as i8 && new_y >= 0 && new_y < BOARD_HEIGHT as i8
+                if new_x >= 0
+                    && new_x < BOARD_WIDTH as i8
+                    && new_y >= 0
+                    && new_y < BOARD_HEIGHT as i8
                 {
                     let new_pos = (new_x as u8, new_y as u8);
 
@@ -1431,7 +1485,7 @@ fn activate_multiply(
                                         Player::Player1 => Color::rgb(0.8, 0.2, 0.2),
                                         Player::Player2 => Color::rgb(0.2, 0.2, 0.8),
                                     },
-                                    custom_size: Some(Vec2::splat(TILE_SIZE * 0.8)),
+                                    custom_size: Some(Vec2::splat(TILE_SIZE * 1.2)),
                                     ..default()
                                 },
                                 transform: Transform::from_xyz(world_pos.x, world_pos.y, 1.0),

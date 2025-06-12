@@ -13,13 +13,18 @@ pub mod systems;
 mod tests {
     mod board_10x8_tests;
     mod board_tests;
+    mod chat_tests;
     mod coordinate_conversion_tests;
     mod integration_orb_visibility_tests;
+    mod missing_powers_tests;
     mod movement_tests;
     mod movement_validation_tests;
     mod piece_selection_tests;
     mod power_orb_spawning_tests;
     mod power_orb_tests;
+    mod power_spawning_fix_tests;
+    mod power_storage_tests;
+    mod turn_phase_tests;
     mod turn_tests;
     mod win_condition_tests;
 
@@ -37,4 +42,7 @@ mod tests {
     mod move_highlighting_3d_tests;
     mod settings_tests;
     mod ui_turn_indicator_tests;
+
+    // 3D positioning tests
+    mod piece_positioning_3d_tests;
 }

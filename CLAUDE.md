@@ -91,3 +91,4 @@ Based on analysis of all task phases and current project status, the existing re
 - Current project is far more advanced than basic implementation guide suggests
 - Focus on power completion rather than rebuilding basic functionality
 - Always write tests first, Test Driven Development is the focus.
+- complex topics are stored in the research/ folder

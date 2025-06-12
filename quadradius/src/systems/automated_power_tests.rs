@@ -335,6 +335,17 @@ fn test_power_effects(
         PowerType::PowerDrain => test_meta_power(power, game_state),
         PowerType::Reflect => test_self_buff_power(power, pieces),
         PowerType::Absorb => test_self_buff_power(power, pieces),
+
+        // Missing research powers - placeholder implementations
+        PowerType::GrowQuadradius => test_meta_power(power, game_state),
+        PowerType::JumpProof => test_self_buff_power(power, pieces),
+        PowerType::Bombs => test_self_buff_power(power, pieces),
+        PowerType::SnakeTunneling => test_self_buff_power(power, pieces),
+        PowerType::DredgeColumn => test_self_buff_power(power, pieces),
+        PowerType::TeachRow => test_meta_power(power, game_state),
+        PowerType::TeachRadial => test_meta_power(power, game_state),
+        PowerType::Acid => test_self_buff_power(power, pieces),
+        PowerType::RecruitRadial => test_meta_power(power, game_state),
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::resources::RenderConfig;
 use bevy::prelude::*;
 
 /// Marker component for the isometric camera
@@ -76,11 +77,11 @@ pub fn board_to_isometric(board_pos: (u8, u8), height: f32) -> Vec3 {
     let centered_x = board_pos.0 as f32 - (BOARD_WIDTH as f32 / 2.0) + 0.5;
     let centered_z = board_pos.1 as f32 - (BOARD_HEIGHT as f32 / 2.0) + 0.5;
 
-    // Use isometric transformation with enhanced tile size for better visibility
-    let enhanced_tile_size = TILE_SIZE * 1.2; // Match the enhanced tile size from board_3d
+    // Use enhanced tile size and height multiplier for better visibility
+    let enhanced_tile_size = TILE_SIZE * crate::systems::board_3d::TILE_SIZE_MULTIPLIER_3D;
     let iso_x = (centered_x - centered_z) * enhanced_tile_size * 0.5;
     let iso_z = (centered_x + centered_z) * enhanced_tile_size * 0.25;
-    let iso_y = height * enhanced_tile_size * 0.15; // Slightly enhanced height scaling
+    let iso_y = height * enhanced_tile_size * crate::systems::board_3d::HEIGHT_MULTIPLIER_3D; // Dramatic height differences
 
     Vec3::new(iso_x, iso_y, iso_z)
 }
@@ -107,7 +108,7 @@ pub fn screen_to_board(
     let world_pos = ray.origin + ray.direction * distance;
 
     // Convert world position back to board coordinates using inverse transformation with enhanced tile size
-    let enhanced_tile_size = TILE_SIZE * 1.2; // Match the enhanced tile size
+    let enhanced_tile_size = TILE_SIZE * crate::systems::board_3d::TILE_SIZE_MULTIPLIER_3D;
 
     // Reverse the isometric transformation:
     // iso_x = (centered_x - centered_z) * enhanced_tile_size * 0.5
@@ -231,5 +232,102 @@ pub fn update_isometric_camera(
         if rotation_changed {
             transform.look_at(Vec3::ZERO, Vec3::Y);
         }
+    }
+}
+
+/// Resource to track camera transition state
+#[derive(Resource, Default)]
+pub struct CameraTransition {
+    pub is_transitioning: bool,
+    pub transition_timer: f32,
+    pub transition_duration: f32,
+    pub from_3d: bool,
+}
+
+/// Handle view switching between 2D and 3D modes with smooth transitions
+pub fn handle_view_switching(
+    keyboard: Res<Input<KeyCode>>,
+    mut render_config: ResMut<RenderConfig>,
+    mut transition: ResMut<CameraTransition>,
+) {
+    // Use Tab key for view switching (Q/E are used for zoom)
+    if keyboard.just_pressed(KeyCode::Tab) && !transition.is_transitioning {
+        transition.is_transitioning = true;
+        transition.transition_timer = 0.0;
+        transition.transition_duration = 0.5; // 500ms transition
+        transition.from_3d = render_config.use_3d;
+
+        // Start the transition by toggling the view
+        render_config.use_3d = !render_config.use_3d;
+
+        info!(
+            "View transition started: {} -> {}",
+            if transition.from_3d {
+                "3D Isometric"
+            } else {
+                "2D Top-Down"
+            },
+            if render_config.use_3d {
+                "3D Isometric"
+            } else {
+                "2D Top-Down"
+            }
+        );
+    }
+}
+
+/// Update camera transition animations
+pub fn update_camera_transition(
+    time: Res<Time>,
+    mut transition: ResMut<CameraTransition>,
+    mut camera_2d_query: Query<
+        &mut OrthographicProjection,
+        (
+            With<crate::systems::settings::Camera2D>,
+            Without<IsometricCamera>,
+        ),
+    >,
+    mut camera_3d_query: Query<&mut Projection, With<IsometricCamera>>,
+) {
+    if !transition.is_transitioning {
+        return;
+    }
+
+    transition.transition_timer += time.delta_seconds();
+    let progress = (transition.transition_timer / transition.transition_duration).min(1.0);
+
+    // Smooth easing function
+    let eased_progress = 1.0 - (1.0 - progress).powi(3); // Ease-out cubic
+
+    // Apply zoom/scale animation during transition
+    if transition.from_3d {
+        // Transitioning from 3D to 2D - zoom out 3D camera smoothly
+        if let Ok(mut projection) = camera_3d_query.get_single_mut() {
+            if let Projection::Orthographic(ref mut ortho) = projection.as_mut() {
+                ortho.scale = 1.0 + eased_progress * 0.5; // Smooth zoom out
+            }
+        }
+    } else {
+        // Transitioning from 2D to 3D - zoom in 2D camera smoothly
+        if let Ok(mut projection) = camera_2d_query.get_single_mut() {
+            projection.scale = 1.0 + (1.0 - eased_progress) * 0.3; // Smooth zoom in
+        }
+    }
+
+    // Complete transition
+    if progress >= 1.0 {
+        transition.is_transitioning = false;
+
+        // Reset camera scales to default
+        if let Ok(mut projection) = camera_2d_query.get_single_mut() {
+            projection.scale = 1.0;
+        }
+        if let Ok(mut projection) = camera_3d_query.get_single_mut() {
+            if let Projection::Orthographic(ref mut ortho) = projection.as_mut() {
+                ortho.scale = 1.0;
+            }
+        }
+
+        info!("Camera transition completed");
     }
 }

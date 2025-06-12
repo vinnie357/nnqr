@@ -1,9 +1,12 @@
+use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::{
     components::*,
     resources::*,
-    systems::{JumpActive, KnightMoveActive, MoveDiagonalActive, MoveTwoActive, TeleportActive, settings::Camera2D},
+    systems::{
+        settings::Camera2D, JumpActive, KnightMoveActive, MoveDiagonalActive, MoveTwoActive,
+        TeleportActive,
+    },
 };
-use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -45,7 +48,7 @@ pub fn handle_drag_start(
                     continue;
                 }
 
-                let piece_bounds = Vec2::new(TILE_SIZE * 0.8, TILE_SIZE * 0.8);
+                let piece_bounds = Vec2::new(TILE_SIZE * 1.2, TILE_SIZE * 1.2);
                 let piece_pos = Vec2::new(transform.translation.x, transform.translation.y);
 
                 if (world_pos.x - piece_pos.x).abs() < piece_bounds.x / 2.0
@@ -210,14 +213,9 @@ pub fn handle_drag_end(
                         transform.translation = Vec3::new(world_pos.x, world_pos.y, 1.0);
                     }
 
-                    // Switch turns
-                    game_state.current_player = match game_state.current_player {
-                        Player::Player1 => Player::Player2,
-                        Player::Player2 => Player::Player1,
-                    };
-
-                    // Reset to power activation phase for next player
-                    game_state.turn_phase = TurnPhase::PowerActivation;
+                    // Advance to PowerCollection phase instead of switching turns immediately
+                    // This implements the 3-phase turn: PowerActivation → PieceMovement → PowerCollection
+                    game_state.turn_phase = TurnPhase::PowerCollection;
                     game_state.selected_power = None;
 
                     // Remove MoveDiagonalActive from the piece that just moved
@@ -310,8 +308,10 @@ fn get_tile_height(pos: (u8, u8), tiles: &Query<&BoardTile>) -> i8 {
 }
 
 fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
-    let x = ((world_pos.x / TILE_SIZE) + BOARD_WIDTH as f32 / 2.0).round() as i8;
-    let y = ((world_pos.y / TILE_SIZE) + BOARD_HEIGHT as f32 / 2.0).round() as i8;
+    // Use enhanced tile size to match 2D board layout
+    let enhanced_tile_size = TILE_SIZE * 1.2; // Match board.rs enhanced tile size
+    let x = ((world_pos.x / enhanced_tile_size) + BOARD_WIDTH as f32 / 2.0).round() as i8;
+    let y = ((world_pos.y / enhanced_tile_size) + BOARD_HEIGHT as f32 / 2.0).round() as i8;
 
     let x = x.max(0).min(BOARD_WIDTH as i8 - 1) as u8;
     let y = y.max(0).min(BOARD_HEIGHT as i8 - 1) as u8;

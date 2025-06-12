@@ -1,7 +1,6 @@
+use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::{components::*, resources::*};
-use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::*;
-use rand::Rng;
 
 const ORB_SPAWN_CHANCE: f32 = 0.5; // 50% chance per turn (increased for better gameplay)
 const ORB_SIZE: f32 = TILE_SIZE * 0.4;
@@ -19,14 +18,9 @@ pub fn spawn_power_orbs(
     pieces: Query<&GamePiece>,
     orbs: Query<&PowerOrb>,
     game_state: Res<GameState>,
-    mut last_turn: Local<LastTurnTracker>,
+    mut spawning_tracker: ResMut<PowerSpawningTracker>,
+    mut last_turn: ResMut<LastTurnTracker>,
 ) {
-    // Check if we're in a new turn
-    let current_turn_id = (game_state.current_player, game_state.turn_phase);
-
-    // Spawn orbs during both phases to ensure players see them
-    // Original logic was too restrictive - orbs should spawn more frequently
-
     // Check if this is a new turn
     if last_turn.last_player == Some(game_state.current_player) {
         return;
@@ -35,17 +29,22 @@ pub fn spawn_power_orbs(
     last_turn.last_player = Some(game_state.current_player);
     last_turn.turn_count += 1;
 
+    // Increment round counter for 7-round cycle
+    spawning_tracker.increment_round();
+
     println!(
-        "Turn {} - checking power orb spawn for {:?}",
-        last_turn.turn_count, game_state.current_player
+        "Turn {} - Round {} since last spawn for {:?}",
+        last_turn.turn_count, spawning_tracker.rounds_since_last_spawn, game_state.current_player
     );
 
-    let mut rng = rand::thread_rng();
-
-    // Random chance to spawn an orb
-    if rng.gen::<f32>() > ORB_SPAWN_CHANCE {
+    // Check if we should spawn an orb (every 7 rounds)
+    if !spawning_tracker.should_spawn_orb() {
         return;
     }
+
+    // Calculate territory control
+    let (p1_control, p2_control) = calculate_territory_control(&pieces);
+    spawning_tracker.update_territory_control(p1_control, p2_control);
 
     // Find all empty tiles
     let mut empty_tiles = Vec::new();
@@ -64,56 +63,81 @@ pub fn spawn_power_orbs(
         }
     }
 
-    // Spawn orb on random empty tile
+    // Spawn orb on empty tile with territory bias
     if !empty_tiles.is_empty() {
-        let spawn_pos = empty_tiles[rng.gen_range(0..empty_tiles.len())];
-        let power_type = PowerType::random();
+        let territory_bias = (
+            spawning_tracker.player1_territory_control,
+            spawning_tracker.player2_territory_control,
+        );
 
-        let world_pos = board_to_world_position(spawn_pos);
+        // Use turn count as seed for deterministic but varied behavior
+        let rng_seed = last_turn.turn_count as u64;
 
-        commands.spawn((
-            PowerOrb {
-                power_type,
-                board_position: spawn_pos,
-            },
-            SpriteBundle {
-                sprite: Sprite {
-                    color: QuadradiusTheme::ORB_BASE,
-                    custom_size: Some(Vec2::splat(ORB_SIZE)),
+        if let Some(spawn_pos) =
+            choose_spawn_location_with_bias(&empty_tiles, territory_bias, rng_seed)
+        {
+            let power_type = PowerType::random();
+            let world_pos = board_to_world_position(spawn_pos);
+
+            commands.spawn((
+                PowerOrb {
+                    power_type,
+                    board_position: spawn_pos,
+                },
+                SpriteBundle {
+                    sprite: Sprite {
+                        color: QuadradiusTheme::ORB_BASE,
+                        custom_size: Some(Vec2::splat(ORB_SIZE)),
+                        ..default()
+                    },
+                    transform: Transform::from_xyz(world_pos.x, world_pos.y, 0.5),
                     ..default()
                 },
-                transform: Transform::from_xyz(world_pos.x, world_pos.y, 0.5),
-                ..default()
-            },
-        ));
+            ));
 
-        println!(
-            "Power orb spawned: {} at {:?}",
-            power_type.name(),
-            spawn_pos
-        );
+            // Mark orb as spawned
+            spawning_tracker.orb_spawned();
+
+            println!(
+                "Power orb {} spawned: {} at {:?} (Total: {}, P1 Control: {:.1}%, P2 Control: {:.1}%)",
+                spawning_tracker.total_orbs_spawned,
+                power_type.name(),
+                spawn_pos,
+                spawning_tracker.total_orbs_spawned,
+                spawning_tracker.player1_territory_control * 100.0,
+                spawning_tracker.player2_territory_control * 100.0
+            );
+        }
     }
 }
 
 pub fn collect_power_orbs(
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
-    pieces: Query<&GamePiece>,
+    mut pieces: Query<(Entity, &GamePiece, &mut PowerInventory)>,
     orbs: Query<(Entity, &PowerOrb)>,
 ) {
     for (orb_entity, orb) in orbs.iter() {
         // Check if any piece is on the same tile as the orb
-        for piece in pieces.iter() {
+        for (piece_entity, piece, mut piece_inventory) in pieces.iter_mut() {
             if piece.board_position == orb.board_position {
-                // Add power to the piece's player inventory
+                // Add power to the specific piece's inventory
+                piece_inventory.add_power(orb.power_type);
+                println!(
+                    "{:?} piece at ({}, {}) collected: {}",
+                    piece.player,
+                    piece.board_position.0,
+                    piece.board_position.1,
+                    orb.power_type.name()
+                );
+
+                // Also add to player inventory for backward compatibility (temporary)
                 match piece.player {
                     Player::Player1 => {
                         game_state.player1_powers.push(orb.power_type);
-                        println!("Player 1 collected: {}", orb.power_type.name());
                     }
                     Player::Player2 => {
                         game_state.player2_powers.push(orb.power_type);
-                        println!("Player 2 collected: {}", orb.power_type.name());
                     }
                 }
 

@@ -115,7 +115,16 @@ fn test_power_type_random() {
             | PowerType::PowerGift
             | PowerType::PowerDrain
             | PowerType::Reflect
-            | PowerType::Absorb => {
+            | PowerType::Absorb
+            | PowerType::GrowQuadradius
+            | PowerType::JumpProof
+            | PowerType::Bombs
+            | PowerType::SnakeTunneling
+            | PowerType::DredgeColumn
+            | PowerType::TeachRow
+            | PowerType::TeachRadial
+            | PowerType::Acid
+            | PowerType::RecruitRadial => {
                 // Valid power type
             }
         }

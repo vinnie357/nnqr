@@ -1,5 +1,7 @@
 pub mod board_tests;
 pub mod board_10x8_tests;
+pub mod board_3d_enhancement_tests;
+pub mod piece_positioning_3d_tests;
 pub mod movement_tests;
 pub mod movement_validation_tests;
 pub mod coordinate_conversion_tests;
@@ -9,5 +11,7 @@ pub mod power_orb_tests;
 pub mod power_orb_spawning_tests;
 pub mod integration_orb_visibility_tests;
 pub mod turn_tests;
+pub mod turn_phase_tests;
 pub mod win_condition_tests;
 pub mod mouse_interaction_tests;
+pub mod piece_visibility_tests;

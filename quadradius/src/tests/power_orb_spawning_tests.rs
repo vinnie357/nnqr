@@ -1,6 +1,6 @@
+use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::components::*;
 use crate::resources::*;
-use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::Color;
 
 /// Test orb visibility properties (simpler version without Bevy app)
@@ -164,17 +164,17 @@ fn test_orb_size_constants() {
 fn test_power_orb_board_boundaries() {
     // Test boundary validation for power orb positions
     let valid_positions = [
-        (0, 0),                                     // Bottom-left corner
-        (BOARD_WIDTH - 1, 0),                      // Bottom-right corner
-        (0, BOARD_HEIGHT - 1),                     // Top-left corner
-        (BOARD_WIDTH - 1, BOARD_HEIGHT - 1),       // Top-right corner
-        (BOARD_WIDTH / 2, BOARD_HEIGHT / 2),       // Center
+        (0, 0),                              // Bottom-left corner
+        (BOARD_WIDTH - 1, 0),                // Bottom-right corner
+        (0, BOARD_HEIGHT - 1),               // Top-left corner
+        (BOARD_WIDTH - 1, BOARD_HEIGHT - 1), // Top-right corner
+        (BOARD_WIDTH / 2, BOARD_HEIGHT / 2), // Center
     ];
 
     let invalid_positions = [
-        (BOARD_WIDTH, 0),                          // Off right edge
-        (0, BOARD_HEIGHT),                         // Off top edge
-        (BOARD_WIDTH, BOARD_HEIGHT),               // Off both edges
+        (BOARD_WIDTH, 0),            // Off right edge
+        (0, BOARD_HEIGHT),           // Off top edge
+        (BOARD_WIDTH, BOARD_HEIGHT), // Off both edges
     ];
 
     // Test valid positions
@@ -182,7 +182,10 @@ fn test_power_orb_board_boundaries() {
         assert!(
             x < BOARD_WIDTH && y < BOARD_HEIGHT,
             "Position ({}, {}) should be valid within {}x{} board",
-            x, y, BOARD_WIDTH, BOARD_HEIGHT
+            x,
+            y,
+            BOARD_WIDTH,
+            BOARD_HEIGHT
         );
     }
 
@@ -191,7 +194,10 @@ fn test_power_orb_board_boundaries() {
         assert!(
             x >= BOARD_WIDTH || y >= BOARD_HEIGHT,
             "Position ({}, {}) should be invalid for {}x{} board",
-            x, y, BOARD_WIDTH, BOARD_HEIGHT
+            x,
+            y,
+            BOARD_WIDTH,
+            BOARD_HEIGHT
         );
     }
 }
@@ -216,17 +222,23 @@ fn test_board_coordinate_conversion() {
 
     for ((x, y), description) in test_cases {
         let (world_x, world_y) = board_to_world_position((x, y));
-        
+
         // World coordinates should be reasonable (not extreme values)
         assert!(
             world_x.abs() < 1000.0,
             "{} world X coordinate {} is too extreme for board position ({}, {})",
-            description, world_x, x, y
+            description,
+            world_x,
+            x,
+            y
         );
         assert!(
             world_y.abs() < 1000.0,
             "{} world Y coordinate {} is too extreme for board position ({}, {})",
-            description, world_y, x, y
+            description,
+            world_y,
+            x,
+            y
         );
     }
 }
@@ -235,15 +247,24 @@ fn test_board_coordinate_conversion() {
 #[test]
 fn test_quadradius_board_dimensions() {
     // Quadradius has a 10x8 board according to research
-    assert_eq!(BOARD_WIDTH, 10, "Quadradius board should be 10 columns wide");
+    assert_eq!(
+        BOARD_WIDTH, 10,
+        "Quadradius board should be 10 columns wide"
+    );
     assert_eq!(BOARD_HEIGHT, 8, "Quadradius board should be 8 rows tall");
-    
+
     // Total tiles should be 80
     let total_tiles = BOARD_WIDTH as usize * BOARD_HEIGHT as usize;
-    assert_eq!(total_tiles, 80, "Quadradius board should have 80 total tiles");
-    
+    assert_eq!(
+        total_tiles, 80,
+        "Quadradius board should have 80 total tiles"
+    );
+
     // Board should be wider than it is tall (landscape orientation)
-    assert!(BOARD_WIDTH > BOARD_HEIGHT, "Board should be wider than tall");
+    assert!(
+        BOARD_WIDTH > BOARD_HEIGHT,
+        "Board should be wider than tall"
+    );
 }
 
 /// Test that orb spawning positions are valid
@@ -259,11 +280,13 @@ fn test_orb_spawning_position_validation() {
     assert!(
         power_orb.board_position.0 < BOARD_WIDTH,
         "Orb X position {} should be less than board width {}",
-        power_orb.board_position.0, BOARD_WIDTH
+        power_orb.board_position.0,
+        BOARD_WIDTH
     );
     assert!(
         power_orb.board_position.1 < BOARD_HEIGHT,
         "Orb Y position {} should be less than board height {}",
-        power_orb.board_position.1, BOARD_HEIGHT
+        power_orb.board_position.1,
+        BOARD_HEIGHT
     );
 }

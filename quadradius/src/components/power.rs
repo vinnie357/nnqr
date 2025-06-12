@@ -58,6 +58,17 @@ pub enum PowerType {
     PowerDrain,   // Remove all opponent powers
     Reflect,      // Reflect next power back
     Absorb,       // Gain power when attacked
+
+    // Missing research-identified powers
+    GrowQuadradius, // Massively extends kill power range (most powerful)
+    JumpProof,      // Permanent immunity to capture
+    Bombs,          // Drops 16 random bombs destroying pieces and terrain
+    SnakeTunneling, // Destructive snake across board, raises terrain 2 levels
+    DredgeColumn,   // Sinks enemies 2 levels, raises friendlies 2 levels
+    TeachRow,       // Shares powers with friendly pieces in same row
+    TeachRadial,    // Shares powers with friendly pieces in 3x3 area
+    Acid,           // Creates permanent holes in board
+    RecruitRadial,  // Area effect version of recruit
 }
 
 #[derive(Component)]
@@ -123,6 +134,22 @@ pub struct Absorbing {
     pub remaining_turns: u32,
 }
 
+// Missing research power components
+#[derive(Component)]
+pub struct GrowQuadradiusActive {
+    pub remaining_turns: u32,
+    pub range_extension: u8,
+}
+
+#[derive(Component)]
+pub struct JumpProof;
+
+// For tiles affected by acid
+#[derive(Component)]
+pub struct DissolvedTile {
+    pub board_position: (u8, u8),
+}
+
 impl PowerType {
     pub fn random() -> Self {
         let mut rng = rand::thread_rng();
@@ -173,11 +200,16 @@ impl PowerType {
             91..92 => PowerType::Pit,
             92..95 => PowerType::Terraform,
 
-            // Meta powers (5% chance - rare)
+            // Meta powers (3% chance - rare)
             95..96 => PowerType::StealPower,
-            96..97 => PowerType::CopyPower,
-            97..98 => PowerType::NullifyPower,
-            98..99 => PowerType::DoublePower,
+            96 => PowerType::CopyPower,
+            97 => PowerType::NullifyPower,
+
+            // Missing research powers (2% chance - very rare)
+            98 => PowerType::GrowQuadradius, // Most powerful, rarest
+            99 => PowerType::JumpProof,
+
+            // Fallback
             _ => PowerType::RandomPower,
         }
     }
@@ -238,6 +270,17 @@ impl PowerType {
             PowerType::PowerDrain => Color::rgb(0.4, 0.1, 0.4),
             PowerType::Reflect => Color::rgb(0.8, 0.7, 0.9),
             PowerType::Absorb => Color::rgb(0.6, 0.3, 0.8),
+
+            // Missing research powers (distinctive colors)
+            PowerType::GrowQuadradius => Color::rgb(1.0, 0.0, 1.0), // Bright magenta - most powerful
+            PowerType::JumpProof => Color::rgb(0.0, 1.0, 1.0),      // Bright cyan - immunity
+            PowerType::Bombs => Color::rgb(1.0, 0.5, 0.0),          // Orange - destructive
+            PowerType::SnakeTunneling => Color::rgb(0.5, 1.0, 0.0), // Lime green - snake
+            PowerType::DredgeColumn => Color::rgb(0.6, 0.4, 0.2),   // Brown - earth manipulation
+            PowerType::TeachRow => Color::rgb(0.0, 0.8, 1.0),       // Light blue - teaching
+            PowerType::TeachRadial => Color::rgb(0.2, 0.6, 1.0),    // Sky blue - radial teaching
+            PowerType::Acid => Color::rgb(0.8, 1.0, 0.2),           // Yellow-green - acid
+            PowerType::RecruitRadial => Color::rgb(1.0, 0.8, 0.4),  // Gold - recruitment
         }
     }
 
@@ -297,6 +340,166 @@ impl PowerType {
             PowerType::PowerDrain => "Power Drain",
             PowerType::Reflect => "Reflect",
             PowerType::Absorb => "Absorb",
+
+            // Missing research powers
+            PowerType::GrowQuadradius => "Grow Quadradius",
+            PowerType::JumpProof => "Jump Proof",
+            PowerType::Bombs => "Bombs",
+            PowerType::SnakeTunneling => "Snake Tunneling",
+            PowerType::DredgeColumn => "Dredge Column",
+            PowerType::TeachRow => "Teach Row",
+            PowerType::TeachRadial => "Teach Radial",
+            PowerType::Acid => "Acid",
+            PowerType::RecruitRadial => "Recruit Radial",
         }
     }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            // Phase 2 powers
+            PowerType::MoveDiagonal => "Enables diagonal movement for this piece",
+            PowerType::RaiseColumn => "Raises an entire column by one level",
+            PowerType::LowerColumn => "Lowers an entire column by one level",
+            PowerType::DestroyColumn => "Destroys all pieces in a column",
+            PowerType::Multiply => "Creates a copy of this piece",
+
+            // Movement powers
+            PowerType::Teleport => "Instantly move to any empty square",
+            PowerType::Jump => "Jump over pieces to empty squares",
+            PowerType::MoveTwo => "Move 2 squares in one direction",
+            PowerType::Knight => "Move like a chess knight",
+            PowerType::Swap => "Swap positions with another piece",
+            PowerType::Push => "Push adjacent piece away",
+            PowerType::Pull => "Pull piece towards you",
+            PowerType::Slide => "Slide until hitting an obstacle",
+            PowerType::MoveTwice => "Take two moves in one turn",
+            PowerType::Leap => "Jump to any empty square within 3 tiles",
+
+            // Combat powers
+            PowerType::SmartBomb => "Destroy all pieces in 3x3 area",
+            PowerType::Sniper => "Destroy piece at distance",
+            PowerType::Shield => "Protect from one attack",
+            PowerType::Invisible => "Become invisible for 3 turns",
+            PowerType::Recruit => "Convert enemy piece to your side",
+            PowerType::Freeze => "Prevent enemy piece from moving",
+            PowerType::Poison => "Piece dies after 3 turns",
+            PowerType::Explode => "Destroy self and adjacent pieces",
+            PowerType::Assassin => "Kill piece without capturing",
+            PowerType::Resurrect => "Bring back destroyed piece",
+
+            // Board manipulation
+            PowerType::RaiseArea => "Raise 3x3 area",
+            PowerType::LowerArea => "Lower 3x3 area",
+            PowerType::CreateWall => "Create impassable wall",
+            PowerType::DestroyWall => "Remove wall",
+            PowerType::Rotate => "Rotate 3x3 section of board",
+            PowerType::Shuffle => "Shuffle pieces in area",
+            PowerType::Earthquake => "Random height changes",
+            PowerType::Bridge => "Create path over gaps",
+            PowerType::Pit => "Create hole in board",
+            PowerType::Terraform => "Set specific tile height",
+
+            // Meta powers
+            PowerType::StealPower => "Steal opponent's power",
+            PowerType::CopyPower => "Copy your own power",
+            PowerType::NullifyPower => "Cancel opponent's power",
+            PowerType::DoublePower => "Use power twice",
+            PowerType::RandomPower => "Get random power effect",
+            PowerType::PowerSwap => "Exchange powers with opponent",
+            PowerType::PowerGift => "Give power to opponent",
+            PowerType::PowerDrain => "Remove all opponent powers",
+            PowerType::Reflect => "Reflect next power back",
+            PowerType::Absorb => "Gain power when attacked",
+
+            // Missing research powers
+            PowerType::GrowQuadradius => {
+                "Massively extends kill power range to entire board - most powerful power"
+            }
+            PowerType::JumpProof => "Permanent immunity to capture by enemy pieces",
+            PowerType::Bombs => "Drops 16 random bombs destroying pieces and depressing terrain",
+            PowerType::SnakeTunneling => {
+                "Sends destructive snake across board while raising terrain 2 levels"
+            }
+            PowerType::DredgeColumn => {
+                "Sinks enemy pieces 2 levels while raising friendly pieces 2 levels"
+            }
+            PowerType::TeachRow => "Shares powers with all friendly pieces in the same row",
+            PowerType::TeachRadial => "Shares powers with all friendly pieces in 3x3 area",
+            PowerType::Acid => "Creates permanent holes in the board making tiles unusable",
+            PowerType::RecruitRadial => "Converts all enemy pieces in 3x3 area to friendly pieces",
+        }
+    }
+
+    pub fn power_category(&self) -> PowerCategory {
+        match self {
+            PowerType::MoveDiagonal
+            | PowerType::Teleport
+            | PowerType::Jump
+            | PowerType::MoveTwo
+            | PowerType::Knight
+            | PowerType::Swap
+            | PowerType::Push
+            | PowerType::Pull
+            | PowerType::Slide
+            | PowerType::MoveTwice
+            | PowerType::Leap => PowerCategory::Movement,
+
+            PowerType::SmartBomb
+            | PowerType::Sniper
+            | PowerType::Invisible
+            | PowerType::Recruit
+            | PowerType::Freeze
+            | PowerType::Poison
+            | PowerType::Explode
+            | PowerType::Assassin
+            | PowerType::Resurrect
+            | PowerType::Bombs
+            | PowerType::SnakeTunneling
+            | PowerType::Acid => PowerCategory::Combat,
+
+            PowerType::Shield | PowerType::JumpProof => PowerCategory::Defensive,
+
+            PowerType::RaiseColumn
+            | PowerType::LowerColumn
+            | PowerType::DestroyColumn
+            | PowerType::RaiseArea
+            | PowerType::LowerArea
+            | PowerType::CreateWall
+            | PowerType::DestroyWall
+            | PowerType::Rotate
+            | PowerType::Shuffle
+            | PowerType::Earthquake
+            | PowerType::Bridge
+            | PowerType::Pit
+            | PowerType::Terraform
+            | PowerType::DredgeColumn => PowerCategory::Terrain,
+
+            PowerType::Multiply
+            | PowerType::GrowQuadradius
+            | PowerType::TeachRow
+            | PowerType::TeachRadial
+            | PowerType::RecruitRadial => PowerCategory::Strategic,
+
+            PowerType::StealPower
+            | PowerType::CopyPower
+            | PowerType::NullifyPower
+            | PowerType::DoublePower
+            | PowerType::RandomPower
+            | PowerType::PowerSwap
+            | PowerType::PowerGift
+            | PowerType::PowerDrain
+            | PowerType::Reflect
+            | PowerType::Absorb => PowerCategory::Meta,
+        }
+    }
+}
+
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub enum PowerCategory {
+    Movement,
+    Combat,
+    Defensive,
+    Terrain,
+    Strategic,
+    Meta,
 }

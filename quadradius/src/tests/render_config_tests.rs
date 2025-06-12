@@ -7,8 +7,8 @@ mod render_config_tests {
     #[test]
     fn test_default_render_config() {
         let config = RenderConfig::default();
-        // Default should be 3D mode for the new isometric view
-        assert!(config.use_3d);
+        // Currently defaults to 2D mode for debugging board visibility
+        assert!(!config.use_3d);
     }
 
     #[test]

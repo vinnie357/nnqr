@@ -112,11 +112,13 @@ fn test_turn_phase_display_logic() {
     let power_display = match power_phase {
         TurnPhase::PowerActivation => "Power Phase",
         TurnPhase::PieceMovement => "Move Phase",
+        TurnPhase::PowerCollection => "Collection Phase",
     };
 
     let move_display = match move_phase {
         TurnPhase::PowerActivation => "Power Phase",
         TurnPhase::PieceMovement => "Move Phase",
+        TurnPhase::PowerCollection => "Collection Phase",
     };
 
     assert_eq!(power_display, "Power Phase");

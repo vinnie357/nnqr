@@ -36,7 +36,7 @@ pub enum UIAnimationType {
 
 // Enhanced UI setup with modern design
 pub fn setup_enhanced_ui(mut commands: Commands, _asset_server: Res<AssetServer>) {
-    // Main UI container
+    // Main UI container - TRANSPARENT to not block the game board
     commands
         .spawn((
             NodeBundle {
@@ -46,6 +46,7 @@ pub fn setup_enhanced_ui(mut commands: Commands, _asset_server: Res<AssetServer>
                     position_type: PositionType::Absolute,
                     ..default()
                 },
+                background_color: BackgroundColor(Color::NONE), // Transparent
                 ..default()
             },
             UIPanel,
@@ -440,6 +441,7 @@ pub fn update_turn_indicator_enhanced(
         let phase = match game_state.turn_phase {
             TurnPhase::PowerActivation => "Power Phase",
             TurnPhase::PieceMovement => "Move Phase",
+            TurnPhase::PowerCollection => "Collection Phase",
         };
 
         text.sections[0].value = format!("{}'s Turn - {}", player_name, phase);

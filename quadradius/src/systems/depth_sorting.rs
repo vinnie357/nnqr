@@ -12,9 +12,9 @@ pub struct IsometricDepthSort {
 
 /// Layer offsets for different entity types
 pub const TILE_LAYER: f32 = 0.0;
-pub const PIECE_LAYER: f32 = 1.0;
-pub const EFFECT_LAYER: f32 = 2.0;
-pub const UI_LAYER: f32 = 10.0;
+pub const PIECE_LAYER: f32 = 100.0; // Much higher to ensure pieces render after tiles
+pub const EFFECT_LAYER: f32 = 200.0;
+pub const UI_LAYER: f32 = 1000.0;
 
 /// Update Z-order for proper isometric depth sorting
 pub fn update_isometric_depth_sorting(

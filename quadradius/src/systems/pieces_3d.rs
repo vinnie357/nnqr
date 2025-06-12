@@ -1,11 +1,17 @@
 use crate::components::*;
 use crate::resources::QuadradiusTheme;
 use crate::systems::{
-    board_3d::BoardTile3D,
+    board_3d::{BoardTile3D, TILE_SIZE_MULTIPLIER_3D},
     depth_sorting::{IsometricDepthSort, PIECE_LAYER},
     isometric_camera::board_to_isometric,
 };
 use bevy::prelude::*;
+
+// Enhanced piece positioning for 3D board
+const ENHANCED_TILE_HEIGHT: f32 = 0.6; // Matches board_3d.rs tile height (tile_size * 0.6)
+const PIECE_HEIGHT: f32 = 0.2; // Height of piece cylinder (increased for visibility)
+const PIECE_CLEARANCE: f32 = 2.0; // Dramatically increased clearance to ensure pieces are clearly visible above tiles
+const PIECE_Y_OFFSET: f32 = ENHANCED_TILE_HEIGHT / 2.0 + PIECE_HEIGHT / 2.0 + PIECE_CLEARANCE; // Sit on top with clearance
 
 /// 3D piece component
 #[derive(Component)]
@@ -31,33 +37,33 @@ pub fn setup_pieces_3d(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // Create piece mesh - cylindrical shape like checkers
+    // Create piece mesh - cylindrical shape like checkers (much larger for better visibility)
     let piece_mesh = meshes.add(Mesh::from(shape::Cylinder {
-        radius: TILE_SIZE * 0.35,
-        height: TILE_SIZE * 0.15,
+        radius: TILE_SIZE * 0.5, // Even larger radius for maximum visibility
+        height: TILE_SIZE * 0.3, // Much taller for more prominence
         resolution: 32,
         segments: 1,
     }));
 
     // Create crown/rim mesh for piece top
     let rim_mesh = meshes.add(Mesh::from(shape::Torus {
-        radius: TILE_SIZE * 0.32,
-        ring_radius: TILE_SIZE * 0.03,
+        radius: TILE_SIZE * 0.4, // Larger to match increased piece size
+        ring_radius: TILE_SIZE * 0.04, // Slightly thicker rim
         subdivisions_segments: 24,
         subdivisions_sides: 12,
     }));
 
     // Create outline meshes (slightly larger for outline effect)
     let outline_piece_mesh = meshes.add(Mesh::from(shape::Cylinder {
-        radius: TILE_SIZE * 0.38,
-        height: TILE_SIZE * 0.16,
+        radius: TILE_SIZE * 0.52, // Match larger piece size
+        height: TILE_SIZE * 0.32, // Match increased height
         resolution: 32,
         segments: 1,
     }));
 
     let outline_rim_mesh = meshes.add(Mesh::from(shape::Torus {
-        radius: TILE_SIZE * 0.35,
-        ring_radius: TILE_SIZE * 0.035,
+        radius: TILE_SIZE * 0.42, // Match larger rim
+        ring_radius: TILE_SIZE * 0.042,
         subdivisions_segments: 24,
         subdivisions_sides: 12,
     }));
@@ -123,14 +129,20 @@ fn spawn_piece_3d(
     // Get board height at position (will be 0 initially)
     let height = 0.0; // TODO: Query actual tile height
     let world_pos = board_to_isometric(position, height);
-    let piece_y = world_pos.y + TILE_SIZE * 0.35;
+    // Position piece to sit on top of enhanced tiles - much higher to ensure visibility
+    let enhanced_tile_size = TILE_SIZE * TILE_SIZE_MULTIPLIER_3D;
+    // The tile mesh height is tile_size * 0.6, so we need to position pieces above that
+    let tile_top_y = enhanced_tile_size * ENHANCED_TILE_HEIGHT / 2.0; // Top of tile mesh
+    let piece_y = world_pos.y + tile_top_y + PIECE_CLEARANCE + enhanced_tile_size * PIECE_HEIGHT / 2.0;
 
-    // Create metallic material for the piece
+    // Create metallic material for the piece with strong emissive glow
     let piece_material = materials.add(StandardMaterial {
         base_color,
         metallic: QuadradiusTheme::METALLIC_VALUE,
         perceptual_roughness: QuadradiusTheme::ROUGHNESS_VALUE,
         reflectance: QuadradiusTheme::REFLECTANCE_VALUE,
+        emissive: base_color * 0.3, // Strong emissive glow to make pieces very visible
+        alpha_mode: AlphaMode::Opaque, // Ensure pieces are fully opaque
         ..default()
     });
 
@@ -139,7 +151,8 @@ fn spawn_piece_3d(
         base_color: accent_color,
         metallic: 0.9,
         perceptual_roughness: 0.2,
-        emissive: accent_color * 0.1, // Slight glow
+        emissive: accent_color * 0.4,  // Stronger glow for visibility
+        alpha_mode: AlphaMode::Opaque, // Ensure rim is fully opaque
         ..default()
     });
 
@@ -164,6 +177,7 @@ fn spawn_piece_3d(
                 player,
                 board_position: position,
             },
+            PowerInventory::new(), // Add power inventory to each piece
             Transform::from_xyz(world_pos.x, piece_y, world_pos.z),
             GlobalTransform::default(),
             Visibility::Visible,
@@ -194,7 +208,7 @@ fn spawn_piece_3d(
             parent.spawn(PbrBundle {
                 mesh: rim_mesh,
                 material: rim_material,
-                transform: Transform::from_xyz(0.0, TILE_SIZE * 0.075, 0.0),
+                transform: Transform::from_xyz(0.0, TILE_SIZE * 0.12, 0.0), // Higher to match increased piece height
                 visibility: Visibility::Visible,
                 ..default()
             });
@@ -204,7 +218,7 @@ fn spawn_piece_3d(
                 PbrBundle {
                     mesh: outline_piece_mesh,
                     material: outline_material.clone(),
-                    transform: Transform::from_xyz(0.0, -TILE_SIZE * 0.005, 0.0), // Slightly below main piece
+                    transform: Transform::from_xyz(0.0, -TILE_SIZE * 0.01, 0.0), // Slightly below main piece
                     visibility: Visibility::Hidden,
                     ..default()
                 },
@@ -215,7 +229,7 @@ fn spawn_piece_3d(
                 PbrBundle {
                     mesh: outline_rim_mesh,
                     material: outline_material,
-                    transform: Transform::from_xyz(0.0, TILE_SIZE * 0.07, 0.0), // Slightly below rim
+                    transform: Transform::from_xyz(0.0, TILE_SIZE * 0.11, 0.0), // Slightly below rim
                     visibility: Visibility::Hidden,
                     ..default()
                 },
@@ -239,7 +253,11 @@ pub fn update_piece_positions_3d(
             .unwrap_or(0) as f32;
 
         let target_pos = board_to_isometric(piece.board_position, tile_height);
-        let target_y = target_pos.y + TILE_SIZE * 0.35;
+        // Use consistent Y positioning calculation with spawn function
+        let enhanced_tile_size = TILE_SIZE * TILE_SIZE_MULTIPLIER_3D;
+        // The tile mesh height is tile_size * 0.6, so we need to position pieces above that
+        let tile_top_y = enhanced_tile_size * ENHANCED_TILE_HEIGHT / 2.0; // Top of tile mesh
+        let target_y = target_pos.y + tile_top_y + PIECE_CLEARANCE + enhanced_tile_size * PIECE_HEIGHT / 2.0;
 
         // Smooth movement
         let current = transform.translation;

@@ -11,15 +11,15 @@ fn test_board_to_isometric_conversion() {
 
     // Based on the enhanced isometric transformation formula in the code:
     // For 10x8 board (BOARD_WIDTH=10, BOARD_HEIGHT=8) with enhanced tile size:
-    // enhanced_tile_size = 64 * 1.2 = 76.8
+    // enhanced_tile_size = 64 * 1.5 = 96.0
     // centered_x = 4 - (10/2) + 0.5 = 4 - 5 + 0.5 = -0.5
     // centered_z = 4 - (8/2) + 0.5 = 4 - 4 + 0.5 = 0.5
-    // iso_x = (-0.5 - 0.5) * 76.8 * 0.5 = -1.0 * 38.4 = -38.4
-    // iso_z = (-0.5 + 0.5) * 76.8 * 0.25 = 0.0 * 19.2 = 0.0
+    // iso_x = (-0.5 - 0.5) * 96.0 * 0.5 = -1.0 * 48.0 = -48.0
+    // iso_z = (-0.5 + 0.5) * 96.0 * 0.25 = 0.0 * 24.0 = 0.0
 
     assert_eq!(
-        center_pos.x, -38.4,
-        "Center X should be -38.4 for board position (4,4) with enhanced tile size"
+        center_pos.x, -48.0,
+        "Center X should be -48.0 for board position (4,4) with enhanced tile size"
     );
     assert_eq!(
         center_pos.z, 0.0,

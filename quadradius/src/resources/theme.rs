@@ -23,13 +23,25 @@ impl QuadradiusTheme {
     pub const TEAM_2_PRIMARY: Color = Color::rgb(0.8, 0.1, 0.1); // Bright metallic red
     pub const TEAM_2_ACCENT: Color = Color::rgb(1.0, 0.4, 0.4); // Bright red accent
 
-    // Board and tile colors - Made significantly lighter while maintaining metallic look
-    pub const TILE_BASE: Color = Color::rgb(0.45, 0.47, 0.50); // Light metallic base - much lighter
-    pub const TILE_ELEVATED_1: Color = Color::rgb(0.52, 0.55, 0.58); // Lighter for height 1
-    pub const TILE_ELEVATED_2: Color = Color::rgb(0.60, 0.63, 0.66); // Medium-light for height 2
-    pub const TILE_ELEVATED_3: Color = Color::rgb(0.68, 0.71, 0.74); // Bright for height 3
-    pub const TILE_ELEVATED_4: Color = Color::rgb(0.75, 0.78, 0.82); // Very bright for height 4
-    pub const TILE_DEPRESSED: Color = Color::rgb(0.25, 0.27, 0.30); // Darker for bomb craters but not black
+    // Board and tile colors - Optimized for 2D visibility with "whiter = higher" principle
+    pub const TILE_BASE: Color = Color::rgb(0.65, 0.67, 0.70); // Much brighter base for better visibility
+    pub const TILE_ELEVATED_1: Color = Color::rgb(0.72, 0.75, 0.78); // Light grey with slight blue tint
+    pub const TILE_ELEVATED_2: Color = Color::rgb(0.80, 0.83, 0.86); // Lighter for clear height distinction
+    pub const TILE_ELEVATED_3: Color = Color::rgb(0.88, 0.91, 0.94); // Very light, approaching white
+    pub const TILE_ELEVATED_4: Color = Color::rgb(0.95, 0.98, 1.0); // Almost pure white for highest elevation
+    pub const TILE_DEPRESSED: Color = Color::rgb(0.35, 0.32, 0.30); // Warmer tone for craters, still visible
+
+    // 2D specific colors for better contrast
+    pub const TILE_BASE_2D: Color = Color::rgb(0.70, 0.72, 0.75); // Even brighter for 2D view
+    pub const TILE_ELEVATED_1_2D: Color = Color::rgb(0.76, 0.79, 0.82); // Clear step up
+    pub const TILE_ELEVATED_2_2D: Color = Color::rgb(0.82, 0.85, 0.88); // Noticeable elevation
+    pub const TILE_ELEVATED_3_2D: Color = Color::rgb(0.88, 0.91, 0.94); // High elevation
+    pub const TILE_ELEVATED_4_2D: Color = Color::rgb(0.94, 0.97, 1.0); // Maximum height
+    pub const TILE_DEPRESSED_2D: Color = Color::rgb(0.40, 0.37, 0.35); // Visible depression
+
+    // Grid and background colors for 2D
+    pub const GRID_LINES_2D: Color = Color::rgb(0.30, 0.30, 0.35); // Lighter grid lines for visibility
+    pub const BOARD_BACKGROUND_2D: Color = Color::rgb(0.15, 0.15, 0.18); // Dark background for contrast
 
     // UI element colors
     pub const UI_BACKGROUND: Color = Color::rgba(0.12, 0.14, 0.16, 0.95); // Dark semi-transparent
@@ -58,6 +70,18 @@ impl QuadradiusTheme {
             2 => Self::TILE_ELEVATED_2,
             3 => Self::TILE_ELEVATED_3,
             _ => Self::TILE_ELEVATED_4,
+        }
+    }
+
+    // Height-based gradient specifically for 2D view with better visibility
+    pub fn tile_color_for_height_2d(height: i8) -> Color {
+        match height {
+            h if h < 0 => Self::TILE_DEPRESSED_2D,
+            0 => Self::TILE_BASE_2D,
+            1 => Self::TILE_ELEVATED_1_2D,
+            2 => Self::TILE_ELEVATED_2_2D,
+            3 => Self::TILE_ELEVATED_3_2D,
+            _ => Self::TILE_ELEVATED_4_2D,
         }
     }
 

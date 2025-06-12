@@ -10,6 +10,7 @@ mod components;
 mod resources;
 mod systems;
 
+use components::ChatState;
 use resources::*;
 use systems::win_condition::GameResult;
 use systems::*;
@@ -32,6 +33,7 @@ fn main() {
         .init_resource::<GameState>()
         .init_resource::<GameResult>()
         .init_resource::<RenderConfig>()
+        .init_resource::<systems::performance_optimization::PerformanceMonitor>()
         .init_resource::<ScreenShake>()
         .init_resource::<MatchTimer>()
         .init_resource::<TurnCounter>()
@@ -43,6 +45,10 @@ fn main() {
         .init_resource::<PerformanceMonitor>()
         .init_resource::<AutomatedTestRunner>()
         .init_resource::<systems::power_orbs::LastTurnTracker>()
+        .init_resource::<PowerCollectionTimer>()
+        .init_resource::<ChatState>()
+        .init_resource::<PowerSpawningTracker>()
+        .init_resource::<systems::isometric_camera::CameraTransition>()
         .add_state::<GameMenuState>()
         .add_state::<SettingsMenuState>()
         .add_event::<PowerUsageEvent>()
@@ -53,6 +59,8 @@ fn main() {
                 // Always spawn both camera types
                 setup_isometric_camera,
                 setup_camera,
+                // Enhanced 3D lighting system
+                board_3d::setup_enhanced_lighting,
                 // Always spawn both board types
                 setup_board_3d,
                 setup_board,
@@ -62,15 +70,16 @@ fn main() {
                 // Common systems
                 setup_enhanced_ui,
                 setup_power_activation_ui,
+                setup_chat_ui,
                 initialize_terrain_heights,
+                initialize_turn_phase,
                 setup_entity_pools,
-                // Initial visibility setup based on render config
-                setup_initial_visibility,
                 // setup_networking,
                 // setup_client_server,
                 // setup_lobby_system,
             ),
         )
+        .add_systems(PostStartup, setup_initial_visibility)
         .add_systems(
             Update,
             (
@@ -116,9 +125,17 @@ fn main() {
             (
                 // Game state and UI systems
                 check_win_condition,
+                handle_power_collection_phase,
+                power_collection_phase_ui,
                 update_turn_indicator_enhanced,
                 update_power_inventory_ui,
                 update_power_activation_ui,
+                handle_chat_input,
+                update_chat_display,
+                toggle_chat_visibility,
+                handle_chat_minimize_maximize,
+                update_unread_indicator,
+                add_demo_chat_messages,
                 animate_ui_elements,
                 show_power_tooltips,
                 // Scoreboard systems
@@ -237,6 +254,9 @@ fn main() {
                 update_height_indicators,
                 // debug_terrain_commands, // Temporarily disabled due to query conflicts
 
+                // View switching system (always active)
+                handle_view_switching,
+                update_camera_transition,
                 // 3D systems (conditional)
                 update_isometric_camera.run_if(|config: Res<RenderConfig>| config.use_3d),
                 update_tile_heights.run_if(|config: Res<RenderConfig>| config.use_3d),
@@ -245,12 +265,12 @@ fn main() {
                 update_piece_outlines.run_if(|config: Res<RenderConfig>| config.use_3d),
                 animate_piece_outlines.run_if(|config: Res<RenderConfig>| config.use_3d),
                 update_selection_highlighting.run_if(|config: Res<RenderConfig>| config.use_3d),
-                // Depth sorting systems
-                setup_tile_depth_sorting,
-                setup_piece_depth_sorting,
-                setup_power_orb_depth_sorting,
-                update_piece_depth_sorting,
-                update_isometric_depth_sorting,
+                // Depth sorting systems (conditional on 3D mode)
+                setup_tile_depth_sorting.run_if(|config: Res<RenderConfig>| config.use_3d),
+                setup_piece_depth_sorting.run_if(|config: Res<RenderConfig>| config.use_3d),
+                setup_power_orb_depth_sorting.run_if(|config: Res<RenderConfig>| config.use_3d),
+                update_piece_depth_sorting.run_if(|config: Res<RenderConfig>| config.use_3d),
+                update_isometric_depth_sorting.run_if(|config: Res<RenderConfig>| config.use_3d),
             ),
         )
         .add_systems(
@@ -264,6 +284,20 @@ fn main() {
                 analyze_system_performance,
                 // Debug systems
                 debug_piece_count,
+                // Temporary visibility debug systems
+                systems::debug_visibility::debug_log_visible_entities,
+                // systems::debug_visibility::force_piece_visibility, // DISABLED: This was forcing 2D pieces to magenta
+                systems::debug_visibility::debug_3d_piece_positions,
+                // Enhanced visual feedback systems
+                systems::enhanced_visual_feedback::add_selection_feedback,
+                systems::enhanced_visual_feedback::add_move_feedback,
+                systems::enhanced_visual_feedback::update_pulse_animations,
+                systems::enhanced_visual_feedback::add_hover_effects,
+                systems::enhanced_visual_feedback::cleanup_visual_feedback,
+                // Performance optimization systems
+                systems::performance_optimization::monitor_performance,
+                systems::performance_optimization::update_level_of_detail,
+                systems::performance_optimization::optimize_visual_effects,
                 debug_piece_selection,
                 debug_mouse_clicks,
                 auto_optimize_performance,
@@ -311,7 +345,7 @@ fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera2dBundle {
             projection: OrthographicProjection {
-                scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(600.0), // Reduced to zoom in closer to board
+                scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(800.0), // Increased to show more of the board
                 ..default()
             },
             transform: Transform::from_xyz(0.0, 0.0, 999.9), // Center camera on board

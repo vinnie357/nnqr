@@ -1,5 +1,5 @@
+use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::{components::*, resources::*};
-use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
 use bevy::prelude::*;
 
 // Components for movement power effects

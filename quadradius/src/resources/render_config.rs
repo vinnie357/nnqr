@@ -1,17 +1,9 @@
 use bevy::prelude::*;
 
 /// Configuration for render mode
-#[derive(Resource, Debug, Clone)]
+#[derive(Resource, Debug, Clone, Default)]
 pub struct RenderConfig {
     pub use_3d: bool,
-}
-
-impl Default for RenderConfig {
-    fn default() -> Self {
-        Self {
-            use_3d: true, // Default to 3D isometric view
-        }
-    }
 }
 
 impl RenderConfig {
