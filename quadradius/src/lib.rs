@@ -45,4 +45,16 @@ mod tests {
 
     // 3D positioning tests
     mod piece_positioning_3d_tests;
+    
+    // Movement overlay tests
+    mod movement_overlay_tests;
+    
+    // Coordinate debug test
+    mod coordinate_debug_test;
+    
+    // Visual alignment test
+    mod visual_alignment_test;
+    
+    // Coordinate consistency test
+    mod coordinate_consistency_test;
 }

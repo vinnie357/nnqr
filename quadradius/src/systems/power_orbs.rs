@@ -151,8 +151,10 @@ pub fn collect_power_orbs(
 }
 
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
-    let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * TILE_SIZE;
-    let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * TILE_SIZE;
+    // Use enhanced tile size to match 2D board layout
+    let enhanced_tile_size = TILE_SIZE * 1.2; // Match board.rs enhanced tile size
+    let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
+    let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * enhanced_tile_size;
     Vec2::new(x, y)
 }
 

@@ -16,7 +16,7 @@ pub fn show_valid_moves_for_powers_3d(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    selected_pieces: Query<(Entity, &GamePiece, &BoardTile), With<Selected>>,
+    selected_pieces: Query<(Entity, &GamePiece), With<Selected>>,
     tiles: Query<&BoardTile>,
     piece_query: Query<&BoardTile, With<GamePiece>>,
     diagonal_query: Query<Entity, With<MoveDiagonalActive>>,
@@ -75,8 +75,8 @@ pub fn show_valid_moves_for_powers_3d(
         })
         .collect();
 
-    for (entity, piece, tile) in selected_pieces.iter() {
-        let from = tile.coordinates;
+    for (entity, piece) in selected_pieces.iter() {
+        let from = piece.board_position;
 
         // Check all possible positions on the enhanced 10x8 board
         for x in 0..BOARD_WIDTH {

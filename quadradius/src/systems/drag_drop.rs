@@ -48,7 +48,8 @@ pub fn handle_drag_start(
                     continue;
                 }
 
-                let piece_bounds = Vec2::new(TILE_SIZE * 1.2, TILE_SIZE * 1.2);
+                let enhanced_tile_size = TILE_SIZE * 1.2; // Match board tile size
+                let piece_bounds = Vec2::new(enhanced_tile_size, enhanced_tile_size);
                 let piece_pos = Vec2::new(transform.translation.x, transform.translation.y);
 
                 if (world_pos.x - piece_pos.x).abs() < piece_bounds.x / 2.0
@@ -310,8 +311,10 @@ fn get_tile_height(pos: (u8, u8), tiles: &Query<&BoardTile>) -> i8 {
 fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
     // Use enhanced tile size to match 2D board layout
     let enhanced_tile_size = TILE_SIZE * 1.2; // Match board.rs enhanced tile size
-    let x = ((world_pos.x / enhanced_tile_size) + BOARD_WIDTH as f32 / 2.0).round() as i8;
-    let y = ((world_pos.y / enhanced_tile_size) + BOARD_HEIGHT as f32 / 2.0).round() as i8;
+    // Reverse the board.rs formula: tile_pos = (board_pos - BOARD_SIZE/2.0 + 0.5) * tile_size
+    // So: board_pos = (tile_pos / tile_size) + BOARD_SIZE/2.0 - 0.5
+    let x = ((world_pos.x / enhanced_tile_size) + BOARD_WIDTH as f32 / 2.0 - 0.5).round() as i8;
+    let y = ((world_pos.y / enhanced_tile_size) + BOARD_HEIGHT as f32 / 2.0 - 0.5).round() as i8;
 
     let x = x.max(0).min(BOARD_WIDTH as i8 - 1) as u8;
     let y = y.max(0).min(BOARD_HEIGHT as i8 - 1) as u8;
@@ -320,8 +323,10 @@ fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
 }
 
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
-    let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * TILE_SIZE;
-    let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * TILE_SIZE;
+    // Use enhanced tile size to match 2D board layout
+    let enhanced_tile_size = TILE_SIZE * 1.2; // Match board.rs enhanced tile size
+    let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
+    let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * enhanced_tile_size;
     Vec2::new(x, y)
 }
 
@@ -370,8 +375,9 @@ fn find_best_valid_target_enhanced(
             let world_pos = board_to_world_position(target);
             let distance = drop_world_pos.distance(world_pos);
 
-            // Only consider positions within snapping range
-            if distance < TILE_SIZE * 0.7
+            // Only consider positions within snapping range (use enhanced tile size)
+            let enhanced_tile_size = TILE_SIZE * 1.2;
+            if distance < enhanced_tile_size * 0.7
                 && crate::systems::enhanced_movement::validate_enhanced_movement(
                     start_pos,
                     target,
@@ -480,12 +486,13 @@ fn spawn_valid_move_indicators(
             if !blocked {
                 // Spawn indicator with pulsing effect
                 let world_pos = board_to_world_position(target_pos);
+                let enhanced_tile_size = TILE_SIZE * 1.2; // Match board tile size
                 commands.spawn((
                     ValidMoveIndicator,
                     SpriteBundle {
                         sprite: Sprite {
                             color: Color::rgba(0.0, 1.0, 0.0, 0.4), // Semi-transparent green
-                            custom_size: Some(Vec2::splat(TILE_SIZE * 0.85)),
+                            custom_size: Some(Vec2::splat(enhanced_tile_size * 0.85)), // Match board tile size
                             ..default()
                         },
                         transform: Transform::from_xyz(world_pos.x, world_pos.y, 2.0),

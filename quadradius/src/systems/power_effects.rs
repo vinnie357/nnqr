@@ -1538,14 +1538,20 @@ pub fn cleanup_power_effects(
 }
 
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
-    let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * TILE_SIZE;
-    let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * TILE_SIZE;
+    // Use enhanced tile size to match 2D board layout
+    let enhanced_tile_size = TILE_SIZE * 1.2; // Match board.rs enhanced tile size
+    let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
+    let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * enhanced_tile_size;
     Vec2::new(x, y)
 }
 
 fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
-    let x = ((world_pos.x / TILE_SIZE) + BOARD_WIDTH as f32 / 2.0).round() as i8;
-    let y = ((world_pos.y / TILE_SIZE) + BOARD_HEIGHT as f32 / 2.0).round() as i8;
+    // Use enhanced tile size to match 2D board layout
+    let enhanced_tile_size = TILE_SIZE * 1.2; // Match board.rs enhanced tile size
+    // Reverse the board.rs formula: tile_pos = (board_pos - BOARD_SIZE/2.0 + 0.5) * tile_size
+    // So: board_pos = (tile_pos / tile_size) + BOARD_SIZE/2.0 - 0.5
+    let x = ((world_pos.x / enhanced_tile_size) + BOARD_WIDTH as f32 / 2.0 - 0.5).round() as i8;
+    let y = ((world_pos.y / enhanced_tile_size) + BOARD_HEIGHT as f32 / 2.0 - 0.5).round() as i8;
 
     let x = x.max(0).min(BOARD_WIDTH as i8 - 1) as u8;
     let y = y.max(0).min(BOARD_HEIGHT as i8 - 1) as u8;

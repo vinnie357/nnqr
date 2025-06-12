@@ -15,3 +15,4 @@ pub mod turn_phase_tests;
 pub mod win_condition_tests;
 pub mod mouse_interaction_tests;
 pub mod piece_visibility_tests;
+pub mod movement_overlay_tests;
