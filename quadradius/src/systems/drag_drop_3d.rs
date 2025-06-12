@@ -2,6 +2,7 @@ use crate::{
     components::*,
     resources::*,
     systems::{
+        enhanced_move_indicators_3d::ValidMoveIndicator3D,
         isometric_camera::{screen_to_board, IsometricCamera},
         pieces_3d::GamePiece3D,
         MoveDiagonalActive,
@@ -15,9 +16,6 @@ pub struct Dragging3D {
     pub start_pos: (u8, u8),
 }
 
-/// Component for valid move indicators in 3D
-#[derive(Component)]
-pub struct ValidMoveIndicator3D;
 
 /// Handle drag start for 3D pieces
 pub fn handle_drag_start_3d(
@@ -76,17 +74,8 @@ pub fn handle_drag_start_3d(
                         // Check if this piece can move diagonally
                         let can_move_diagonal = diagonal_pieces.iter().any(|e| e == entity);
 
-                        // Show valid moves in 3D
-                        info!("Showing valid moves for piece at {:?}", board_pos);
-                        show_valid_moves_3d(
-                            commands,
-                            meshes,
-                            materials,
-                            board_pos,
-                            &tiles,
-                            &game_state,
-                            can_move_diagonal,
-                        );
+                        // Valid moves will be shown by the enhanced_move_indicators_3d system
+                        info!("Selected piece at {:?} - enhanced indicators will show valid moves", board_pos);
 
                         // Debug logging disabled to prevent spam
                         #[cfg(debug_assertions)]
@@ -258,105 +247,7 @@ pub fn handle_drag_end_3d(
     }
 }
 
-/// Show valid moves for a piece in 3D
-pub fn show_valid_moves_3d(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    from: (u8, u8),
-    tiles: &Query<&BoardTile>,
-    game_state: &GameState,
-    can_move_diagonal: bool,
-) {
-    let valid_tiles = get_valid_tiles_3d(from, tiles, can_move_diagonal);
-    info!("Found {} valid moves from {:?}", valid_tiles.len(), from);
 
-    // Create shared mesh and material for indicators
-    let indicator_mesh = meshes.add(Mesh::from(shape::Cylinder {
-        radius: TILE_SIZE * 0.4,
-        height: TILE_SIZE * 0.05,
-        resolution: 16,
-        segments: 1,
-    }));
-
-    let indicator_material = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.2, 1.0, 0.2, 0.7), // More opaque green
-        emissive: Color::rgb(0.1, 0.8, 0.1),         // Brighter glow
-        alpha_mode: AlphaMode::Blend,
-        ..default()
-    });
-
-    for (x, y) in valid_tiles {
-        let height = tiles
-            .iter()
-            .find(|tile| tile.coordinates == (x, y))
-            .map(|tile| tile.height)
-            .unwrap_or(0) as f32;
-
-        let world_pos = crate::systems::isometric_camera::board_to_isometric((x, y), height);
-
-        // Spawn a glowing indicator
-        commands.spawn((
-            PbrBundle {
-                mesh: indicator_mesh.clone(),
-                material: indicator_material.clone(),
-                transform: Transform::from_translation(Vec3::new(
-                    world_pos.x,
-                    world_pos.y + 0.1,
-                    world_pos.z,
-                )),
-                ..default()
-            },
-            ValidMoveIndicator3D,
-        ));
-    }
-}
-
-/// Get valid tiles for a piece (simplified version)
-fn get_valid_tiles_3d(
-    from: (u8, u8),
-    tiles: &Query<&BoardTile>,
-    _can_move_diagonal: bool,
-) -> Vec<(u8, u8)> {
-    let mut valid_tiles = Vec::new();
-
-    // Check all adjacent positions
-    for dx in -1i32..=1 {
-        for dy in -1i32..=1 {
-            if dx == 0 && dy == 0 {
-                continue;
-            }
-
-            let new_x = from.0 as i32 + dx;
-            let new_y = from.1 as i32 + dy;
-
-            if new_x >= 0 && new_x < BOARD_WIDTH as i32 && new_y >= 0 && new_y < BOARD_HEIGHT as i32
-            {
-                let pos = (new_x as u8, new_y as u8);
-
-                // Check height restrictions
-                let from_height = tiles
-                    .iter()
-                    .find(|t| t.coordinates == from)
-                    .map(|t| t.height)
-                    .unwrap_or(0);
-
-                let to_height = tiles
-                    .iter()
-                    .find(|t| t.coordinates == pos)
-                    .map(|t| t.height)
-                    .unwrap_or(0);
-
-                // Can't move up more than 1 level
-                if to_height <= from_height + 1 {
-                    valid_tiles.push(pos);
-                }
-            }
-        }
-    }
-
-    valid_tiles
-}
 
 /// Check if a move is valid
 fn is_valid_move(

@@ -1,17 +1,18 @@
 use crate::components::*;
 use crate::resources::*;
 use crate::systems::drag_drop_3d::*;
+use crate::systems::enhanced_move_indicators_3d::ValidMoveIndicator3D;
 use crate::systems::pieces_3d::GamePiece3D;
 use bevy::prelude::*;
 
 #[test]
 fn test_3d_move_highlighting_component_exists() {
     // Test that the ValidMoveIndicator3D component exists and is properly defined
-    let indicator = ValidMoveIndicator3D;
+    let indicator = ValidMoveIndicator3D { coordinates: (4, 3) };
 
     // This test ensures the component compiles and exists
-    // The component itself doesn't need data, it's just a marker
-    assert_eq!(std::mem::size_of::<ValidMoveIndicator3D>(), 0);
+    // The enhanced component now stores coordinates
+    assert_eq!(indicator.coordinates, (4, 3));
 }
 
 #[test]
@@ -170,7 +171,7 @@ fn test_move_highlighting_integration_proof() {
     // by verifying that all required components and logic are in place
 
     // 1. Required components exist
-    let _indicator = ValidMoveIndicator3D;
+    let _indicator = ValidMoveIndicator3D { coordinates: (0, 0) };
     let _dragging = Dragging3D { start_pos: (0, 0) };
 
     // 2. Game state supports move highlighting

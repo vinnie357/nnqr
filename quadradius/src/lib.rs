@@ -57,4 +57,22 @@ mod tests {
     
     // Coordinate consistency test
     mod coordinate_consistency_test;
+    
+    // 3D movement indicators test
+    mod movement_indicators_3d_test;
+    
+    // Final verification test for the 3D movement indicators fix
+    mod movement_indicators_3d_final_verification;
+    
+    // Movement indicator positioning test
+    mod movement_indicators_positioning_test;
+    
+    // Movement indicator alignment debug test
+    mod movement_indicators_alignment_debug;
+    
+    // 3D piece type compatibility test
+    mod movement_indicators_3d_piece_type_test;
+    
+    // Movement indicator shape test
+    mod movement_indicators_shape_test;
 }
