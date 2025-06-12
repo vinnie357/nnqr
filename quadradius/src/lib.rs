@@ -75,4 +75,10 @@ mod tests {
     
     // Movement indicator shape test
     mod movement_indicators_shape_test;
+    
+    // Board movement alignment test
+    mod board_movement_alignment_test;
+    
+    // Movement indicators alignment fix verification
+    mod movement_indicators_alignment_fix_verification;
 }
