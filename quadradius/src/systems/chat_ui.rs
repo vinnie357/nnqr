@@ -11,7 +11,7 @@ pub fn setup_chat_ui(mut commands: Commands) {
             NodeBundle {
                 style: Style {
                     width: Val::Px(300.0),
-                    height: Val::Px(400.0),
+                    height: Val::Px(50.0), // Start minimized - just show header
                     position_type: PositionType::Absolute,
                     right: Val::Px(10.0),
                     top: Val::Px(10.0),
@@ -105,7 +105,7 @@ pub fn setup_chat_ui(mut commands: Commands) {
                                 ))
                                 .with_children(|parent| {
                                     parent.spawn(TextBundle::from_section(
-                                        "−", // Minimize symbol
+                                        "⬜", // Maximize symbol (since chat starts minimized)
                                         TextStyle {
                                             font_size: 14.0,
                                             color: QuadradiusTheme::UI_TEXT,
@@ -127,6 +127,7 @@ pub fn setup_chat_ui(mut commands: Commands) {
                             flex_direction: FlexDirection::Column,
                             ..default()
                         },
+                        visibility: Visibility::Hidden, // Start hidden since chat is minimized by default
                         ..default()
                     },
                 ))

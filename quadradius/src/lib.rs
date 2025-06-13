@@ -99,4 +99,10 @@ mod tests {
     
     // Turn ending fix test for premature turn endings
     mod turn_ending_fix_test;
+    
+    // Chat 2D minimized state test
+    mod chat_2d_minimized_test;
+    
+    // 2D turn ending debug test for user-reported issues
+    mod turn_ending_debug_2d_test;
 }
