@@ -87,4 +87,16 @@ mod tests {
     
     // Chat default state tests
     mod chat_default_state_test;
+    
+    // Drag drop debug tests
+    mod drag_drop_debug_test;
+    
+    // Piece movement fix verification
+    mod piece_movement_fix_verification;
+    
+    // Complete 2D drag workflow test for user-reported movement issues
+    mod complete_2d_drag_workflow_test;
+    
+    // Turn ending fix test for premature turn endings
+    mod turn_ending_fix_test;
 }

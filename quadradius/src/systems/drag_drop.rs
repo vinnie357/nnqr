@@ -28,6 +28,7 @@ pub fn handle_drag_start(
 
     // Only allow dragging during piece movement phase
     if game_state.turn_phase != TurnPhase::PieceMovement {
+        info!("2D Drag blocked: Wrong turn phase ({:?}), need PieceMovement", game_state.turn_phase);
         return;
     }
 
@@ -42,19 +43,36 @@ pub fn handle_drag_start(
 
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
+            info!("2D Click at screen: ({:.1}, {:.1}) -> world: ({:.1}, {:.1})", 
+                  cursor_pos.x, cursor_pos.y, world_pos.x, world_pos.y);
+            
+            let current_player_pieces: Vec<_> = pieces.iter()
+                .filter(|(_, piece, _)| piece.player == game_state.current_player)
+                .collect();
+            
+            info!("2D: {} pieces available for {:?}", current_player_pieces.len(), game_state.current_player);
+            
             // Check if we're clicking on a piece
+            let mut found_piece = false;
             for (entity, piece, transform) in pieces.iter() {
                 if piece.player != game_state.current_player {
                     continue;
                 }
 
                 let enhanced_tile_size = TILE_SIZE * 1.2; // Match board tile size
-                let piece_bounds = Vec2::new(enhanced_tile_size, enhanced_tile_size);
+                let piece_size = enhanced_tile_size * 0.7; // Match actual piece size from pieces.rs
+                let piece_bounds = Vec2::new(piece_size, piece_size);
                 let piece_pos = Vec2::new(transform.translation.x, transform.translation.y);
+                
+                let dx = (world_pos.x - piece_pos.x).abs();
+                let dy = (world_pos.y - piece_pos.y).abs();
+                let half_width = piece_bounds.x / 2.0;
+                let half_height = piece_bounds.y / 2.0;
 
-                if (world_pos.x - piece_pos.x).abs() < piece_bounds.x / 2.0
-                    && (world_pos.y - piece_pos.y).abs() < piece_bounds.y / 2.0
-                {
+                if dx < half_width && dy < half_height {
+                    found_piece = true;
+                    info!("2D: Selected {:?} piece at board {:?}, world ({:.1}, {:.1})", 
+                          piece.player, piece.board_position, piece_pos.x, piece_pos.y);
                     // Start dragging this piece
                     let offset = piece_pos - world_pos;
                     commands.entity(entity).insert(Dragging { offset });
@@ -73,6 +91,10 @@ pub fn handle_drag_start(
                     );
                     break;
                 }
+            }
+            
+            if !found_piece {
+                info!("2D: No piece found at click position ({:.1}, {:.1})", world_pos.x, world_pos.y);
             }
         }
     }
@@ -172,58 +194,73 @@ pub fn handle_drag_end(
                 );
 
                 if let Some(valid_target) = target_pos {
-                    // Check for capture
-                    let captured_entity = piece_positions
-                        .iter()
-                        .find(|(pos, p, e)| *pos == valid_target && *p != player && *e != entity)
-                        .map(|(_, _, e)| *e);
+                    // Check if the piece actually moved to a different position
+                    let piece_actually_moved = valid_target != start_pos;
+                    
+                    if piece_actually_moved {
+                        info!("2D: Piece moved from {:?} to {:?} - ending turn", start_pos, valid_target);
+                        
+                        // Check for capture
+                        let captured_entity = piece_positions
+                            .iter()
+                            .find(|(pos, p, e)| *pos == valid_target && *p != player && *e != entity)
+                            .map(|(_, _, e)| *e);
 
-                    // Despawn captured piece with explosion effect
-                    if let Some(captured) = captured_entity {
-                        // Get captured piece position for explosion
-                        let captured_world_pos = board_to_world_position(valid_target);
-                        let captured_player_color = match player {
-                            Player::Player1 => Color::rgb(0.2, 0.2, 0.8), // Enemy color for explosion
-                            Player::Player2 => Color::rgb(0.8, 0.2, 0.2),
-                        };
+                        // Despawn captured piece with explosion effect
+                        if let Some(captured) = captured_entity {
+                            // Get captured piece position for explosion
+                            let captured_world_pos = board_to_world_position(valid_target);
+                            let captured_player_color = match player {
+                                Player::Player1 => Color::rgb(0.2, 0.2, 0.8), // Enemy color for explosion
+                                Player::Player2 => Color::rgb(0.8, 0.2, 0.2),
+                            };
 
-                        // Spawn capture explosion
-                        crate::systems::visual_effects::spawn_capture_explosion(
-                            &mut commands,
-                            Vec3::new(captured_world_pos.x, captured_world_pos.y, 0.0),
-                            captured_player_color,
-                        );
+                            // Spawn capture explosion
+                            crate::systems::visual_effects::spawn_capture_explosion(
+                                &mut commands,
+                                Vec3::new(captured_world_pos.x, captured_world_pos.y, 0.0),
+                                captured_player_color,
+                            );
 
-                        // Spawn floating text
-                        crate::systems::visual_effects::spawn_floating_text(
-                            &mut commands,
-                            Vec3::new(captured_world_pos.x, captured_world_pos.y, 0.0),
-                            "Captured!".to_string(),
-                            Color::rgb(1.0, 0.3, 0.3),
-                        );
+                            // Spawn floating text
+                            crate::systems::visual_effects::spawn_floating_text(
+                                &mut commands,
+                                Vec3::new(captured_world_pos.x, captured_world_pos.y, 0.0),
+                                "Captured!".to_string(),
+                                Color::rgb(1.0, 0.3, 0.3),
+                            );
 
-                        if let Some(mut entity_commands) = commands.get_entity(captured) {
-                            entity_commands.despawn();
+                            if let Some(mut entity_commands) = commands.get_entity(captured) {
+                                entity_commands.despawn();
+                            }
+                        }
+
+                        // Move is valid - update piece position
+                        if let Ok((_, mut piece, mut transform, _)) = dragging_pieces.get_mut(entity) {
+                            piece.board_position = valid_target;
+                            let world_pos = board_to_world_position(valid_target);
+                            transform.translation = Vec3::new(world_pos.x, world_pos.y, 1.0);
+                        }
+
+                        // Only advance turn phase if piece actually moved to a different position
+                        // This implements the 3-phase turn: PowerActivation → PieceMovement → PowerSpawning
+                        game_state.turn_phase = TurnPhase::PowerSpawning;
+                        game_state.selected_power = None;
+
+                        // Remove MoveDiagonalActive from the piece that just moved
+                        commands.entity(entity).remove::<MoveDiagonalActive>();
+
+                        // Force the resource to be marked as changed
+                        game_state.set_changed();
+                    } else {
+                        info!("2D: Piece returned to original position {:?} - turn continues", start_pos);
+                        
+                        // Piece was dropped back on original position - just clean up, don't end turn
+                        if let Ok((_, _, mut transform, _)) = dragging_pieces.get_mut(entity) {
+                            let world_pos = board_to_world_position(start_pos);
+                            transform.translation = Vec3::new(world_pos.x, world_pos.y, 1.0);
                         }
                     }
-
-                    // Move is valid - update piece position
-                    if let Ok((_, mut piece, mut transform, _)) = dragging_pieces.get_mut(entity) {
-                        piece.board_position = valid_target;
-                        let world_pos = board_to_world_position(valid_target);
-                        transform.translation = Vec3::new(world_pos.x, world_pos.y, 1.0);
-                    }
-
-                    // Advance to PowerSpawning phase instead of switching turns immediately
-                    // This implements the 3-phase turn: PowerActivation → PieceMovement → PowerSpawning
-                    game_state.turn_phase = TurnPhase::PowerSpawning;
-                    game_state.selected_power = None;
-
-                    // Remove MoveDiagonalActive from the piece that just moved
-                    commands.entity(entity).remove::<MoveDiagonalActive>();
-
-                    // Force the resource to be marked as changed
-                    game_state.set_changed();
                 } else {
                     // Move is invalid - snap back to original position with animation
                     if let Ok((_, _, mut transform, _)) = dragging_pieces.get_mut(entity) {

@@ -167,57 +167,73 @@ pub fn handle_drag_end_3d(
 
                 // Check if move is valid
                 if is_valid_move(start_pos, target_pos, &tiles, &all_pieces) {
-                    // Check for capture
-                    let mut captured_entity = None;
-                    for (other_entity, other_piece) in all_pieces.iter() {
-                        if other_piece.board_position == target_pos {
-                            captured_entity = Some(other_entity);
-                            break;
+                    // Check if the piece actually moved to a different position  
+                    let piece_actually_moved = target_pos != start_pos;
+                    
+                    if piece_actually_moved {
+                        info!("3D: Piece moved from {:?} to {:?} - ending turn", start_pos, target_pos);
+                        
+                        // Check for capture
+                        let mut captured_entity = None;
+                        for (other_entity, other_piece) in all_pieces.iter() {
+                            if other_piece.board_position == target_pos {
+                                captured_entity = Some(other_entity);
+                                break;
+                            }
                         }
-                    }
 
-                    // Perform capture if needed
-                    if let Some(captured) = captured_entity {
-                        commands.entity(captured).despawn_recursive();
+                        // Perform capture if needed
+                        if let Some(captured) = captured_entity {
+                            commands.entity(captured).despawn_recursive();
+                            // Debug logging disabled to prevent spam
+                            #[cfg(debug_assertions)]
+                            if false {
+                                info!("Captured piece at {:?}", target_pos);
+                            }
+                        }
+
+                        // Update piece position
+                        piece.board_position = target_pos;
+
+                        // Update transform to final position
+                        let height = tiles
+                            .iter()
+                            .find(|tile| tile.coordinates == target_pos)
+                            .map(|tile| tile.height)
+                            .unwrap_or(0) as f32;
+
+                        let world_pos =
+                            crate::systems::isometric_camera::board_to_isometric(target_pos, height);
+                        transform.translation =
+                            Vec3::new(world_pos.x, world_pos.y + TILE_SIZE * 0.35, world_pos.z);
+
+                        // Follow proper 3-phase turn sequence: PowerActivation → PieceMovement → PowerSpawning
+                        // Only advance to PowerSpawning phase if piece actually moved to a different position
+                        game_state.turn_phase = TurnPhase::PowerSpawning;
+                        game_state.selected_power = None;
+
+                        // Force the resource to be marked as changed
+                        game_state.set_changed();
+
                         // Debug logging disabled to prevent spam
                         #[cfg(debug_assertions)]
                         if false {
-                            info!("Captured piece at {:?}", target_pos);
+                            info!("Moved piece from {:?} to {:?}", start_pos, target_pos);
                         }
-                    }
+                    } else {
+                        info!("3D: Piece returned to original position {:?} - turn continues", start_pos);
+                        
+                        // Piece was dropped back on original position - just clean up, don't end turn
+                        let height = tiles
+                            .iter()
+                            .find(|tile| tile.coordinates == start_pos)
+                            .map(|tile| tile.height)
+                            .unwrap_or(0) as f32;
 
-                    // Update piece position
-                    piece.board_position = target_pos;
-
-                    // Update transform to final position
-                    let height = tiles
-                        .iter()
-                        .find(|tile| tile.coordinates == target_pos)
-                        .map(|tile| tile.height)
-                        .unwrap_or(0) as f32;
-
-                    let world_pos =
-                        crate::systems::isometric_camera::board_to_isometric(target_pos, height);
-                    transform.translation =
-                        Vec3::new(world_pos.x, world_pos.y + TILE_SIZE * 0.35, world_pos.z);
-
-                    // Switch turns - Fix for bug where Player1 turn doesn't end
-                    game_state.current_player = match game_state.current_player {
-                        Player::Player1 => Player::Player2,
-                        Player::Player2 => Player::Player1,
-                    };
-
-                    // Reset to power activation phase for next player
-                    game_state.turn_phase = TurnPhase::PowerActivation;
-                    game_state.selected_power = None;
-
-                    // Force the resource to be marked as changed
-                    game_state.set_changed();
-
-                    // Debug logging disabled to prevent spam
-                    #[cfg(debug_assertions)]
-                    if false {
-                        info!("Moved piece from {:?} to {:?}", start_pos, target_pos);
+                        let world_pos =
+                            crate::systems::isometric_camera::board_to_isometric(start_pos, height);
+                        transform.translation =
+                            Vec3::new(world_pos.x, world_pos.y + TILE_SIZE * 0.35, world_pos.z);
                     }
                 } else {
                     // Invalid move - return to original position
@@ -256,9 +272,9 @@ fn is_valid_move(
     tiles: &Query<&BoardTile>,
     pieces: &Query<(Entity, &GamePiece3D), Without<Dragging3D>>,
 ) -> bool {
-    // Can't move to same position
+    // Allow dropping on same position (for piece selection/deselection)
     if from == to {
-        return false;
+        return true;
     }
 
     // Check board bounds
