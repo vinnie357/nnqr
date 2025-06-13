@@ -441,7 +441,7 @@ pub fn update_turn_indicator_enhanced(
         let phase = match game_state.turn_phase {
             TurnPhase::PowerActivation => "Power Phase",
             TurnPhase::PieceMovement => "Move Phase",
-            TurnPhase::PowerCollection => "Collection Phase",
+            TurnPhase::PowerSpawning => "Spawning Phase ⚡",
         };
 
         text.sections[0].value = format!("{}'s Turn - {}", player_name, phase);

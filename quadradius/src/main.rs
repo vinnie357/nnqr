@@ -45,7 +45,7 @@ fn main() {
         .init_resource::<PerformanceMonitor>()
         .init_resource::<AutomatedTestRunner>()
         .init_resource::<systems::power_orbs::LastTurnTracker>()
-        .init_resource::<PowerCollectionTimer>()
+        .init_resource::<PowerSpawningTimer>()
         .init_resource::<ChatState>()
         .init_resource::<PowerSpawningTracker>()
         .init_resource::<systems::isometric_camera::CameraTransition>()
@@ -125,8 +125,8 @@ fn main() {
             (
                 // Game state and UI systems
                 check_win_condition,
-                handle_power_collection_phase,
-                power_collection_phase_ui,
+                handle_power_spawning_phase,
+                power_spawning_phase_ui,
                 update_turn_indicator_enhanced,
                 update_power_inventory_ui,
                 update_power_activation_ui,

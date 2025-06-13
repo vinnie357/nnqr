@@ -214,9 +214,9 @@ pub fn handle_drag_end(
                         transform.translation = Vec3::new(world_pos.x, world_pos.y, 1.0);
                     }
 
-                    // Advance to PowerCollection phase instead of switching turns immediately
-                    // This implements the 3-phase turn: PowerActivation → PieceMovement → PowerCollection
-                    game_state.turn_phase = TurnPhase::PowerCollection;
+                    // Advance to PowerSpawning phase instead of switching turns immediately
+                    // This implements the 3-phase turn: PowerActivation → PieceMovement → PowerSpawning
+                    game_state.turn_phase = TurnPhase::PowerSpawning;
                     game_state.selected_power = None;
 
                     // Remove MoveDiagonalActive from the piece that just moved

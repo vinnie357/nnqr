@@ -7,11 +7,11 @@ fn test_turn_phase_enum_variants() {
     // Test that all three phases exist
     let power_activation = TurnPhase::PowerActivation;
     let piece_movement = TurnPhase::PieceMovement;
-    let power_collection = TurnPhase::PowerCollection;
+    let power_collection = TurnPhase::PowerSpawning;
 
     assert_eq!(power_activation, TurnPhase::PowerActivation);
     assert_eq!(piece_movement, TurnPhase::PieceMovement);
-    assert_eq!(power_collection, TurnPhase::PowerCollection);
+    assert_eq!(power_collection, TurnPhase::PowerSpawning);
 }
 
 #[test]
@@ -26,16 +26,16 @@ fn test_turn_phase_sequence() {
     game_state.turn_phase = TurnPhase::PieceMovement;
     assert_eq!(game_state.turn_phase, TurnPhase::PieceMovement);
 
-    // Should progress to PowerCollection
-    game_state.turn_phase = TurnPhase::PowerCollection;
-    assert_eq!(game_state.turn_phase, TurnPhase::PowerCollection);
+    // Should progress to PowerSpawning
+    game_state.turn_phase = TurnPhase::PowerSpawning;
+    assert_eq!(game_state.turn_phase, TurnPhase::PowerSpawning);
 }
 
 #[test]
 fn test_turn_phase_serialization() {
-    // Test that PowerCollection phase has the Serialize/Deserialize traits
+    // Test that PowerSpawning phase has the Serialize/Deserialize traits
     // This ensures the enum can be used in save games
-    let power_collection = TurnPhase::PowerCollection;
+    let power_collection = TurnPhase::PowerSpawning;
 
     // Basic serialization test using bincode (which is available)
     let serialized = bincode::serialize(&power_collection).unwrap();
@@ -47,9 +47,9 @@ fn test_turn_phase_serialization() {
 fn test_game_state_with_power_collection_phase() {
     let mut game_state = GameState::default();
 
-    // Test that GameState can hold PowerCollection phase
-    game_state.turn_phase = TurnPhase::PowerCollection;
-    assert_eq!(game_state.turn_phase, TurnPhase::PowerCollection);
+    // Test that GameState can hold PowerSpawning phase
+    game_state.turn_phase = TurnPhase::PowerSpawning;
+    assert_eq!(game_state.turn_phase, TurnPhase::PowerSpawning);
 
     // Test that other state remains intact
     assert_eq!(game_state.current_player, Player::Player1);
@@ -69,11 +69,11 @@ fn test_turn_phase_cycle_complete() {
     game_state.turn_phase = TurnPhase::PieceMovement;
     assert_eq!(game_state.current_player, Player::Player1); // Same player
 
-    // PieceMovement -> PowerCollection
-    game_state.turn_phase = TurnPhase::PowerCollection;
+    // PieceMovement -> PowerSpawning
+    game_state.turn_phase = TurnPhase::PowerSpawning;
     assert_eq!(game_state.current_player, Player::Player1); // Same player
 
-    // PowerCollection -> PowerActivation (next player)
+    // PowerSpawning -> PowerActivation (next player)
     game_state.turn_phase = TurnPhase::PowerActivation;
     game_state.current_player = Player::Player2; // Switch player
     assert_eq!(game_state.current_player, Player::Player2);
@@ -86,9 +86,9 @@ fn test_power_collection_phase_with_powers() {
     // Add a power to player 1
     game_state.player1_powers.push(PowerType::MoveDiagonal);
     game_state.current_player = Player::Player1;
-    game_state.turn_phase = TurnPhase::PowerCollection;
+    game_state.turn_phase = TurnPhase::PowerSpawning;
 
-    // Verify power is accessible during PowerCollection phase
+    // Verify power is accessible during PowerSpawning phase
     let current_powers = game_state.get_current_player_powers();
     assert_eq!(current_powers.len(), 1);
     assert_eq!(current_powers[0], PowerType::MoveDiagonal);
@@ -103,8 +103,8 @@ fn test_turn_phase_display() {
     );
     assert_eq!(format!("{:?}", TurnPhase::PieceMovement), "PieceMovement");
     assert_eq!(
-        format!("{:?}", TurnPhase::PowerCollection),
-        "PowerCollection"
+        format!("{:?}", TurnPhase::PowerSpawning),
+        "PowerSpawning"
     );
 }
 
@@ -116,11 +116,11 @@ fn test_turn_phase_resource_integration() {
     // Test that GameState resource can be accessed and modified
     {
         let mut game_state = app.world.resource_mut::<GameState>();
-        game_state.turn_phase = TurnPhase::PowerCollection;
+        game_state.turn_phase = TurnPhase::PowerSpawning;
     }
 
     let game_state = app.world.resource::<GameState>();
-    assert_eq!(game_state.turn_phase, TurnPhase::PowerCollection);
+    assert_eq!(game_state.turn_phase, TurnPhase::PowerSpawning);
 }
 
 #[test]
@@ -143,9 +143,9 @@ pub fn advance_turn_phase(game_state: &mut GameState) {
             game_state.turn_phase = TurnPhase::PieceMovement;
         }
         TurnPhase::PieceMovement => {
-            game_state.turn_phase = TurnPhase::PowerCollection;
+            game_state.turn_phase = TurnPhase::PowerSpawning;
         }
-        TurnPhase::PowerCollection => {
+        TurnPhase::PowerSpawning => {
             // Complete the turn and switch to next player
             game_state.turn_phase = TurnPhase::PowerActivation;
             game_state.current_player = match game_state.current_player {
@@ -160,8 +160,8 @@ pub fn advance_turn_phase(game_state: &mut GameState) {
 pub fn is_valid_phase_transition(from: TurnPhase, to: TurnPhase) -> bool {
     match (from, to) {
         (TurnPhase::PowerActivation, TurnPhase::PieceMovement) => true,
-        (TurnPhase::PieceMovement, TurnPhase::PowerCollection) => true,
-        (TurnPhase::PowerCollection, TurnPhase::PowerActivation) => true,
+        (TurnPhase::PieceMovement, TurnPhase::PowerSpawning) => true,
+        (TurnPhase::PowerSpawning, TurnPhase::PowerActivation) => true,
         _ => false,
     }
 }
@@ -177,12 +177,12 @@ fn test_advance_turn_phase_helper() {
     assert_eq!(game_state.turn_phase, TurnPhase::PieceMovement);
     assert_eq!(game_state.current_player, Player::Player1);
 
-    // PieceMovement -> PowerCollection
+    // PieceMovement -> PowerSpawning
     advance_turn_phase(&mut game_state);
-    assert_eq!(game_state.turn_phase, TurnPhase::PowerCollection);
+    assert_eq!(game_state.turn_phase, TurnPhase::PowerSpawning);
     assert_eq!(game_state.current_player, Player::Player1);
 
-    // PowerCollection -> PowerActivation (next player)
+    // PowerSpawning -> PowerActivation (next player)
     advance_turn_phase(&mut game_state);
     assert_eq!(game_state.turn_phase, TurnPhase::PowerActivation);
     assert_eq!(game_state.current_player, Player::Player2);
@@ -196,24 +196,24 @@ fn test_valid_phase_transitions() {
     ));
     assert!(is_valid_phase_transition(
         TurnPhase::PieceMovement,
-        TurnPhase::PowerCollection
+        TurnPhase::PowerSpawning
     ));
     assert!(is_valid_phase_transition(
-        TurnPhase::PowerCollection,
+        TurnPhase::PowerSpawning,
         TurnPhase::PowerActivation
     ));
 
     // Invalid transitions
     assert!(!is_valid_phase_transition(
         TurnPhase::PowerActivation,
-        TurnPhase::PowerCollection
+        TurnPhase::PowerSpawning
     ));
     assert!(!is_valid_phase_transition(
         TurnPhase::PieceMovement,
         TurnPhase::PowerActivation
     ));
     assert!(!is_valid_phase_transition(
-        TurnPhase::PowerCollection,
+        TurnPhase::PowerSpawning,
         TurnPhase::PieceMovement
     ));
 }

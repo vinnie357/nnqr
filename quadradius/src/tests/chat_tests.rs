@@ -307,24 +307,24 @@ fn test_chat_minimize_maximize_state() {
     let mut app = App::new();
     app.insert_resource(ChatState::new());
 
-    // Test initial minimized state
+    // Test initial minimized state (chat now starts minimized by default)
     let chat_state = app.world.resource::<ChatState>();
-    assert!(!chat_state.is_minimized);
+    assert!(chat_state.is_minimized);
     assert_eq!(chat_state.unread_count, 0);
 
-    // Test minimizing chat
-    {
-        let mut chat_state = app.world.resource_mut::<ChatState>();
-        chat_state.minimize();
-        assert!(chat_state.is_minimized);
-    }
-
-    // Test maximizing chat
+    // Test maximizing chat (from default minimized state)
     {
         let mut chat_state = app.world.resource_mut::<ChatState>();
         chat_state.maximize();
         assert!(!chat_state.is_minimized);
         assert_eq!(chat_state.unread_count, 0); // Should reset unread count
+    }
+
+    // Test minimizing chat again
+    {
+        let mut chat_state = app.world.resource_mut::<ChatState>();
+        chat_state.minimize();
+        assert!(chat_state.is_minimized);
     }
 }
 

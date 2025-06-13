@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub enum TurnPhase {
     PowerActivation,
     PieceMovement,
-    PowerCollection,
+    PowerSpawning,
 }
 
 #[derive(Resource)]

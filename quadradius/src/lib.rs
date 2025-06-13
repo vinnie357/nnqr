@@ -81,4 +81,10 @@ mod tests {
     
     // Movement indicators alignment fix verification
     mod movement_indicators_alignment_fix_verification;
+    
+    // Power spawning phase tests
+    mod power_spawning_phase_tests;
+    
+    // Chat default state tests
+    mod chat_default_state_test;
 }

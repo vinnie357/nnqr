@@ -1,5 +1,6 @@
 use crate::systems::{isometric_camera::board_to_isometric, pieces_3d::GamePiece3D};
 use crate::{components::*, resources::*};
+use crate::resources::game_state::TurnPhase;
 use bevy::prelude::*;
 
 /// Component for 3D power orbs with glow effects
@@ -23,6 +24,11 @@ pub fn spawn_power_orbs_3d(
     mut spawning_tracker: ResMut<PowerSpawningTracker>,
     mut last_turn: ResMut<crate::systems::power_orbs::LastTurnTracker>,
 ) {
+    // Only spawn orbs during the PowerSpawning phase
+    if game_state.turn_phase != TurnPhase::PowerSpawning {
+        return;
+    }
+
     // Check if this is a new turn
     if last_turn.last_player == Some(game_state.current_player) {
         return;
@@ -35,12 +41,13 @@ pub fn spawn_power_orbs_3d(
     spawning_tracker.increment_round();
 
     println!(
-        "3D Turn {} - Round {} since last spawn for {:?}",
+        "3D Spawning Phase - Turn {} - Round {} since last spawn for {:?}",
         last_turn.turn_count, spawning_tracker.rounds_since_last_spawn, game_state.current_player
     );
 
     // Check if we should spawn an orb (every 7 rounds)
     if !spawning_tracker.should_spawn_orb() {
+        println!("3D: Not time to spawn orb yet (need {} more rounds)", 7 - spawning_tracker.rounds_since_last_spawn);
         return;
     }
 

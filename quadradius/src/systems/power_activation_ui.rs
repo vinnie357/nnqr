@@ -192,7 +192,7 @@ pub fn update_power_activation_ui(
         TurnPhase::PieceMovement => {
             *visibility = Visibility::Hidden;
         }
-        TurnPhase::PowerCollection => {
+        TurnPhase::PowerSpawning => {
             *visibility = Visibility::Hidden;
         }
     }

@@ -21,7 +21,7 @@ impl ChatMessage {
 }
 
 /// Resource for managing chat state
-#[derive(Resource, Clone, Debug, Default)]
+#[derive(Resource, Clone, Debug)]
 pub struct ChatState {
     pub messages: Vec<ChatMessage>,
     pub current_input: String,
@@ -30,13 +30,19 @@ pub struct ChatState {
     pub unread_count: usize,
 }
 
+impl Default for ChatState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ChatState {
     pub fn new() -> Self {
         Self {
             messages: Vec::new(),
             current_input: String::new(),
             max_messages: 100, // Keep last 100 messages
-            is_minimized: false,
+            is_minimized: true, // Start minimized by default
             unread_count: 0,
         }
     }
