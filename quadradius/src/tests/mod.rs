@@ -17,3 +17,5 @@ pub mod mouse_interaction_tests;
 pub mod piece_visibility_tests;
 pub mod movement_overlay_tests;
 pub mod movement_indicator_cleanup_fix_test;
+pub mod piece_outline_cleanup_test;
+pub mod piece_outline_artifact_fix_test;

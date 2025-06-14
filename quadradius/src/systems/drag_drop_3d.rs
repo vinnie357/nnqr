@@ -4,7 +4,7 @@ use crate::{
     systems::{
         enhanced_move_indicators_3d::ValidMoveIndicator3D,
         isometric_camera::{screen_to_board, IsometricCamera},
-        pieces_3d::GamePiece3D,
+        pieces_3d::{GamePiece3D, PieceOutline},
         MoveDiagonalActive,
     },
 };
@@ -29,6 +29,7 @@ pub fn handle_drag_start_3d(
     pieces: Query<(Entity, &GamePiece3D), Without<Dragging3D>>,
     diagonal_pieces: Query<Entity, With<MoveDiagonalActive>>,
     tiles: Query<&BoardTile>,
+    mut piece_outlines: Query<&mut PieceOutline>,
 ) {
     if !mouse_input.just_pressed(MouseButton::Left) {
         return;
@@ -70,6 +71,13 @@ pub fn handle_drag_start_3d(
 
                         // Add selection highlighting
                         commands.entity(entity).insert(Selected);
+                        
+                        // Immediately enable piece outline for instant visual feedback
+                        if let Ok(mut piece_outline) = piece_outlines.get_mut(entity) {
+                            piece_outline.active = true;
+                            piece_outline.pulse_timer = 0.0;
+                            info!("🎯 Enabled piece outline for entity {:?} on selection", entity);
+                        }
 
                         // Check if this piece can move diagonally
                         let can_move_diagonal = diagonal_pieces.iter().any(|e| e == entity);
@@ -146,6 +154,7 @@ pub fn handle_drag_end_3d(
     all_pieces_2d: Query<(Entity, &GamePiece)>,
     tiles: Query<&BoardTile>,
     valid_indicators: Query<Entity, With<ValidMoveIndicator3D>>,
+    mut piece_outlines: Query<&mut PieceOutline>,
     // No turn complete events for now
 ) {
     if !mouse_input.just_released(MouseButton::Left) {
@@ -259,6 +268,14 @@ pub fn handle_drag_end_3d(
                 // Remove dragging and selection components
                 commands.entity(entity).remove::<Dragging3D>();
                 commands.entity(entity).remove::<Selected>();
+                
+                // CRITICAL FIX: Immediately disable piece outline to prevent visual artifacts
+                // This ensures the outline is turned off right when dragging ends, preventing
+                // the "circle left behind" artifact on first move of 3D pieces
+                if let Ok(mut piece_outline) = piece_outlines.get_mut(entity) {
+                    piece_outline.active = false;
+                    info!("🔧 Disabled piece outline for entity {:?} to prevent visual artifacts", entity);
+                }
                 
                 // Also remove Selected from any 2D counterpart at the same position
                 clear_selected_at_position_2d(&mut commands, start_pos, &all_pieces_2d);
