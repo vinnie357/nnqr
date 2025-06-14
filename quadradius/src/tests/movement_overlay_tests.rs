@@ -70,6 +70,7 @@ fn test_2d_movement_overlay_positioning() {
         // Simulate piece selection by adding Dragging component
         commands.entity(test_piece).insert(Dragging {
             offset: Vec2::ZERO,
+            original_position: (4, 3), // Use the same position as the piece
         });
     });
 

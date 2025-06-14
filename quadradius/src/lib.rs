@@ -105,4 +105,18 @@ mod tests {
     
     // 2D turn ending debug test for user-reported issues
     mod turn_ending_debug_2d_test;
+    
+    // Piece color preservation test for invalid move flash bug
+    mod piece_color_preservation_test;
+    mod piece_selection_cleanup_test;
+    mod turn_ending_debug_simple;
+    mod click_to_move_fix_test;
+    mod turn_phase_blocking_fix_test;
+    mod player2_turn_ending_test;
+    mod power_spawning_timer_bug_test;
+    mod player2_auto_skip_bug_test;
+    mod capture_validation_test;
+    mod movement_phase_validation_test;
+    mod actual_turn_ending_validation_test;
+    mod movement_threshold_95_percent_test;
 }

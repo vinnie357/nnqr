@@ -1,5 +1,5 @@
 use crate::components::*;
-use bevy::prelude::*;
+// use bevy::prelude::*; // Unused import
 
 /// Debug test to verify exact coordinate positioning
 #[test]

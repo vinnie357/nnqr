@@ -116,7 +116,7 @@ fn test_drag_to_position(
     should_end_turn: bool,
 ) {
     // Step 1: Start drag
-    let mut mouse_input = Input::<MouseButton>::default();
+    let mouse_input = Input::<MouseButton>::default();
     app.world.insert_resource(mouse_input);
     
     // Set cursor at piece position for selection

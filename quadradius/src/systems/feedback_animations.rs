@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::resources::QuadradiusTheme;
 use bevy::prelude::*;
 
 // Animate pieces that had invalid moves with a shake effect
@@ -39,21 +40,21 @@ pub fn flash_invalid_moves(
         let elapsed = time.elapsed_seconds() - flash.start_time;
 
         if elapsed > flash.duration {
-            // Flash complete, restore original color
+            // Flash complete, restore original color using proper theme colors
             commands.entity(entity).remove::<InvalidMoveFlash>();
             sprite.color = match piece.player {
-                Player::Player1 => Color::rgb(0.8, 0.2, 0.2),
-                Player::Player2 => Color::rgb(0.2, 0.2, 0.8),
+                Player::Player1 => QuadradiusTheme::TEAM_1_PRIMARY, // Bright metallic blue
+                Player::Player2 => QuadradiusTheme::TEAM_2_PRIMARY, // Bright metallic red
             };
         } else {
             // Apply red flash effect
             let progress = elapsed / flash.duration;
             let flash_intensity = (1.0 - progress).powf(2.0); // Quick fade out
 
-            // Interpolate between piece color and red
+            // Interpolate between piece color and red using proper theme colors
             let base_color = match piece.player {
-                Player::Player1 => Color::rgb(0.8, 0.2, 0.2),
-                Player::Player2 => Color::rgb(0.2, 0.2, 0.8),
+                Player::Player1 => QuadradiusTheme::TEAM_1_PRIMARY, // Bright metallic blue
+                Player::Player2 => QuadradiusTheme::TEAM_2_PRIMARY, // Bright metallic red
             };
 
             // Mix with bright red for flash effect

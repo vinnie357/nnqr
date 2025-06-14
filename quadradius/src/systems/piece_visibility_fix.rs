@@ -75,12 +75,18 @@ pub fn raycast_piece_selection(
     pieces: Query<(Entity, &GamePiece3D, &Transform, &GlobalTransform)>,
     game_state: Res<GameState>,
     mut commands: Commands,
+    dragging_query: Query<Entity, With<crate::systems::drag_drop_3d::Dragging3D>>,
 ) {
     if !mouse_input.just_pressed(MouseButton::Left) {
         return;
     }
 
     if game_state.turn_phase != TurnPhase::PieceMovement {
+        return;
+    }
+
+    // Don't run if there's already a piece being dragged
+    if !dragging_query.is_empty() {
         return;
     }
 
@@ -131,16 +137,14 @@ pub fn raycast_piece_selection(
         }
     }
 
-    if let Some((entity, pos)) = closest_piece {
+    if let Some((entity, _pos)) = closest_piece {
         // Debug logging only in debug builds and when needed
         #[cfg(debug_assertions)]
         if false {
             // Enable for debugging piece selection issues
-            info!("Selected piece at {:?} via raycast", pos);
+            info!("Selected piece at {:?} via raycast", _pos);
         }
+        // Only mark as selected, let the drag and drop system handle the actual dragging
         commands.entity(entity).insert(Selected);
-        commands
-            .entity(entity)
-            .insert(crate::systems::drag_drop_3d::Dragging3D { start_pos: pos });
     }
 }

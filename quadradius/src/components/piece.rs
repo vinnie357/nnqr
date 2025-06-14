@@ -8,7 +8,7 @@ pub enum Player {
     Player2,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 pub struct GamePiece {
     pub player: Player,
     pub board_position: (u8, u8),
@@ -17,6 +17,7 @@ pub struct GamePiece {
 #[derive(Component)]
 pub struct Dragging {
     pub offset: Vec2,
+    pub original_position: (u8, u8), // Store the original board position
 }
 
 #[derive(Component)]

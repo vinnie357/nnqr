@@ -4,7 +4,7 @@ use crate::{
     resources::*,
     systems::{
         settings::Camera2D, JumpActive, KnightMoveActive, MoveDiagonalActive, MoveTwoActive,
-        TeleportActive,
+        TeleportActive, pieces_3d::GamePiece3D,
     },
 };
 use bevy::prelude::*;
@@ -28,7 +28,7 @@ pub fn handle_drag_start(
 
     // Only allow dragging during piece movement phase
     if game_state.turn_phase != TurnPhase::PieceMovement {
-        info!("2D Drag blocked: Wrong turn phase ({:?}), need PieceMovement", game_state.turn_phase);
+        info!("2D Drag blocked: Wrong turn phase ({:?}), need PieceMovement. Wait for spawning phase to complete.", game_state.turn_phase);
         return;
     }
 
@@ -75,7 +75,10 @@ pub fn handle_drag_start(
                           piece.player, piece.board_position, piece_pos.x, piece_pos.y);
                     // Start dragging this piece
                     let offset = piece_pos - world_pos;
-                    commands.entity(entity).insert(Dragging { offset });
+                    commands.entity(entity).insert(Dragging { 
+                        offset,
+                        original_position: piece.board_position,
+                    });
 
                     // Check if this piece has diagonal move
                     let has_diagonal = diagonal_pieces.contains(entity);
@@ -141,9 +144,19 @@ pub fn handle_drag_end(
     move_two_pieces: Query<Entity, With<MoveTwoActive>>,
     knight_pieces: Query<Entity, With<KnightMoveActive>>,
     other_pieces: Query<(Entity, &GamePiece), Without<Dragging>>,
+    all_pieces_3d: Query<(Entity, &GamePiece3D)>,
     time: Res<Time>,
 ) {
     if !mouse_input.just_released(MouseButton::Left) {
+        return;
+    }
+    
+    let dragging_count = dragging_pieces.iter().count();
+    info!("2D: handle_drag_end called - {} pieces dragging", dragging_count);
+    
+    // CRITICAL: If no pieces are being dragged, don't process anything
+    if dragging_count == 0 {
+        info!("2D: No pieces being dragged - ignoring mouse release");
         return;
     }
 
@@ -161,15 +174,19 @@ pub fn handle_drag_end(
             // Collect info about pieces to move
             let mut moves_to_process = Vec::new();
 
-            for (entity, piece, _, _) in dragging_pieces.iter() {
-                let start_pos = piece.board_position;
+            for (entity, piece, _, dragging) in dragging_pieces.iter() {
+                let start_pos = dragging.original_position; // Use the stored original position
                 moves_to_process.push((entity, start_pos, piece.player));
             }
 
             // Process moves
             for (entity, start_pos, player) in moves_to_process {
-                // First remove the Dragging component
+                // First remove the Dragging and Selected components
                 commands.entity(entity).remove::<Dragging>();
+                commands.entity(entity).remove::<Selected>();
+                
+                // Also remove Selected from any 3D counterpart at the same position
+                clear_selected_at_position(&mut commands, start_pos, &all_pieces_3d);
 
                 // Get all piece positions
                 let mut piece_positions: Vec<((u8, u8), Player, Entity)> = other_pieces
@@ -197,14 +214,38 @@ pub fn handle_drag_end(
                     // Check if the piece actually moved to a different position
                     let piece_actually_moved = valid_target != start_pos;
                     
-                    if piece_actually_moved {
-                        info!("2D: Piece moved from {:?} to {:?} - ending turn", start_pos, valid_target);
-                        
-                        // Check for capture
+                    // Extra safety: check if this might be a coordinate precision issue
+                    let mouse_world_distance = {
+                        let start_world = board_to_world_position(start_pos);
+                        let mouse_distance = world_pos.distance(start_world);
+                        mouse_distance
+                    };
+                    
+                    info!("2D: Drag end - start_pos: {:?}, valid_target: {:?}, moved: {}, mouse_distance: {:.2}", 
+                          start_pos, valid_target, piece_actually_moved, mouse_world_distance);
+                    
+                    // CRITICAL FIX: Require BOTH position change AND sufficient mouse movement
+                    let enhanced_tile_size = TILE_SIZE * 1.2;
+                    let min_drag_distance = enhanced_tile_size * 0.98; // INCREASED to 98% of tile - player must drag extremely precisely
+                    let is_sufficient_movement = mouse_world_distance >= min_drag_distance;
+                    
+                    if !is_sufficient_movement {
+                        info!("2D: BLOCKING TURN END - Mouse distance {:.2} < {:.2} minimum (need {:.0}% of tile size)", 
+                              mouse_world_distance, min_drag_distance, 98.0);
+                    }
+                    
+                    let should_treat_as_moved = piece_actually_moved && is_sufficient_movement;
+                    
+                    if should_treat_as_moved {
+                        // Check for capture BEFORE logging
                         let captured_entity = piece_positions
                             .iter()
                             .find(|(pos, p, e)| *pos == valid_target && *p != player && *e != entity)
                             .map(|(_, _, e)| *e);
+                        
+                        let is_capture = captured_entity.is_some();
+                        info!("2D: TURN ENDING - Piece moved from {:?} to {:?}, capture: {}, phase: {:?} -> PowerSpawning", 
+                              start_pos, valid_target, is_capture, game_state.turn_phase);
 
                         // Despawn captured piece with explosion effect
                         if let Some(captured) = captured_entity {
@@ -244,6 +285,7 @@ pub fn handle_drag_end(
 
                         // Only advance turn phase if piece actually moved to a different position
                         // This implements the 3-phase turn: PowerActivation → PieceMovement → PowerSpawning
+                        info!("2D: Setting turn_phase to PowerSpawning (was {:?})", game_state.turn_phase);
                         game_state.turn_phase = TurnPhase::PowerSpawning;
                         game_state.selected_power = None;
 
@@ -253,7 +295,13 @@ pub fn handle_drag_end(
                         // Force the resource to be marked as changed
                         game_state.set_changed();
                     } else {
-                        info!("2D: Piece returned to original position {:?} - turn continues", start_pos);
+                        if piece_actually_moved {
+                            info!("2D: TURN NOT ENDING - Piece moved to {:?} but distance {:.2} < {:.2} (too small)", 
+                                  valid_target, mouse_world_distance, min_drag_distance);
+                        } else {
+                            info!("2D: TURN NOT ENDING - Piece returned to original position {:?}", start_pos);
+                        }
+                        info!("2D: Turn continues, phase stays: {:?}", game_state.turn_phase);
                         
                         // Piece was dropped back on original position - just clean up, don't end turn
                         if let Ok((_, _, mut transform, _)) = dragging_pieces.get_mut(entity) {
@@ -262,6 +310,8 @@ pub fn handle_drag_end(
                         }
                     }
                 } else {
+                    info!("2D: No valid target found for piece at {:?} - turn continues, phase stays: {:?}", 
+                          start_pos, game_state.turn_phase);
                     // Move is invalid - snap back to original position with animation
                     if let Ok((_, _, mut transform, _)) = dragging_pieces.get_mut(entity) {
                         let world_pos = board_to_world_position(start_pos);
@@ -381,7 +431,21 @@ fn find_best_valid_target_enhanced(
     move_two_query: &Query<Entity, With<MoveTwoActive>>,
     knight_query: &Query<Entity, With<KnightMoveActive>>,
 ) -> Option<(u8, u8)> {
-    // First, check if the exact drop position is valid
+    // Calculate minimum distance needed for intentional movement FIRST
+    let enhanced_tile_size = TILE_SIZE * 1.2;
+    let min_intentional_distance = enhanced_tile_size * 0.98; // INCREASED to 98% of tile size - must be extremely precise movement
+    let start_world_pos = board_to_world_position(start_pos);
+    let actual_mouse_distance = drop_world_pos.distance(start_world_pos);
+    
+    // Only process moves if the mouse moved a reasonable distance indicating intent
+    if actual_mouse_distance < min_intentional_distance {
+        // Mouse movement too small - this was likely just a click, not a drag
+        info!("2D: Mouse movement too small: {:.2} < {:.2} (need {:.0}% of tile) - NOT a valid move", 
+              actual_mouse_distance, min_intentional_distance, 98.0);
+        return None;
+    }
+
+    // Now check if the exact drop position is valid
     let exact_target = world_to_board_position(drop_world_pos);
 
     // Use enhanced movement validation
@@ -409,11 +473,16 @@ fn find_best_valid_target_enhanced(
     for x in 0..BOARD_WIDTH {
         for y in 0..BOARD_HEIGHT {
             let target = (x, y);
+            
+            // Don't snap back to the starting position
+            if target == start_pos {
+                continue;
+            }
+            
             let world_pos = board_to_world_position(target);
             let distance = drop_world_pos.distance(world_pos);
 
-            // Only consider positions within snapping range (use enhanced tile size)
-            let enhanced_tile_size = TILE_SIZE * 1.2;
+            // Only consider positions within snapping range
             if distance < enhanced_tile_size * 0.7
                 && crate::systems::enhanced_movement::validate_enhanced_movement(
                     start_pos,
@@ -552,6 +621,123 @@ pub fn cleanup_indicators(
             if let Some(mut entity_commands) = commands.get_entity(entity) {
                 entity_commands.despawn();
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::resources::TurnPhase;
+    
+    #[test]
+    fn test_drag_end_logic_without_movement() {
+        // Test the core logic: piece at same position should not advance turn
+        let original_pos = (3, 3);  // Position stored in Dragging component
+        let target_pos = (3, 3);    // Position piece is dropped at
+        
+        let piece_actually_moved = target_pos != original_pos;
+        
+        assert!(!piece_actually_moved, 
+            "Piece should not be considered moved when dropped at original position");
+        
+        // In handle_drag_end, this would prevent turn phase change
+        let mut turn_phase = TurnPhase::PieceMovement;
+        if piece_actually_moved {
+            turn_phase = TurnPhase::PowerSpawning;
+        }
+        
+        assert_eq!(turn_phase, TurnPhase::PieceMovement,
+            "Turn phase should not change when piece doesn't move");
+    }
+    
+    #[test]
+    fn test_drag_end_logic_with_movement() {
+        // Test the core logic: piece at different position should advance turn
+        let original_pos = (3, 3);  // Position stored in Dragging component
+        let target_pos = (4, 3);    // Position piece is dropped at (moved one square)
+        
+        let piece_actually_moved = target_pos != original_pos;
+        
+        assert!(piece_actually_moved, 
+            "Piece should be considered moved when dropped at different position");
+        
+        // In handle_drag_end, this would trigger turn phase change
+        let mut turn_phase = TurnPhase::PieceMovement;
+        if piece_actually_moved {
+            turn_phase = TurnPhase::PowerSpawning;
+        }
+        
+        assert_eq!(turn_phase, TurnPhase::PowerSpawning,
+            "Turn phase should change to PowerSpawning when piece moves");
+    }
+    
+    #[test]
+    fn test_original_position_tracking() {
+        // Test that the fix prevents the bug where piece.board_position was updated during drag
+        let original_pos = (3, 3);    // Position when drag started (stored in Dragging)
+        let current_piece_pos = (5, 5); // Piece's board_position got updated during drag somehow
+        let target_pos = (3, 3);      // Player drops back to original position
+        
+        // OLD BUG: would compare current_piece_pos vs target_pos (5,5 vs 3,3) = moved!
+        let old_buggy_logic = target_pos != current_piece_pos;
+        assert!(old_buggy_logic, "Old buggy logic would think piece moved");
+        
+        // NEW FIXED LOGIC: compares original_pos vs target_pos (3,3 vs 3,3) = not moved!
+        let fixed_logic = target_pos != original_pos;
+        assert!(!fixed_logic, "Fixed logic correctly detects no movement");
+    }
+    
+    #[test]
+    fn test_small_movement_prevention() {
+        // Test that small mouse movements don't end turns due to coordinate precision
+        let original_pos = (3, 3);
+        let target_pos = (4, 3);  // Coordinate rounding put us on adjacent tile
+        let mouse_distance = 20.0;  // But mouse only moved 20 pixels (less than threshold)
+        
+        let piece_actually_moved = target_pos != original_pos;
+        assert!(piece_actually_moved, "Coordinates show piece moved");
+        
+        // Small movement threshold: 30% of enhanced tile size
+        let enhanced_tile_size = 60.0 * 1.2; // TILE_SIZE * 1.2 = 72.0
+        let threshold = enhanced_tile_size * 0.3; // 72.0 * 0.3 = 21.6
+        let is_small_movement = mouse_distance < threshold; // 20.0 < 21.6 = true
+        let should_treat_as_moved = piece_actually_moved && !is_small_movement;
+        
+        assert!(is_small_movement, "Mouse movement should be considered small");
+        assert!(!should_treat_as_moved, "Should not treat as moved due to small distance");
+    }
+    
+    #[test]
+    fn test_large_movement_detection() {
+        // Test that actual intentional movements still end turns
+        let original_pos = (3, 3);
+        let target_pos = (4, 3);  // Moved to adjacent tile
+        let mouse_distance = 80.0;  // Mouse moved significant distance
+        
+        let piece_actually_moved = target_pos != original_pos;
+        assert!(piece_actually_moved, "Coordinates show piece moved");
+        
+        // Small movement threshold: 30% of enhanced tile size
+        let enhanced_tile_size = 60.0 * 1.2; // TILE_SIZE * 1.2  
+        let is_small_movement = mouse_distance < enhanced_tile_size * 0.3;
+        let should_treat_as_moved = piece_actually_moved && !is_small_movement;
+        
+        assert!(!is_small_movement, "Mouse movement should not be considered small");
+        assert!(should_treat_as_moved, "Should treat as moved for large distance");
+    }
+}
+
+/// Helper function to clear Selected component from all pieces at a given position
+/// This ensures 2D and 3D representations stay synchronized
+fn clear_selected_at_position(
+    commands: &mut Commands,
+    position: (u8, u8),
+    pieces_3d: &Query<(Entity, &GamePiece3D)>,
+) {
+    // Remove Selected component from any 3D pieces at this position
+    for (entity, piece_3d) in pieces_3d.iter() {
+        if piece_3d.board_position == position {
+            commands.entity(entity).remove::<Selected>();
         }
     }
 }

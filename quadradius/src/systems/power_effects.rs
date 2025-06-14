@@ -168,7 +168,7 @@ pub fn handle_power_activation(
     mut commands: Commands,
     mouse_input: Res<Input<MouseButton>>,
     windows: Query<&Window>,
-    camera_q: Query<(&Camera, &GlobalTransform)>,
+    camera_q: Query<(&Camera, &GlobalTransform), (With<Camera2d>, With<Camera>)>,
     mut game_state: ResMut<GameState>,
     mut tile_queries: ParamSet<(
         Query<&BoardTile>,
@@ -614,22 +614,17 @@ pub fn handle_power_activation(
                                         board_position: piece.board_position,
                                     });
 
-                                    // Update piece color
+                                    // Update piece color using correct theme colors
+                                    use crate::resources::QuadradiusTheme;
                                     let new_color = match game_state.current_player {
-                                        Player::Player1 => Color::rgb(0.8, 0.2, 0.2),
-                                        Player::Player2 => Color::rgb(0.2, 0.2, 0.8),
+                                        Player::Player1 => QuadradiusTheme::TEAM_1_PRIMARY, // Bright metallic blue
+                                        Player::Player2 => QuadradiusTheme::TEAM_2_PRIMARY, // Bright metallic red
                                     };
-                                    commands.entity(entity).insert(SpriteBundle {
-                                        sprite: Sprite {
-                                            color: new_color,
-                                            custom_size: Some(Vec2::splat(TILE_SIZE * 1.2)),
-                                            ..default()
-                                        },
-                                        transform: Transform::from_xyz(
-                                            board_to_world_position(piece.board_position).x,
-                                            board_to_world_position(piece.board_position).y,
-                                            1.0,
-                                        ),
+                                    
+                                    // Only update the sprite color, don't replace the entire bundle
+                                    commands.entity(entity).insert(Sprite {
+                                        color: new_color,
+                                        custom_size: Some(Vec2::splat(TILE_SIZE * 1.2)),
                                         ..default()
                                     });
 
@@ -741,8 +736,8 @@ pub fn handle_power_activation(
                                     SpriteBundle {
                                         sprite: Sprite {
                                             color: match game_state.current_player {
-                                                Player::Player1 => Color::rgb(0.8, 0.2, 0.2),
-                                                Player::Player2 => Color::rgb(0.2, 0.2, 0.8),
+                                                Player::Player1 => QuadradiusTheme::TEAM_1_PRIMARY, // Bright metallic blue
+                                                Player::Player2 => QuadradiusTheme::TEAM_2_PRIMARY, // Bright metallic red
                                             },
                                             custom_size: Some(Vec2::splat(TILE_SIZE * 1.2)),
                                             ..default()
@@ -1482,8 +1477,8 @@ fn activate_multiply(
                             SpriteBundle {
                                 sprite: Sprite {
                                     color: match game_state.current_player {
-                                        Player::Player1 => Color::rgb(0.8, 0.2, 0.2),
-                                        Player::Player2 => Color::rgb(0.2, 0.2, 0.8),
+                                        Player::Player1 => QuadradiusTheme::TEAM_1_PRIMARY, // Bright metallic blue
+                                        Player::Player2 => QuadradiusTheme::TEAM_2_PRIMARY, // Bright metallic red
                                     },
                                     custom_size: Some(Vec2::splat(TILE_SIZE * 1.2)),
                                     ..default()

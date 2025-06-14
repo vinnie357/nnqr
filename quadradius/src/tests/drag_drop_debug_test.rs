@@ -1,6 +1,6 @@
 use crate::components::*;
 use crate::resources::game_state::{GameState, TurnPhase};
-use crate::systems::drag_drop::*;
+// use crate::systems::drag_drop::*; // Unused import
 use bevy::prelude::*;
 
 /// Test to debug 2D piece movement issues
@@ -58,7 +58,7 @@ fn test_2d_piece_movement_debug() {
     // Collect piece data first
     let pieces_data: Vec<_> = {
         let mut pieces_query = app.world.query::<(Entity, &GamePiece, &Transform)>();
-        pieces_query.iter(&app.world).map(|(e, p, t)| (e, p.clone(), *t)).collect()
+        pieces_query.iter(&app.world).map(|(e, p, t)| (e, *p, *t)).collect()
     };
     
     let game_state = app.world.resource::<GameState>();

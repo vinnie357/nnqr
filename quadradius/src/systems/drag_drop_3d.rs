@@ -143,6 +143,7 @@ pub fn handle_drag_end_3d(
     mut game_state: ResMut<GameState>,
     mut pieces: Query<(Entity, &mut GamePiece3D, &mut Transform, &Dragging3D)>,
     all_pieces: Query<(Entity, &GamePiece3D), Without<Dragging3D>>,
+    all_pieces_2d: Query<(Entity, &GamePiece)>,
     tiles: Query<&BoardTile>,
     valid_indicators: Query<Entity, With<ValidMoveIndicator3D>>,
     // No turn complete events for now
@@ -166,7 +167,7 @@ pub fn handle_drag_end_3d(
                 let start_pos = dragging.start_pos;
 
                 // Check if move is valid
-                if is_valid_move(start_pos, target_pos, &tiles, &all_pieces) {
+                if is_valid_move_3d(start_pos, target_pos, piece.player, &tiles, &all_pieces) {
                     // Check if the piece actually moved to a different position  
                     let piece_actually_moved = target_pos != start_pos;
                     
@@ -258,6 +259,9 @@ pub fn handle_drag_end_3d(
                 // Remove dragging and selection components
                 commands.entity(entity).remove::<Dragging3D>();
                 commands.entity(entity).remove::<Selected>();
+                
+                // Also remove Selected from any 2D counterpart at the same position
+                clear_selected_at_position_2d(&mut commands, start_pos, &all_pieces_2d);
             }
         }
     }
@@ -265,10 +269,11 @@ pub fn handle_drag_end_3d(
 
 
 
-/// Check if a move is valid
-fn is_valid_move(
+/// Check if a move is valid in 3D
+fn is_valid_move_3d(
     from: (u8, u8),
     to: (u8, u8),
+    current_player: Player,
     tiles: &Query<&BoardTile>,
     pieces: &Query<(Entity, &GamePiece3D), Without<Dragging3D>>,
 ) -> bool {
@@ -300,12 +305,12 @@ fn is_valid_move(
         return false;
     }
 
-    // Check if destination is occupied by same player
+    // Check if destination is occupied by same player (can't capture own pieces)
     for (_entity, piece) in pieces.iter() {
-        if piece.board_position == to {
-            // Can capture opponent pieces but not own pieces
-            return false; // This should check player, but simplified for now
+        if piece.board_position == to && piece.player == current_player {
+            return false; // Can't capture own pieces
         }
+        // Note: Can capture opponent pieces, so don't return false for different player
     }
 
     // Check basic movement (adjacent tiles)
@@ -324,6 +329,21 @@ pub fn cleanup_indicators_3d(
     if dragging.is_empty() {
         for entity in indicators.iter() {
             commands.entity(entity).despawn();
+        }
+    }
+}
+
+/// Helper function to clear Selected component from all 2D pieces at a given position
+/// This ensures 2D and 3D representations stay synchronized
+fn clear_selected_at_position_2d(
+    commands: &mut Commands,
+    position: (u8, u8),
+    pieces_2d: &Query<(Entity, &GamePiece)>,
+) {
+    // Remove Selected component from any 2D pieces at this position
+    for (entity, piece_2d) in pieces_2d.iter() {
+        if piece_2d.board_position == position {
+            commands.entity(entity).remove::<Selected>();
         }
     }
 }

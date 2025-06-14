@@ -4,6 +4,9 @@ use bevy::prelude::*;
 
 /// Advance turn phase following the proper sequence
 pub fn advance_turn_phase(game_state: &mut GameState) {
+    let old_phase = game_state.turn_phase;
+    let old_player = game_state.current_player;
+    
     match game_state.turn_phase {
         TurnPhase::PowerActivation => {
             game_state.turn_phase = TurnPhase::PieceMovement;
@@ -21,6 +24,9 @@ pub fn advance_turn_phase(game_state: &mut GameState) {
             game_state.selected_power = None;
         }
     }
+    
+    info!("🔄 Turn advance: {:?} {:?} -> {:?} {:?}", 
+          old_player, old_phase, game_state.current_player, game_state.turn_phase);
 }
 
 /// Check if a phase transition is valid
@@ -37,6 +43,7 @@ pub fn is_valid_phase_transition(from: TurnPhase, to: TurnPhase) -> bool {
 #[derive(Resource, Default)]
 pub struct PowerSpawningTimer {
     pub start_time: Option<f32>,
+    pub last_player: Option<Player>, // Track which player this timer belongs to
 }
 
 /// System to handle PowerSpawning phase timing and automatic advancement
@@ -47,23 +54,32 @@ pub fn handle_power_spawning_phase(
     input: Res<Input<KeyCode>>,
 ) {
     if game_state.turn_phase != TurnPhase::PowerSpawning {
+        if timer.start_time.is_some() {
+            info!("🔄 Timer reset for {:?} leaving PowerSpawning phase", game_state.current_player);
+        }
         timer.start_time = None;
+        timer.last_player = None;
         return;
     }
 
-    // Initialize timer if entering PowerSpawning phase
-    if timer.start_time.is_none() {
+    // Initialize timer if entering PowerSpawning phase OR if different player
+    if timer.start_time.is_none() || timer.last_player != Some(game_state.current_player) {
         timer.start_time = Some(time.elapsed_seconds());
+        timer.last_player = Some(game_state.current_player);
+        info!("⏱️ Timer initialized for {:?} at {:.2}s", game_state.current_player, time.elapsed_seconds());
         println!(
-            "🎯 PowerSpawning phase started for {:?} - Power orbs may spawn on the board!",
+            "🎯 PowerSpawning phase started for {:?} - Power orbs may spawn! Pieces CANNOT be moved during this phase.",
             game_state.current_player
         );
+    } else {
+        info!("⏱️ Timer already running for {:?}, started at {:.2}s", game_state.current_player, timer.start_time.unwrap());
     }
 
     let elapsed = time.elapsed_seconds() - timer.start_time.unwrap();
 
     // Auto-advance after 2 seconds or if player manually skips
     if elapsed > 2.0 || input.just_pressed(KeyCode::Space) {
+        info!("⏰ {:?} PowerSpawning timer elapsed {:.2}s, advancing turn", game_state.current_player, elapsed);
         advance_turn_phase(&mut game_state);
         timer.start_time = None;
         println!(

@@ -149,7 +149,6 @@ fn perform_realistic_drag_sequence(
     piece_entity: Entity, 
     click_world_pos: Vec2
 ) -> DragResult {
-    let mut drag_detected = false;
     let mut target_found = None;
     
     // Step 1: Mouse press (start drag)
@@ -171,7 +170,7 @@ fn perform_realistic_drag_sequence(
     app.world.run_system_once(handle_drag_start);
     
     // Check if drag was detected
-    drag_detected = app.world.get::<Dragging>(piece_entity).is_some();
+    let drag_detected = app.world.get::<Dragging>(piece_entity).is_some();
     
     if drag_detected {
         // Step 2: Mouse move (drag update) - simulate small movement
