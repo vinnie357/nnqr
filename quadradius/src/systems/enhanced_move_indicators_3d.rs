@@ -4,7 +4,11 @@ use crate::systems::{
     pieces_3d::GamePiece3D,
     power_effects::MoveDiagonalActive,
 };
-use crate::{components::*, systems::isometric_camera::board_to_isometric};
+use crate::{
+    components::*, 
+    resources::{GameState, TurnPhase},
+    systems::isometric_camera::board_to_isometric
+};
 use bevy::prelude::*;
 
 // Constants matching pieces_3d.rs for consistent positioning
@@ -34,10 +38,16 @@ pub fn show_valid_moves_for_powers_3d(
     jump_query: Query<Entity, With<JumpActive>>,
     move_two_query: Query<Entity, With<MoveTwoActive>>,
     move_twice_query: Query<Entity, With<MoveTwiceActive>>,
+    game_state: Res<GameState>,
 ) {
-    // Clear existing indicators properly
+    // Always clear existing indicators first to prevent buildup
     for entity in existing_indicators.iter() {
         commands.entity(entity).despawn();
+    }
+    
+    // Only show indicators during piece movement phase
+    if game_state.turn_phase != TurnPhase::PieceMovement {
+        return;
     }
     
     // Debug: Check if any pieces are selected (both 2D and 3D)
@@ -314,5 +324,29 @@ pub fn cleanup_valid_move_indicators_3d(
 ) {
     for entity in indicators.iter() {
         commands.entity(entity).despawn();
+    }
+}
+
+/// Clean up indicators when no pieces are selected or when turn phase changes
+pub fn cleanup_orphaned_indicators_3d(
+    mut commands: Commands,
+    indicators: Query<Entity, With<ValidMoveIndicator3D>>,
+    selected_2d_pieces: Query<Entity, (With<GamePiece>, With<Selected>)>,
+    selected_3d_pieces: Query<Entity, (With<GamePiece3D>, With<Selected>)>,
+    game_state: Res<GameState>,
+) {
+    // Clean up indicators if no pieces are selected OR if not in piece movement phase
+    let has_selected_pieces = !selected_2d_pieces.is_empty() || !selected_3d_pieces.is_empty();
+    let in_movement_phase = game_state.turn_phase == TurnPhase::PieceMovement;
+    
+    if !has_selected_pieces || !in_movement_phase {
+        for entity in indicators.iter() {
+            commands.entity(entity).despawn();
+        }
+        
+        if !indicators.is_empty() {
+            info!("🧹 Cleaned up {} orphaned movement indicators (selected: {}, phase: {:?})", 
+                  indicators.iter().count(), has_selected_pieces, game_state.turn_phase);
+        }
     }
 }

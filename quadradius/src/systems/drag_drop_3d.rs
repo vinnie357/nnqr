@@ -325,10 +325,20 @@ pub fn cleanup_indicators_3d(
     mut commands: Commands,
     indicators: Query<Entity, With<ValidMoveIndicator3D>>,
     dragging: Query<&Dragging3D>,
+    selected_pieces: Query<Entity, (With<GamePiece3D>, With<Selected>)>,
+    selected_pieces_2d: Query<Entity, (With<GamePiece>, With<Selected>)>,
 ) {
-    if dragging.is_empty() {
-        for entity in indicators.iter() {
-            commands.entity(entity).despawn();
+    // Clean up indicators if no pieces are being dragged AND no pieces are selected
+    let no_dragging = dragging.is_empty();
+    let no_selected = selected_pieces.is_empty() && selected_pieces_2d.is_empty();
+    
+    if no_dragging && no_selected {
+        let indicator_count = indicators.iter().count();
+        if indicator_count > 0 {
+            info!("🗑️ Cleaning up {} indicators (no dragging, no selection)", indicator_count);
+            for entity in indicators.iter() {
+                commands.entity(entity).despawn();
+            }
         }
     }
 }
