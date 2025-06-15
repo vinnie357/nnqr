@@ -1,6 +1,6 @@
-use crate::components::power::*;
-use crate::components::piece::*;
+use crate::components::*;
 use crate::resources::*;
+use crate::resources::game_state::TurnCounter;
 use crate::systems::power_effects::MoveDiagonalActive;
 use bevy::prelude::*;
 
@@ -49,10 +49,10 @@ impl ActiveEffects {
             }
         }
 
-        self.effects.push(effect);
         println!("Added effect: {} (duration: {} turns)", 
                 effect.effect_data.get_effect_name(), 
                 effect.duration_turns);
+        self.effects.push(effect);
         true
     }
 
@@ -118,25 +118,26 @@ impl ActiveEffects {
 pub fn process_turn_effects(
     mut effect_processor: ResMut<EffectProcessor>,
     game_state: Res<GameState>,
+    turn_counter: Res<TurnCounter>,
     mut commands: Commands,
     mut entities_with_effects: Query<(Entity, &mut ActiveEffects, Option<&GamePiece>)>,
 ) {
     // Only process once per turn
-    if effect_processor.current_turn == game_state.turn_number && effect_processor.effects_processed_this_turn {
+    if effect_processor.current_turn == turn_counter.turn_number && effect_processor.effects_processed_this_turn {
         return;
     }
 
     // Update turn tracking
-    effect_processor.current_turn = game_state.turn_number;
+    effect_processor.current_turn = turn_counter.turn_number;
     effect_processor.effects_processed_this_turn = true;
 
-    println!("🔄 Processing effects for turn {}", game_state.turn_number);
+    println!("🔄 Processing effects for turn {}", turn_counter.turn_number);
 
     for (entity, mut active_effects, piece) in entities_with_effects.iter_mut() {
         // Process death effects first (poison)
         for effect in &active_effects.effects {
             if let EffectData::Status(StatusEffect::Poisoned { death_timer }) = &effect.effect_data {
-                if effect.remaining_turns(game_state.turn_number) <= 1 {
+                if effect.remaining_turns(turn_counter.turn_number) <= 1 {
                     println!("💀 Piece dies from poison!");
                     // Spawn death effect
                     if let Some(piece) = piece {
@@ -155,7 +156,7 @@ pub fn process_turn_effects(
         }
 
         // Remove expired effects
-        let expired_effects = active_effects.remove_expired_effects(game_state.turn_number);
+        let expired_effects = active_effects.remove_expired_effects(turn_counter.turn_number);
         
         // Log expired effects
         for expired in expired_effects {
@@ -166,15 +167,16 @@ pub fn process_turn_effects(
         update_component_states(&mut commands, entity, &active_effects);
     }
 
-    println!("✅ Effect processing complete for turn {}", game_state.turn_number);
+    println!("✅ Effect processing complete for turn {}", turn_counter.turn_number);
 }
 
 /// System to mark turn effects as not processed when turn changes
 pub fn reset_effect_processing(
     mut effect_processor: ResMut<EffectProcessor>,
     game_state: Res<GameState>,
+    turn_counter: Res<TurnCounter>,
 ) {
-    if effect_processor.current_turn != game_state.turn_number {
+    if effect_processor.current_turn != turn_counter.turn_number {
         effect_processor.effects_processed_this_turn = false;
     }
 }
@@ -231,7 +233,7 @@ pub fn add_effect_to_entity(
     effect: PowerEffect,
 ) {
     // Get or create ActiveEffects component
-    commands.entity(entity).insert_if_new(ActiveEffects::default());
+    commands.entity(entity).try_insert(ActiveEffects::default());
     
     // We'll update the ActiveEffects in a separate system since we can't query and mutate in the same system
     commands.entity(entity).insert(PendingEffect(effect));
@@ -255,7 +257,7 @@ pub fn process_pending_effects(
 /// Helper function for coordinate conversion
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
     use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
-    use crate::resources::TILE_SIZE;
+    use crate::components::TILE_SIZE;
     
     let enhanced_tile_size = TILE_SIZE * 1.2;
     let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;

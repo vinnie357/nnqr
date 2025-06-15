@@ -1,4 +1,4 @@
-use crate::systems::TurnCounter;
+use crate::resources::game_state::TurnCounter;
 use crate::{components::*, resources::*};
 use bevy::prelude::*;
 use rand::Rng;

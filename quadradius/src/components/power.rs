@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use crate::resources::Player;
+use crate::components::Player;
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
 pub enum PowerType {

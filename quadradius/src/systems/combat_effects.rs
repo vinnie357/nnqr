@@ -1,7 +1,7 @@
-use crate::components::power::*;
-use crate::components::piece::*;
+use crate::components::*;
 use crate::resources::*;
-use crate::systems::effect_processing::{ActiveEffects, add_effect_to_entity};
+use crate::resources::game_state::TurnCounter;
+use crate::systems::effect_processing::ActiveEffects;
 use bevy::prelude::*;
 
 /// System to handle combat interactions with effects
@@ -11,6 +11,8 @@ pub fn process_combat_with_effects(
     mut pieces_query: Query<(Entity, &GamePiece, Option<&mut ActiveEffects>)>,
     capture_attempts: Query<(Entity, &CaptureAttempt)>,
 ) {
+    // Store reflection data to process after main loop
+    let mut reflection_data = Vec::new();
     for (attempt_entity, capture_attempt) in capture_attempts.iter() {
         let target_pos = capture_attempt.target_position;
         let attacker_player = capture_attempt.attacker_player;
@@ -73,21 +75,8 @@ pub fn process_combat_with_effects(
                     // Reflect the attack back to attacker
                     capture_blocked = true;
                     
-                    // Find the attacking piece and damage it instead
-                    for (attacker_entity, attacker_piece, _) in pieces_query.iter() {
-                        if attacker_piece.player == attacker_player {
-                            println!("↩ Attack reflected back to attacker!");
-                            
-                            // Create a new capture attempt for the reflection
-                            commands.spawn(CaptureAttempt {
-                                target_position: attacker_piece.board_position,
-                                attacker_player: target_piece.player,
-                                damage_type: capture_attempt.damage_type,
-                                can_be_blocked: false, // Reflections can't be blocked
-                            });
-                            break;
-                        }
-                    }
+                    // Store reflection info for later processing
+                    reflection_data.push((target_piece.player, attacker_player, capture_attempt.damage_type.clone()));
                     
                     // Spawn reflection visual effect
                     let world_pos = board_to_world_position(target_pos);
@@ -107,6 +96,25 @@ pub fn process_combat_with_effects(
         
         // Remove the processed capture attempt
         commands.entity(attempt_entity).despawn();
+    }
+    
+    // Process any reflections that were queued
+    for (defender_player, attacker_player, damage_type) in reflection_data {
+        // Find attacker pieces to reflect damage to
+        for (_, piece, _) in pieces_query.iter() {
+            if piece.player == attacker_player {
+                println!("↩ Attack reflected back to attacker!");
+                
+                // Create reflection capture attempt
+                commands.spawn(CaptureAttempt {
+                    target_position: piece.board_position,
+                    attacker_player: defender_player,
+                    damage_type,
+                    can_be_blocked: false, // Reflections can't be blocked
+                });
+                break; // Only reflect to one piece
+            }
+        }
     }
 }
 
@@ -203,13 +211,14 @@ pub struct MovementAttempt {
 pub fn process_poison_death(
     mut commands: Commands,
     game_state: Res<GameState>,
+    turn_counter: Res<TurnCounter>,
     pieces_query: Query<(Entity, &GamePiece, &ActiveEffects)>,
 ) {
     for (entity, piece, effects) in pieces_query.iter() {
         // Check for poison effects that should trigger death
         for effect in &effects.effects {
             if let EffectData::Status(StatusEffect::Poisoned { death_timer }) = &effect.effect_data {
-                if effect.remaining_turns(game_state.turn_number) <= 1 {
+                if effect.remaining_turns(turn_counter.turn_number) <= 1 {
                     // Piece dies from poison
                     println!("☠ Piece at {:?} dies from poison!", piece.board_position);
                     
@@ -320,7 +329,7 @@ fn can_jump_to_position(_from: (u8, u8), _to: (u8, u8)) -> bool {
 /// Helper function for coordinate conversion
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
     use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
-    use crate::resources::TILE_SIZE;
+    use crate::components::TILE_SIZE;
     
     let enhanced_tile_size = TILE_SIZE * 1.2;
     let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
@@ -346,14 +355,15 @@ pub fn create_capture_attempt(
 /// System to handle recruitment effects
 pub fn apply_recruitment_effects(
     mut commands: Commands,
-    pieces_query: Query<(Entity, &mut GamePiece, &ActiveEffects)>,
+    mut pieces_query: Query<(Entity, &mut GamePiece, &ActiveEffects)>,
     game_state: Res<GameState>,
+    turn_counter: Res<TurnCounter>,
 ) {
-    for (entity, mut piece, effects) in pieces_query.iter() {
+    for (entity, mut piece, effects) in pieces_query.iter_mut() {
         // Check for recruitment effects
         for effect in &effects.effects {
             if let EffectData::Status(StatusEffect::Recruiting { conversion_power }) = &effect.effect_data {
-                if effect.remaining_turns(game_state.turn_number) <= 1 {
+                if effect.remaining_turns(turn_counter.turn_number) <= 1 {
                     // Convert the piece to the effect source player
                     let old_player = piece.player;
                     piece.player = effect.source_player;
@@ -370,7 +380,7 @@ pub fn apply_recruitment_effects(
                     
                     commands.entity(entity).insert(Sprite {
                         color: new_color,
-                        custom_size: Some(Vec2::splat(crate::resources::TILE_SIZE * 1.2)),
+                        custom_size: Some(Vec2::splat(TILE_SIZE * 1.2)),
                         ..default()
                     });
                     

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::components::power::*;
+    use crate::components::*;
     use crate::resources::*;
     use crate::systems::effect_processing::*;
     use crate::systems::combat_effects::*;

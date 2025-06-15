@@ -1,7 +1,8 @@
 use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::systems::TerrainHeight;
-use crate::systems::effect_processing::{add_effect_to_entity, ActiveEffects};
+use crate::systems::effect_processing::add_effect_to_entity;
 use crate::{components::*, resources::*};
+use crate::resources::game_state::TurnCounter;
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -171,6 +172,7 @@ pub fn handle_power_activation(
     windows: Query<&Window>,
     camera_q: Query<(&Camera, &GlobalTransform), (With<Camera2d>, With<Camera>)>,
     mut game_state: ResMut<GameState>,
+    turn_counter: Res<TurnCounter>,
     mut tile_queries: ParamSet<(
         Query<&BoardTile>,
         Query<(Entity, &mut BoardTile, &mut TerrainHeight)>,
@@ -471,7 +473,7 @@ pub fn handle_power_activation(
                                         entity,
                                         EffectData::Status(StatusEffect::Frozen),
                                         game_state.current_player,
-                                        game_state.turn_number,
+                                        turn_counter.turn_number,
                                     );
                                     add_effect_to_entity(&mut commands, entity, freeze_effect);
                                     println!("Frozen enemy piece at {:?} for 3 turns", board_pos);
@@ -596,7 +598,7 @@ pub fn handle_power_activation(
                                         entity,
                                         EffectData::Protection(ProtectionType::Shield { hits_remaining: 1 }),
                                         game_state.current_player,
-                                        game_state.turn_number,
+                                        turn_counter.turn_number,
                                     );
                                     add_effect_to_entity(&mut commands, entity, shield_effect);
                                 }
@@ -614,7 +616,7 @@ pub fn handle_power_activation(
                                         entity,
                                         EffectData::Status(StatusEffect::Invisible),
                                         game_state.current_player,
-                                        game_state.turn_number,
+                                        turn_counter.turn_number,
                                     );
                                     add_effect_to_entity(&mut commands, entity, invisible_effect);
                                 }
@@ -670,7 +672,7 @@ pub fn handle_power_activation(
                                         entity,
                                         EffectData::Status(StatusEffect::Poisoned { death_timer: 3 }),
                                         game_state.current_player,
-                                        game_state.turn_number,
+                                        turn_counter.turn_number,
                                     );
                                     add_effect_to_entity(&mut commands, entity, poison_effect);
                                     println!(
@@ -710,9 +712,9 @@ pub fn handle_power_activation(
                                         let target_y = board_pos.1 as i8 + dy;
 
                                         if target_x >= 0
-                                            && target_x < BOARD_SIZE as i8
+                                            && target_x < BOARD_WIDTH as i8
                                             && target_y >= 0
-                                            && target_y < BOARD_SIZE as i8
+                                            && target_y < BOARD_HEIGHT as i8
                                         {
                                             let target = (target_x as u8, target_y as u8);
                                             if let Some((target_entity, _)) = pieces
@@ -1112,7 +1114,7 @@ pub fn handle_power_activation(
                                         entity,
                                         EffectData::Protection(ProtectionType::Reflection { turns_remaining: 3 }),
                                         game_state.current_player,
-                                        game_state.turn_number,
+                                        turn_counter.turn_number,
                                     );
                                     add_effect_to_entity(&mut commands, entity, reflect_effect);
                                 }
@@ -1276,7 +1278,7 @@ pub fn handle_power_activation(
                                             damage_types: vec![DamageType::Capture, DamageType::All] 
                                         }),
                                         game_state.current_player,
-                                        game_state.turn_number,
+                                        turn_counter.turn_number,
                                     );
                                     add_effect_to_entity(&mut commands, entity, jumpproof_effect);
                                 }

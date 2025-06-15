@@ -18,6 +18,11 @@ pub struct GameState {
     pub selected_power: Option<usize>, // Index of selected power in player's inventory
 }
 
+#[derive(Resource, Default)]
+pub struct TurnCounter {
+    pub turn_number: u32,
+}
+
 impl Default for GameState {
     fn default() -> Self {
         Self {

@@ -36,7 +36,7 @@ fn main() {
         .init_resource::<systems::performance_optimization::PerformanceMonitor>()
         .init_resource::<ScreenShake>()
         .init_resource::<MatchTimer>()
-        .init_resource::<TurnCounter>()
+        .init_resource::<crate::resources::game_state::TurnCounter>()
         .init_resource::<GameBalanceData>()
         .init_resource::<PowerTestSuite>()
         .init_resource::<PowerBalanceConfig>()
@@ -136,6 +136,11 @@ fn main() {
                 process_turn_effects,
                 process_pending_effects,
                 update_effect_indicators,
+            ),
+        )
+        .add_systems(
+            Update,
+            (
                 // Combat effects systems
                 process_combat_with_effects,
                 apply_invisibility_targeting,
@@ -144,6 +149,12 @@ fn main() {
                 apply_invisibility_rendering,
                 apply_movement_enhancements,
                 apply_recruitment_effects,
+            ),
+        )
+        .add_systems(
+            Update,
+            (
+                // UI and scoreboard systems
                 update_turn_indicator_enhanced,
                 update_power_inventory_ui,
                 update_power_activation_ui,
@@ -152,10 +163,15 @@ fn main() {
                 toggle_chat_visibility,
                 handle_chat_minimize_maximize,
                 update_unread_indicator,
+            ),
+        )
+        .add_systems(
+            Update,
+            (
+                // Animation and utility systems
                 add_demo_chat_messages,
                 animate_ui_elements,
                 show_power_tooltips,
-                // Scoreboard systems
                 update_piece_count,
                 animate_score_changes,
                 update_power_notifications,

@@ -1,5 +1,4 @@
-use crate::components::power::*;
-use crate::components::piece::*;
+use crate::components::*;
 use crate::resources::*;
 use bevy::prelude::*;
 
@@ -25,7 +24,7 @@ pub fn handle_area_targeting(
     mut commands: Commands,
     mouse_input: Res<Input<MouseButton>>,
     windows: Query<&Window>,
-    camera_q: Query<(&Camera, &GlobalTransform), (With<Camera2d>, With<Camera>)>,
+    camera_q: Query<(&Camera, &GlobalTransform), (With<crate::systems::settings::Camera2D>, With<Camera>)>,
     mut area_state: ResMut<AreaTargetingState>,
     game_state: Res<GameState>,
     existing_indicators: Query<Entity, With<AreaTargetingIndicator>>,
@@ -367,7 +366,7 @@ fn execute_recruit_radial(
 /// Helper function for coordinate conversion
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
     use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
-    use crate::resources::TILE_SIZE;
+    use crate::components::TILE_SIZE;
     
     let enhanced_tile_size = TILE_SIZE * 1.2;
     let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
@@ -378,7 +377,7 @@ fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
 /// Helper function for coordinate conversion
 fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
     use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
-    use crate::resources::TILE_SIZE;
+    use crate::components::TILE_SIZE;
     
     let enhanced_tile_size = TILE_SIZE * 1.2;
     let x = ((world_pos.x / enhanced_tile_size) + BOARD_WIDTH as f32 / 2.0 - 0.5).round() as i8;
@@ -392,4 +391,4 @@ fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
 
 /// Import constants
 use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
-use crate::resources::TILE_SIZE;
+use crate::components::TILE_SIZE;

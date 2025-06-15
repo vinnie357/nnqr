@@ -165,17 +165,8 @@ pub fn update_match_timer(
     }
 }
 
-// Turn counter
-#[derive(Resource)]
-pub struct TurnCounter {
-    pub turn_number: u32,
-}
-
-impl Default for TurnCounter {
-    fn default() -> Self {
-        Self { turn_number: 1 }
-    }
-}
+// Turn counter - using TurnCounter from game_state module
+use crate::resources::game_state::TurnCounter;
 
 pub fn increment_turn_counter(mut turn_counter: ResMut<TurnCounter>, game_state: Res<GameState>) {
     if game_state.is_changed() && game_state.turn_phase == TurnPhase::PowerActivation {
