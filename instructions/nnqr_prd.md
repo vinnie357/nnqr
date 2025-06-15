@@ -146,59 +146,133 @@ enum TurnPhase {
 
 ## Implementation Phases
 
-### Phase 1: Core Foundation (MVP)
+### Phase 1: Foundation & Power Integration
 **Priority**: Critical
-**Timeline**: 2-3 weeks
+**Timeline**: 2 weeks
 
 **Deliverables**:
-1. Basic 10x8 board rendering with isometric view in Bevy
-2. Piece placement and basic movement (horizontal/vertical, one square)
-3. Turn-based gameplay loop
-4. Simple terrain height visualization
-5. Win condition detection (eliminate all opponent pieces)
+1. Fix power integration patterns (55+ powers currently broken)
+2. Movement power functionality (teleport, jump, knight, etc.)
+3. Terrain power functionality (raise/lower columns, areas)
+4. Duration-based effect processing (freeze, poison, shields)
 
 **Technical Tasks**:
-- Set up Bevy project structure
-- Implement board rendering system
-- Create piece entities and movement validation
-- Implement basic game state management
-- Add simple UI for turn indication
+- Connect power activation to movement validation
+- Integrate terrain system with board manipulation powers
+- Implement turn-based effect processing
+- Establish patterns for all subsequent phases
 
-### Phase 2: Power-Up Foundation
+### Phase 2: Combat Powers & Effects
 **Priority**: High
-**Timeline**: 2-3 weeks
+**Timeline**: 2 weeks
 
 **Deliverables**:
-1. Power orb spawning system
-2. Core 10-15 power-ups implemented
-3. Power activation UI
-4. Terrain manipulation (raise/lower)
+1. Duration-based effect framework
+2. Combat power implementation (shield, invisible, recruit)
+3. Protection and stealth mechanics
+4. Visual effect integration
 
 **Technical Tasks**:
-- Implement random orb spawning algorithm
-- Create power-up activation system
-- Add terrain height modification mechanics
-- Implement basic power-up effects
+- Implement PowerEffect component system
+- Create turn-based effect processing
+- Add combat system integration
+- Develop visual feedback systems
 
-### Phase 3: Complete Power-Up System
-**Priority**: Medium
-**Timeline**: 3-4 weeks
-
-**Deliverables**:
-1. All ~70 power-ups implemented
-2. Complex interactions between powers
-3. Power balancing and testing
-4. Advanced UI for power management
-
-### Phase 4: Polish and Multiplayer
-**Priority**: Medium
-**Timeline**: 2-3 weeks
+### Phase 3: Board Manipulation & Terrain
+**Priority**: High
+**Timeline**: 2 weeks
 
 **Deliverables**:
-1. Network multiplayer support
-2. Improved graphics and animations
-3. Sound effects and music
-4. Game persistence and replay system
+1. Area targeting and selection system
+2. Terrain modification powers (raise/lower areas)
+3. Wall and obstacle creation
+4. Board transformation capabilities
+
+**Technical Tasks**:
+- Implement 3x3 area selection UI
+- Create terrain modification framework
+- Add wall and obstacle systems
+- Develop board transformation powers
+
+### Phase 4: Meta Powers & Complex Interactions
+**Priority**: Medium
+**Timeline**: 2 weeks
+
+**Deliverables**:
+1. Power interaction framework
+2. Meta power implementation (steal, copy, nullify)
+3. Complex strategic combinations
+4. Priority resolution system
+
+**Technical Tasks**:
+- Create power registry and interaction system
+- Implement power manipulation mechanics
+- Add chain reaction prevention
+- Develop balance validation tools
+
+### Phase 5: Polish & Release Preparation
+**Priority**: Medium
+**Timeline**: 3 weeks
+
+**Deliverables**:
+1. Performance optimization
+2. Visual and audio polish
+3. Balance refinement
+4. User experience enhancement
+
+**Technical Tasks**:
+- Optimize power system performance
+- Enhance visual effects and animations
+- Conduct comprehensive balance testing
+- Improve UI/UX and accessibility
+
+### Phase 6: Review & Code Quality
+**Priority**: Medium
+**Timeline**: 2 weeks
+
+**Deliverables**:
+1. Code quality review and cleanup
+2. Technical debt resolution
+3. Comprehensive testing (>98% coverage)
+4. Documentation completion
+
+**Technical Tasks**:
+- Conduct architecture review
+- Refactor and optimize code
+- Complete test suite coverage
+- Finalize documentation
+
+### Phase 7: Web Deployment & WASM
+**Priority**: Medium
+**Timeline**: 3 weeks
+
+**Deliverables**:
+1. WebAssembly compilation and optimization
+2. Browser compatibility and performance
+3. Web multiplayer implementation
+4. Progressive web app features
+
+**Technical Tasks**:
+- Configure WASM build pipeline
+- Optimize for browser performance
+- Implement web networking
+- Add PWA capabilities
+
+### Phase 8: Final Testing & Validation
+**Priority**: High
+**Timeline**: 3 weeks
+
+**Deliverables**:
+1. Comprehensive game testing (all 71 powers)
+2. Cross-platform validation
+3. Community beta testing
+4. Release preparation
+
+**Technical Tasks**:
+- Test all power combinations
+- Validate cross-platform compatibility
+- Conduct multiplayer stress testing
+- Prepare launch infrastructure
 
 ---
 

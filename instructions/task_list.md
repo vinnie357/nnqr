@@ -1,12 +1,30 @@
 # Quadradius Development Task List
-**Current Status: Phase 4+ Complete - 38+ Powers Implemented**
-*Focus: Complete remaining 12+ powers for full game recreation*
+**REDIRECTED TO PHASE-BASED STRUCTURE**
 
-## CURRENT PROJECT STATUS
-✅ **Phase 1-4**: COMPLETED & EXCEEDED
-✅ **38+ Powers**: IMPLEMENTED with sophisticated framework
-✅ **Windows Release**: v0.2.0 deployed with cross-platform builds
-✅ **Advanced Features**: 3D isometric rendering, PBR materials, comprehensive testing
+**IMPORTANT**: This document has been superseded by the phase-based task management system.
+
+## Current Project Status
+**Phase 1**: Foundation & Power Integration (31% complete, IN PROGRESS)  
+**Phases 2-8**: Blocked pending Phase 1 completion  
+**Reality**: 12-15 powers functional out of 71 defined (not 38+ as previously documented)
+
+## Phase-Based Task Management
+For current and detailed task information, see:
+
+### Phase Directories
+- **Phase 1** (ACTIVE): `/features/phase1/task_list.md` - Foundation & Power Integration
+- **Phase 2**: `/features/phase2/task_list.md` - Combat Powers & Effects
+- **Phase 3**: `/features/phase3/task_list.md` - Board Manipulation & Terrain
+- **Phase 4**: `/features/phase4/task_list.md` - Meta Powers & Interactions
+- **Phase 5**: `/features/phase5/task_list.md` - Polish & Release Preparation
+- **Phase 6**: `/features/phase6/task_list.md` - Review & Code Quality
+- **Phase 7**: `/features/phase7/task_list.md` - Web Deployment & WASM
+- **Phase 8**: `/features/phase8/task_list.md` - Final Testing & Validation
+
+### Project Tracking
+- **Overall Status**: `/instructions/project_status.md`
+- **Implementation Status**: `/instructions/implementation_status.md`
+- **Immediate Next Steps**: `/instructions/immediate_next_steps.md`
 
 ## IMMEDIATE PRIORITIES (Next 1-2 Weeks)
 

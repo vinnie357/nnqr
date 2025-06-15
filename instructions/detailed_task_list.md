@@ -1,33 +1,52 @@
-# Quadradius Detailed Task List
-**Current Status: Phase 4+ Complete - Power System Completion Focus**
-*Updated for current advanced project state*
+# Quadradius Task Management - Phase Structure
 
-## Research References and Documentation Sources
+**IMPORTANT**: This file has been replaced by phase-based organization.
+
+## New Structure
+
+### Phase-Based Task Management
+Task details are now organized in phase-specific directories:
+
+- **Current Phase**: `/features/phase1/` - Foundation & Power Integration
+- **Phase 2**: `/features/phase2/` - Combat Powers & Effects  
+- **Phase 3**: `/features/phase3/` - Board Manipulation & Terrain
+- **Phase 4**: `/features/phase4/` - Meta Powers & Interactions
+- **Phase 5**: `/features/phase5/` - Polish & Release Preparation
+
+### Phase Directory Structure
+Each phase contains:
+- `claude.md` - Context, research links, and implementation guidance
+- `task_list.md` - Detailed task breakdown with status tracking
+- `status.md` - Progress reports and metrics
+
+### Project Overview
+- **Overall Status**: `/instructions/project_status.md`
+- **Implementation Status**: `/instructions/implementation_status.md`
+- **Immediate Next Steps**: `/instructions/immediate_next_steps.md`
+
+## Research References
 
 ### Core Research Documents
-- **@research/game.md** - Comprehensive game mechanics and original Flash game analysis
-- **@research/isometric_design_patterns_bevy.md** - Technical patterns for isometric rendering in Bevy
-- **@nnqr_prd.md** - Updated Project Requirements Document with 10x8 board specifications  
-- **@nnqr_plan.md** - Updated implementation plan with isometric rendering requirements
-- **@nnqr_implementation.md** - Step-by-step implementation guide (needs updating for 10x8 board)
+- **@research/game.md** - Comprehensive game mechanics analysis
+- **@research/isometric_design_patterns_bevy.md** - Technical implementation patterns
+- **@instructions/nnqr_prd.md** - Project requirements with 10x8 board specs
 
 ### Current Project Analysis
-- **@quadradius/POWER_IMPLEMENTATION_STATUS.md** - Current power implementation status (38/50+ powers)
-- **@quadradius/README.md** - Project overview and current capabilities
-- **@implementation_status.md** - Gap analysis between current state and documentation
+- **@features/project_status.md** - Cross-phase progress tracking
+- **@instructions/implementation_status.md** - Current state analysis
 
 ---
 
-# CURRENT PHASE: POWER SYSTEM COMPLETION (Week 1-2)
-*Timeline: 10-14 days | 38+ Powers Complete, 12+ Remaining*
+# CURRENT PHASE: POWER IMPLEMENTATION FIXES (Week 1-2)
+*Timeline: 10-14 days | 12-15 Powers Functional, 55+ Need Implementation*
 
 ## PROJECT COMPLETION STATUS
 ✅ **Phase 1 Foundation**: COMPLETED & EXCEEDED (10x8 isometric board, 3D rendering)
-✅ **Phase 2 Power Foundation**: COMPLETED & EXCEEDED (38+ powers implemented)
-✅ **Phase 3 Advanced Features**: COMPLETED & EXCEEDED (PBR materials, comprehensive UI)
+⚠️ **Phase 2 Power Foundation**: FRAMEWORK COMPLETE, IMPLEMENTATION GAPS (12-15/71 powers functional)
+✅ **Phase 3 UI & Systems**: COMPLETED & EXCEEDED (PBR materials, comprehensive UI)
 ✅ **Phase 4 Polish & Deployment**: COMPLETED (Windows release v0.2.0, cross-platform builds)
 
-🎯 **CURRENT FOCUS**: Complete remaining power implementations for full game recreation
+🎯 **CURRENT FOCUS**: Fix broken power implementations - most powers activate but don't affect gameplay
 
 ## Research Foundation for This Phase
 **Primary References:**
@@ -42,89 +61,112 @@
 - Current project has advanced 3D rendering that's not documented in implementation guide
 - Power system architecture needs documentation for developer onboarding
 
-## 🔥 CRITICAL - Power Implementation Completion
+## 🔥 CRITICAL - Power System Integration Fixes
 
-### Task 1.1: Fix Broken Power Implementations
-**Priority**: Critical | **Duration**: 6 hours | **Dependencies**: None
+### Task 1.0: Power System Analysis (NEW - PREREQUISITE)
+**Priority**: Critical | **Duration**: 1 hour | **Dependencies**: None
 
-**Description**: Complete the three broken power implementations that have framework but no working functionality.
-
-**Detailed Steps**:
-1. **Fix Freeze Power**:
-   - [ ] Analyze current framework in codebase
-   - [ ] Implement Frozen component with turn duration
-   - [ ] Add movement prevention logic for frozen pieces
-   - [ ] Add visual feedback (frozen piece indication)
-   - [ ] Write automated tests for freeze mechanics
-
-2. **Fix Assassin Power**:
-   - [ ] Review current integration issues
-   - [ ] Implement proper targeting system
-   - [ ] Add kill-without-capture mechanics
-   - [ ] Ensure proper piece removal and state update
-   - [ ] Add visual effects for assassination
-
-3. **Fix MoveTwice Power**:
-   - [ ] Replace print statement with actual implementation
-   - [ ] Track moves per turn in game state
-   - [ ] Allow second move after first completes
-   - [ ] Prevent abuse (can't use multiple MoveTwice in one turn)
-   - [ ] Add visual feedback for remaining moves
-
-**Acceptance Criteria**:
-- [ ] Freeze power prevents piece movement for specified turns
-- [ ] Assassin power removes pieces without capturing
-- [ ] MoveTwice power allows two moves in one turn
-- [ ] All powers work correctly in multiplayer scenarios
-- [ ] Visual feedback is clear and informative
-
-### Task 1.2: Complete Movement Powers (5 Remaining)
-**Priority**: Critical | **Duration**: 8 hours | **Dependencies**: Task 1.1
-
-**Description**: Implement the remaining 5 movement powers to complete the movement category.
+**Description**: Understand why 55+ powers activate but don't affect gameplay mechanics.
 
 **Detailed Steps**:
-1. **Swap Power**:
-   - [ ] Implement two-piece targeting system
-   - [ ] Add position swapping logic
-   - [ ] Handle height validation for both pieces
-   - [ ] Add smooth animation for simultaneous movement
-   - [ ] Test edge cases (swapping with different height pieces)
+1. **Analyze Power Activation Flow**:
+   - [ ] Trace MoveDiagonal implementation (known working)
+   - [ ] Compare with Teleport implementation (activates but doesn't work)
+   - [ ] Document where movement validation happens
+   - [ ] Identify integration points needed
 
-2. **Push Power**:
-   - [ ] Implement adjacent piece detection
-   - [ ] Add push direction calculation
-   - [ ] Validate push destination (bounds, obstacles)
-   - [ ] Handle push chains (piece pushes piece pushes piece)
-   - [ ] Add visual effects for pushing action
+2. **Map Power Categories to Systems**:
+   - [ ] Movement powers → movement validation system
+   - [ ] Terrain powers → terrain height system  
+   - [ ] Duration effects → turn management system
+   - [ ] Combat powers → piece interaction system
 
-3. **Pull Power**:
-   - [ ] Implement piece selection at distance
-   - [ ] Calculate pull path and destination
-   - [ ] Validate pull legality (no obstacles in path)
-   - [ ] Add smooth pull animation
-   - [ ] Handle height restrictions for pulled pieces
-
-4. **Leap Power**:
-   - [ ] Implement 3-tile radius targeting
-   - [ ] Add leap path visualization
-   - [ ] Validate landing spots (empty, accessible)
-   - [ ] Add arc animation for leap movement
-   - [ ] Test leap over obstacles and pieces
-
-5. **Power Integration**:
-   - [ ] Add all powers to PowerType enum
-   - [ ] Update power spawning system to include new powers
-   - [ ] Add automated tests for all movement powers
-   - [ ] Balance power effects and costs
-   - [ ] Update power documentation
+3. **Create Integration Checklist**:
+   - [ ] List all systems that need power integration
+   - [ ] Identify which files contain validation logic
+   - [ ] Document component queries needed
+   - [ ] Plan minimal changes for maximum impact
 
 **Acceptance Criteria**:
-- [ ] All 5 movement powers work correctly
-- [ ] Smooth animations for all movement types
-- [ ] No edge cases cause crashes or invalid states
-- [ ] Powers are balanced relative to existing powers
-- [ ] Comprehensive test coverage for all powers
+- [ ] Clear understanding of why powers don't work
+- [ ] Integration points documented
+- [ ] Plan for connecting powers to game systems
+
+### Task 1.1: Fix Movement Power Integration
+**Priority**: Critical | **Duration**: 6 hours | **Dependencies**: Task 1.0
+
+**Description**: Connect movement powers to the movement validation system so they actually change how pieces can move.
+
+**Detailed Steps**:
+1. **Integrate Power State with Movement Validation**:
+   - [ ] Find movement validation in drag_drop.rs or similar
+   - [ ] Add ActivePowers component query to validation
+   - [ ] Create movement rule modifications based on active powers
+   - [ ] Test each integration thoroughly
+
+2. **Fix Core Movement Powers**:
+   - [ ] **MoveTwice**: Track remaining moves, don't end turn after first move
+   - [ ] **Teleport**: Allow movement to any empty tile
+   - [ ] **Jump**: Allow jumping over pieces in straight lines
+   - [ ] **Knight**: Allow L-shaped movement patterns
+   - [ ] **MoveAgain**: Similar to MoveTwice but single use
+
+3. **Fix Advanced Movement Powers**:
+   - [ ] **Push**: Move adjacent pieces one tile away
+   - [ ] **Pull**: Bring distant pieces closer
+   - [ ] **Swap**: Exchange positions with another piece
+   - [ ] **Leap**: Jump to tiles within 3-tile radius
+   - [ ] **Dash**: Move multiple tiles in one direction
+
+**Acceptance Criteria**:
+- [ ] Movement powers actually change how pieces can move
+- [ ] Each power has distinct movement behavior
+- [ ] Movement validation respects power rules
+- [ ] Visual feedback shows available moves correctly
+- [ ] No regression in basic movement
+
+### Task 1.2: Fix Terrain Height Integration
+**Priority**: Critical | **Duration**: 6 hours | **Dependencies**: Task 1.0
+
+**Description**: Connect terrain manipulation powers to the actual terrain height system.
+
+**Detailed Steps**:
+1. **Connect Terrain System to Powers**:
+   - [ ] Locate terrain_height.rs and TerrainHeight component
+   - [ ] Create terrain modification event system
+   - [ ] Link power activation to terrain changes
+   - [ ] Update visual representation for height changes
+
+2. **Fix Column Manipulation Powers**:
+   - [ ] **RaiseColumn**: Increase all tiles in column by 1 level
+   - [ ] **LowerColumn**: Decrease all tiles in column by 1 level  
+   - [ ] **DestroyColumn**: Already works - use as reference
+   - [ ] **DredgeColumn**: Lower enemy pieces, raise friendly pieces
+
+3. **Fix Area Terrain Powers**:
+   - [ ] **RaiseArea**: Increase 3x3 area height by 1
+   - [ ] **LowerArea**: Decrease 3x3 area height by 1
+   - [ ] **Terraform**: Set specific tile to chosen height
+   - [ ] **Earthquake**: Random height changes across board
+
+4. **Fix Single Tile Powers**:
+   - [ ] **RaiseTile**: Increase single tile height
+   - [ ] **LowerTile**: Decrease single tile height
+   - [ ] **CreatePit**: Make tile impassable
+   - [ ] **Bridge**: Create path over gaps
+
+5. **Update Movement Validation**:
+   - [ ] Ensure height restrictions still work (up 1, down any)
+   - [ ] Update piece positions when terrain changes
+   - [ ] Handle pieces on destroyed/lowered terrain
+   - [ ] Test edge cases (max/min heights)
+
+**Acceptance Criteria**:
+- [ ] Terrain powers visually change board heights
+- [ ] Height changes affect movement possibilities
+- [ ] Pieces react correctly to terrain changes
+- [ ] Visual feedback clearly shows height levels
+- [ ] No crashes with extreme height values
 
 ### Task 1.3: Document Current Power System Architecture
 **Priority**: Critical | **Duration**: 3 hours | **Dependencies**: Current codebase analysis
