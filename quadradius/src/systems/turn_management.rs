@@ -1,5 +1,6 @@
 use crate::components::Player;
 use crate::resources::game_state::{GameState, TurnPhase};
+use crate::components::power::{Frozen, Poisoned, Shield, Invisible, Reflecting, Absorbing};
 use bevy::prelude::*;
 
 /// Advance turn phase following the proper sequence
@@ -124,3 +125,99 @@ pub fn power_spawning_phase_ui(
 // Marker component for turn indicator UI
 #[derive(Component)]
 pub struct TurnIndicator;
+
+/// Process duration effects at the start of each turn
+pub fn process_duration_effects(
+    mut commands: Commands,
+    game_state: Res<GameState>,
+    mut frozen_pieces: Query<(Entity, &mut Frozen)>,
+    mut poisoned_pieces: Query<(Entity, &mut Poisoned)>,
+    shielded_pieces: Query<(Entity, &Shield)>,
+    mut invisible_pieces: Query<(Entity, &mut Invisible)>,
+    mut reflecting_pieces: Query<(Entity, &mut Reflecting)>,
+    mut absorbing_pieces: Query<(Entity, &mut Absorbing)>,
+    pieces: Query<&crate::components::GamePiece>,
+) {
+    // Only process effects at the start of each player's turn (PowerActivation phase)
+    if game_state.turn_phase != TurnPhase::PowerActivation {
+        return;
+    }
+    
+    // Process Frozen effects
+    for (entity, mut frozen) in frozen_pieces.iter_mut() {
+        if frozen.remaining_turns > 0 {
+            frozen.remaining_turns -= 1;
+            info!("Frozen piece at entity {:?} has {} turns remaining", entity, frozen.remaining_turns);
+            
+            if frozen.remaining_turns == 0 {
+                commands.entity(entity).remove::<Frozen>();
+                info!("Piece is no longer frozen");
+            }
+        }
+    }
+    
+    // Process Poisoned effects
+    for (entity, mut poisoned) in poisoned_pieces.iter_mut() {
+        if poisoned.remaining_turns > 0 {
+            poisoned.remaining_turns -= 1;
+            info!("Poisoned piece at entity {:?} has {} turns remaining", entity, poisoned.remaining_turns);
+            
+            if poisoned.remaining_turns == 0 {
+                // Piece dies from poison
+                if let Some(piece) = pieces.get(entity).ok() {
+                    info!("Piece at ({}, {}) died from poison", piece.board_position.0, piece.board_position.1);
+                }
+                if let Some(mut entity_commands) = commands.get_entity(entity) {
+                    entity_commands.despawn();
+                }
+            }
+        }
+    }
+    
+    // Process Shield effects (shields don't expire by time, but track remaining hits)
+    for (entity, shield) in shielded_pieces.iter() {
+        if shield.remaining_hits == 0 {
+            commands.entity(entity).remove::<Shield>();
+            info!("Shield expired for piece at entity {:?}", entity);
+        }
+    }
+    
+    // Process Invisible effects
+    for (entity, mut invisible) in invisible_pieces.iter_mut() {
+        if invisible.remaining_turns > 0 {
+            invisible.remaining_turns -= 1;
+            info!("Invisible piece at entity {:?} has {} turns remaining", entity, invisible.remaining_turns);
+            
+            if invisible.remaining_turns == 0 {
+                commands.entity(entity).remove::<Invisible>();
+                info!("Piece is no longer invisible");
+            }
+        }
+    }
+    
+    // Process Reflecting effects
+    for (entity, mut reflecting) in reflecting_pieces.iter_mut() {
+        if reflecting.remaining_turns > 0 {
+            reflecting.remaining_turns -= 1;
+            info!("Reflecting piece at entity {:?} has {} turns remaining", entity, reflecting.remaining_turns);
+            
+            if reflecting.remaining_turns == 0 {
+                commands.entity(entity).remove::<Reflecting>();
+                info!("Piece is no longer reflecting");
+            }
+        }
+    }
+    
+    // Process Absorbing effects
+    for (entity, mut absorbing) in absorbing_pieces.iter_mut() {
+        if absorbing.remaining_turns > 0 {
+            absorbing.remaining_turns -= 1;
+            info!("Absorbing piece at entity {:?} has {} turns remaining", entity, absorbing.remaining_turns);
+            
+            if absorbing.remaining_turns == 0 {
+                commands.entity(entity).remove::<Absorbing>();
+                info!("Piece is no longer absorbing");
+            }
+        }
+    }
+}

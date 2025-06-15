@@ -20,6 +20,11 @@ pub fn handle_drag_start(
     game_state: Res<GameState>,
     pieces: Query<(Entity, &GamePiece, &Transform), Without<Dragging>>,
     diagonal_pieces: Query<Entity, With<MoveDiagonalActive>>,
+    teleport_pieces: Query<Entity, With<TeleportActive>>,
+    jump_pieces: Query<Entity, With<JumpActive>>,
+    move_two_pieces: Query<Entity, With<MoveTwoActive>>,
+    knight_pieces: Query<Entity, With<KnightMoveActive>>,
+    frozen_pieces: Query<Entity, With<crate::components::power::Frozen>>,
     tiles: Query<&BoardTile>,
 ) {
     if !mouse_input.just_pressed(MouseButton::Left) {
@@ -70,6 +75,12 @@ pub fn handle_drag_start(
                 let half_height = piece_bounds.y / 2.0;
 
                 if dx < half_width && dy < half_height {
+                    // Check if piece is frozen
+                    if frozen_pieces.contains(entity) {
+                        info!("2D: Cannot select frozen piece at {:?}", piece.board_position);
+                        return;
+                    }
+                    
                     found_piece = true;
                     info!("2D: Selected {:?} piece at board {:?}, world ({:.1}, {:.1})", 
                           piece.player, piece.board_position, piece_pos.x, piece_pos.y);
@@ -80,17 +91,25 @@ pub fn handle_drag_start(
                         original_position: piece.board_position,
                     });
 
-                    // Check if this piece has diagonal move
+                    // Check what movement powers this piece has
                     let has_diagonal = diagonal_pieces.contains(entity);
+                    let has_teleport = teleport_pieces.contains(entity);
+                    let has_jump = jump_pieces.contains(entity);
+                    let has_move_two = move_two_pieces.contains(entity);
+                    let has_knight = knight_pieces.contains(entity);
 
-                    // Show valid move indicators
-                    spawn_valid_move_indicators(
+                    // Show valid move indicators with all movement types
+                    spawn_enhanced_move_indicators(
                         &mut commands,
                         piece.board_position,
                         &pieces,
                         &tiles,
                         game_state.current_player,
                         has_diagonal,
+                        has_teleport,
+                        has_jump,
+                        has_move_two,
+                        has_knight,
                     );
                     break;
                 }
@@ -143,6 +162,7 @@ pub fn handle_drag_end(
     jump_pieces: Query<Entity, With<JumpActive>>,
     move_two_pieces: Query<Entity, With<MoveTwoActive>>,
     knight_pieces: Query<Entity, With<KnightMoveActive>>,
+    frozen_pieces_drag_end: Query<Entity, With<crate::components::power::Frozen>>,
     other_pieces: Query<(Entity, &GamePiece), Without<Dragging>>,
     all_pieces_3d: Query<(Entity, &GamePiece3D)>,
     time: Res<Time>,
@@ -181,6 +201,14 @@ pub fn handle_drag_end(
 
             // Process moves
             for (entity, start_pos, player) in moves_to_process {
+                // Check if piece is frozen (can't move)
+                if frozen_pieces_drag_end.contains(entity) {
+                    info!("2D: Frozen piece cannot move - canceling drag");
+                    commands.entity(entity).remove::<Dragging>();
+                    commands.entity(entity).remove::<Selected>();
+                    continue;
+                }
+                
                 // First remove the Dragging and Selected components
                 commands.entity(entity).remove::<Dragging>();
                 commands.entity(entity).remove::<Selected>();
@@ -607,6 +635,146 @@ fn spawn_valid_move_indicators(
                 ));
             }
         }
+    }
+}
+
+fn spawn_enhanced_move_indicators(
+    commands: &mut Commands,
+    from_pos: (u8, u8),
+    pieces: &Query<(Entity, &GamePiece, &Transform), Without<Dragging>>,
+    tiles: &Query<&BoardTile>,
+    current_player: Player,
+    allow_diagonal: bool,
+    has_teleport: bool,
+    has_jump: bool,
+    has_move_two: bool,
+    has_knight: bool,
+) {
+    // Start with basic orthogonal directions
+    let mut all_valid_moves = Vec::new();
+    
+    if has_teleport {
+        // Teleport: can move to any empty square on the board
+        for x in 0..BOARD_WIDTH {
+            for y in 0..BOARD_HEIGHT {
+                let target_pos = (x, y);
+                if target_pos != from_pos {
+                    // Check if square is empty
+                    let mut occupied = false;
+                    for (_, piece, _) in pieces.iter() {
+                        if piece.board_position == target_pos {
+                            occupied = true;
+                            break;
+                        }
+                    }
+                    if !occupied {
+                        all_valid_moves.push((target_pos, Color::CYAN));
+                    }
+                }
+            }
+        }
+    } else {
+        // Regular movement with various enhancements
+        let mut basic_directions = vec![(0, 1), (0, -1), (1, 0), (-1, 0)];
+        
+        if allow_diagonal {
+            basic_directions.extend_from_slice(&[(1, 1), (1, -1), (-1, 1), (-1, -1)]);
+        }
+
+        if has_knight {
+            // Knight moves: L-shaped moves like chess knight
+            let knight_moves = [
+                (2, 1), (2, -1), (-2, 1), (-2, -1),
+                (1, 2), (1, -2), (-1, 2), (-1, -2),
+            ];
+            basic_directions.extend_from_slice(&knight_moves);
+        }
+
+        let from_height = get_tile_height(from_pos, tiles);
+
+        for (dx, dy) in basic_directions.iter() {
+            let max_distance = if has_move_two { 2 } else { 1 };
+            
+            for distance in 1..=max_distance {
+                let new_x = from_pos.0 as i8 + (dx * distance);
+                let new_y = from_pos.1 as i8 + (dy * distance);
+
+                if new_x >= 0 && new_x < BOARD_WIDTH as i8 && new_y >= 0 && new_y < BOARD_HEIGHT as i8 {
+                    let target_pos = (new_x as u8, new_y as u8);
+                    let to_height = get_tile_height(target_pos, tiles);
+
+                    // Height restriction (unless teleporting)
+                    if !has_teleport && to_height > from_height + 1 {
+                        break; // Can't continue in this direction
+                    }
+
+                    // Check for pieces
+                    let mut occupied_by_friendly = false;
+                    let mut occupied_by_enemy = false;
+                    
+                    for (_, piece, _) in pieces.iter() {
+                        if piece.board_position == target_pos {
+                            if piece.player == current_player {
+                                occupied_by_friendly = true;
+                            } else {
+                                occupied_by_enemy = true;
+                            }
+                            break;
+                        }
+                    }
+
+                    // Determine if this is a valid move
+                    let can_move = if has_jump {
+                        // Jump: can move over pieces, but not land on friendly pieces
+                        !occupied_by_friendly
+                    } else {
+                        // Normal: can't move through any pieces
+                        if occupied_by_friendly || occupied_by_enemy {
+                            // Can capture enemy pieces
+                            occupied_by_enemy
+                        } else {
+                            true // Empty square
+                        }
+                    };
+
+                    if can_move {
+                        let color = if occupied_by_enemy {
+                            Color::RED // Attack move
+                        } else if has_move_two && distance == 2 {
+                            Color::BLUE // Extended move
+                        } else if has_knight && (dx.abs() == 2 || dy.abs() == 2) {
+                            Color::PURPLE // Knight move
+                        } else {
+                            Color::GREEN // Normal move
+                        };
+                        all_valid_moves.push((target_pos, color));
+                    }
+
+                    // Stop if we hit a piece and can't jump
+                    if !has_jump && (occupied_by_friendly || occupied_by_enemy) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Spawn indicators for all valid moves
+    for (target_pos, color) in all_valid_moves {
+        let world_pos = board_to_world_position(target_pos);
+        let enhanced_tile_size = TILE_SIZE * 1.2;
+        commands.spawn((
+            ValidMoveIndicator,
+            SpriteBundle {
+                sprite: Sprite {
+                    color: color.with_a(0.6), // Semi-transparent
+                    custom_size: Some(Vec2::splat(enhanced_tile_size * 0.85)),
+                    ..default()
+                },
+                transform: Transform::from_xyz(world_pos.x, world_pos.y, 2.0),
+                ..default()
+            },
+        ));
     }
 }
 

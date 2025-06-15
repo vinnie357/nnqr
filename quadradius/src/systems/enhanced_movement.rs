@@ -30,17 +30,15 @@ pub fn validate_enhanced_movement(
 
     // Check for special movement powers
     if teleport_query.contains(entity) {
-        // Teleport can move to ANY empty square
-        println!("Teleport active - can move anywhere!");
+        // Teleport can move to ANY empty square (ignores terrain height)
         return true;
     }
 
     if knight_query.contains(entity) {
-        // Knight moves in L-shape
+        // Knight moves in L-shape (ignores terrain height)
         let dx = (to.0 as i8 - from.0 as i8).abs();
         let dy = (to.1 as i8 - from.1 as i8).abs();
         if (dx == 2 && dy == 1) || (dx == 1 && dy == 2) {
-            println!("Knight move validated");
             return true;
         }
     }
@@ -50,8 +48,10 @@ pub fn validate_enhanced_movement(
         let dx = (to.0 as i8 - from.0 as i8).abs();
         let dy = (to.1 as i8 - from.1 as i8).abs();
         if (dx == 2 && dy == 0) || (dx == 0 && dy == 2) {
-            println!("Move Two validated");
-            return true;
+            // Still check terrain height for move two
+            let from_height = get_tile_height(from, tiles);
+            let to_height = get_tile_height(to, tiles);
+            return to_height <= from_height + 1;
         }
     }
 
@@ -60,8 +60,10 @@ pub fn validate_enhanced_movement(
         let dx = (to.0 as i8 - from.0 as i8).abs();
         let dy = (to.1 as i8 - from.1 as i8).abs();
         if dx == 0 || dy == 0 {
-            println!("Jump move validated");
-            return true;
+            // Still check terrain height for jump
+            let from_height = get_tile_height(from, tiles);
+            let to_height = get_tile_height(to, tiles);
+            return to_height <= from_height + 1;
         }
     }
 

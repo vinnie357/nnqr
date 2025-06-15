@@ -49,6 +49,8 @@ fn main() {
         .init_resource::<ChatState>()
         .init_resource::<PowerSpawningTracker>()
         .init_resource::<systems::isometric_camera::CameraTransition>()
+        .init_resource::<EffectProcessor>()
+        .init_resource::<AreaTargetingState>()
         .add_state::<GameMenuState>()
         .add_state::<SettingsMenuState>()
         .add_event::<PowerUsageEvent>()
@@ -129,6 +131,19 @@ fn main() {
                 check_win_condition,
                 handle_power_spawning_phase,
                 power_spawning_phase_ui,
+                // Effect processing systems (before turn indicator)
+                reset_effect_processing,
+                process_turn_effects,
+                process_pending_effects,
+                update_effect_indicators,
+                // Combat effects systems
+                process_combat_with_effects,
+                apply_invisibility_targeting,
+                apply_frozen_movement_restriction,
+                process_poison_death,
+                apply_invisibility_rendering,
+                apply_movement_enhancements,
+                apply_recruitment_effects,
                 update_turn_indicator_enhanced,
                 update_power_inventory_ui,
                 update_power_activation_ui,
@@ -156,6 +171,7 @@ fn main() {
                 handle_skip_button_interaction,
                 handle_power_selection,
                 handle_power_activation,
+                handle_area_targeting,
                 cleanup_power_effects,
                 // Power orb systems - 2D
                 spawn_power_orbs

@@ -1,13 +1,16 @@
+pub mod area_targeting;
 pub mod automated_power_tests;
 pub mod board;
 pub mod board_3d;
 pub mod camera_2d;
 pub mod chat_ui;
+pub mod combat_effects;
 pub mod crash_debug;
 pub mod debug_powers;
 pub mod debug_visibility;
 pub mod depth_sorting;
 pub mod drag_drop;
+pub mod effect_processing;
 pub mod drag_drop_3d;
 pub mod enhanced_board_visuals;
 pub mod enhanced_move_indicators_3d;
@@ -47,13 +50,16 @@ pub mod win_condition;
 pub use board::*;
 pub use board_3d::*;
 pub use chat_ui::*;
+pub use combat_effects::*;
 // pub use debug_powers::*; // Disabled for production builds
 pub use drag_drop::*;
 pub use drag_drop_3d::*;
 // pub use enhanced_board_visuals::*; // Temporarily disabled due to HeightIndicator conflict
+pub use area_targeting::*;
 pub use automated_power_tests::*;
 // pub use crash_debug::*; // Disabled for production builds
 pub use depth_sorting::*;
+pub use effect_processing::*;
 pub use enhanced_move_indicators_3d::*;
 pub use enhanced_movement::*;
 pub use enhanced_ui::{

@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use crate::resources::Player;
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
 pub enum PowerType {
@@ -78,11 +79,81 @@ pub struct PowerOrb {
 }
 
 // Components for power effects that persist across turns
-#[derive(Component)]
+#[derive(Component, Clone, Debug)]
 pub struct PowerEffect {
     pub power_type: PowerType,
-    pub duration: f32,
-    pub target: Entity,
+    pub duration_turns: u32,
+    pub target_entity: Entity,
+    pub effect_data: EffectData,
+    pub source_player: Player,
+    pub turn_applied: u32,
+}
+
+// Data for different types of effects
+#[derive(Clone, Debug)]
+pub enum EffectData {
+    // Movement effects
+    Movement(MovementRestriction),
+    // Combat effects
+    Protection(ProtectionType),
+    // Status effects
+    Status(StatusEffect),
+    // Area effects
+    Area(AreaEffect),
+}
+
+#[derive(Clone, Debug)]
+pub enum MovementRestriction {
+    None,           // Can't move
+    Limited(Vec<(i8, i8)>), // Can only move to specific relative positions
+    Enhanced(MovementType), // Enhanced movement abilities
+}
+
+#[derive(Clone, Debug)]
+pub enum MovementType {
+    Diagonal,
+    Teleport,
+    Jump,
+    Knight,
+    Double, // Can move twice
+}
+
+#[derive(Clone, Debug)]
+pub enum ProtectionType {
+    Shield { hits_remaining: u32 },
+    Immunity { damage_types: Vec<DamageType> },
+    Reflection { turns_remaining: u32 },
+}
+
+#[derive(Clone, Debug)]
+pub enum DamageType {
+    Capture,
+    Explosion,
+    Magic,
+    All,
+}
+
+#[derive(Clone, Debug)]
+pub enum StatusEffect {
+    Invisible,
+    Poisoned { death_timer: u32 },
+    Frozen,
+    Recruiting { conversion_power: u32 },
+}
+
+#[derive(Clone, Debug)]
+pub struct AreaEffect {
+    pub center: (u8, u8),
+    pub radius: u8,
+    pub effect_type: AreaEffectType,
+}
+
+#[derive(Clone, Debug)]
+pub enum AreaEffectType {
+    Damage,
+    Heal,
+    Convert,
+    Terrain,
 }
 
 // For shields that block attacks
@@ -502,4 +573,150 @@ pub enum PowerCategory {
     Terrain,
     Strategic,
     Meta,
+}
+
+// Effect stacking rules and utility functions
+impl PowerEffect {
+    pub fn new(
+        power_type: PowerType,
+        duration_turns: u32,
+        target_entity: Entity,
+        effect_data: EffectData,
+        source_player: Player,
+        current_turn: u32,
+    ) -> Self {
+        Self {
+            power_type,
+            duration_turns,
+            target_entity,
+            effect_data,
+            source_player,
+            turn_applied: current_turn,
+        }
+    }
+
+    pub fn is_expired(&self, current_turn: u32) -> bool {
+        current_turn >= self.turn_applied + self.duration_turns
+    }
+
+    pub fn remaining_turns(&self, current_turn: u32) -> u32 {
+        let elapsed = current_turn.saturating_sub(self.turn_applied);
+        self.duration_turns.saturating_sub(elapsed)
+    }
+
+    pub fn can_stack_with(&self, other: &PowerEffect) -> bool {
+        match (&self.effect_data, &other.effect_data) {
+            // Different effect types can always stack
+            (EffectData::Movement(_), EffectData::Protection(_)) => true,
+            (EffectData::Movement(_), EffectData::Status(_)) => true,
+            (EffectData::Protection(_), EffectData::Status(_)) => true,
+            (EffectData::Protection(_), EffectData::Movement(_)) => true,
+            (EffectData::Status(_), EffectData::Movement(_)) => true,
+            (EffectData::Status(_), EffectData::Protection(_)) => true,
+
+            // Same effect types - check specific stacking rules
+            (EffectData::Movement(a), EffectData::Movement(b)) => {
+                self.movement_can_stack(a, b)
+            }
+            (EffectData::Protection(a), EffectData::Protection(b)) => {
+                self.protection_can_stack(a, b)
+            }
+            (EffectData::Status(a), EffectData::Status(b)) => {
+                self.status_can_stack(a, b)
+            }
+
+            // Area effects don't stack
+            (EffectData::Area(_), _) | (_, EffectData::Area(_)) => false,
+        }
+    }
+
+    fn movement_can_stack(&self, a: &MovementRestriction, b: &MovementRestriction) -> bool {
+        match (a, b) {
+            // Frozen state doesn't stack with anything
+            (MovementRestriction::None, _) | (_, MovementRestriction::None) => false,
+            // Different enhanced movements can stack
+            (MovementRestriction::Enhanced(_), MovementRestriction::Enhanced(_)) => true,
+            // Limited movements can combine
+            (MovementRestriction::Limited(_), MovementRestriction::Limited(_)) => true,
+            _ => true,
+        }
+    }
+
+    fn protection_can_stack(&self, a: &ProtectionType, b: &ProtectionType) -> bool {
+        match (a, b) {
+            // Shields don't stack
+            (ProtectionType::Shield { .. }, ProtectionType::Shield { .. }) => false,
+            // Different protection types can stack
+            _ => true,
+        }
+    }
+
+    fn status_can_stack(&self, a: &StatusEffect, b: &StatusEffect) -> bool {
+        match (a, b) {
+            // Same status effects don't stack
+            (StatusEffect::Invisible, StatusEffect::Invisible) => false,
+            (StatusEffect::Frozen, StatusEffect::Frozen) => false,
+            (StatusEffect::Poisoned { .. }, StatusEffect::Poisoned { .. }) => false,
+            // Different status effects can stack
+            _ => true,
+        }
+    }
+
+    pub fn get_visual_priority(&self) -> u32 {
+        match &self.effect_data {
+            EffectData::Status(StatusEffect::Poisoned { .. }) => 100, // Highest priority
+            EffectData::Status(StatusEffect::Frozen) => 90,
+            EffectData::Protection(ProtectionType::Shield { .. }) => 80,
+            EffectData::Status(StatusEffect::Invisible) => 70,
+            EffectData::Protection(ProtectionType::Immunity { .. }) => 60,
+            EffectData::Movement(_) => 50,
+            EffectData::Protection(ProtectionType::Reflection { .. }) => 40,
+            EffectData::Area(_) => 30,
+            _ => 10,
+        }
+    }
+}
+
+// Stacking rule definitions
+#[derive(Debug, Clone)]
+pub enum StackingRule {
+    NoStack,     // Effects of this type cannot stack
+    Replace,     // New effect replaces old one
+    Combine,     // Effects combine their values
+    Independent, // Effects work independently
+}
+
+impl EffectData {
+    pub fn stacking_rule(&self) -> StackingRule {
+        match self {
+            EffectData::Movement(MovementRestriction::None) => StackingRule::NoStack,
+            EffectData::Protection(ProtectionType::Shield { .. }) => StackingRule::Replace,
+            EffectData::Status(StatusEffect::Invisible) => StackingRule::Replace,
+            EffectData::Status(StatusEffect::Frozen) => StackingRule::NoStack,
+            EffectData::Status(StatusEffect::Poisoned { .. }) => StackingRule::Replace,
+            EffectData::Movement(MovementRestriction::Enhanced(_)) => StackingRule::Combine,
+            EffectData::Protection(ProtectionType::Immunity { .. }) => StackingRule::Combine,
+            _ => StackingRule::Independent,
+        }
+    }
+
+    pub fn get_effect_name(&self) -> &'static str {
+        match self {
+            EffectData::Movement(MovementRestriction::None) => "Frozen",
+            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Diagonal)) => "Diagonal Movement",
+            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Teleport)) => "Teleport",
+            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Jump)) => "Jump",
+            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Knight)) => "Knight Movement",
+            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Double)) => "Double Move",
+            EffectData::Protection(ProtectionType::Shield { .. }) => "Shield",
+            EffectData::Protection(ProtectionType::Immunity { .. }) => "Immunity",
+            EffectData::Protection(ProtectionType::Reflection { .. }) => "Reflection",
+            EffectData::Status(StatusEffect::Invisible) => "Invisible",
+            EffectData::Status(StatusEffect::Poisoned { .. }) => "Poisoned",
+            EffectData::Status(StatusEffect::Frozen) => "Frozen",
+            EffectData::Status(StatusEffect::Recruiting { .. }) => "Recruiting",
+            EffectData::Area(_) => "Area Effect",
+            _ => "Unknown Effect",
+        }
+    }
 }

@@ -1,5 +1,6 @@
 use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::systems::TerrainHeight;
+use crate::systems::effect_processing::{add_effect_to_entity, ActiveEffects};
 use crate::{components::*, resources::*};
 use bevy::prelude::*;
 use rand::Rng;
@@ -459,14 +460,20 @@ pub fn handle_power_activation(
                             }
                         }
                         PowerType::Freeze => {
-                            // Freeze target piece for 3 turns
+                            // Freeze target piece for 3 turns using new effect system
                             if let Some((entity, piece)) =
                                 pieces.iter().find(|(_, p)| p.board_position == board_pos)
                             {
                                 if piece.player != game_state.current_player {
-                                    commands.entity(entity).insert(
-                                        crate::components::power::Frozen { remaining_turns: 3 },
+                                    let freeze_effect = PowerEffect::new(
+                                        PowerType::Freeze,
+                                        3, // Duration in turns
+                                        entity,
+                                        EffectData::Status(StatusEffect::Frozen),
+                                        game_state.current_player,
+                                        game_state.turn_number,
                                     );
+                                    add_effect_to_entity(&mut commands, entity, freeze_effect);
                                     println!("Frozen enemy piece at {:?} for 3 turns", board_pos);
                                     true
                                 } else {
@@ -580,24 +587,36 @@ pub fn handle_power_activation(
                             }
                         }
                         PowerType::Shield => {
-                            // Give current player's pieces shield protection
+                            // Give current player's pieces shield protection using new effect system
                             for (entity, piece) in pieces.iter() {
                                 if piece.player == game_state.current_player {
-                                    commands.entity(entity).insert(
-                                        crate::components::power::Shield { remaining_hits: 1 },
+                                    let shield_effect = PowerEffect::new(
+                                        PowerType::Shield,
+                                        5, // Duration in turns
+                                        entity,
+                                        EffectData::Protection(ProtectionType::Shield { hits_remaining: 1 }),
+                                        game_state.current_player,
+                                        game_state.turn_number,
                                     );
+                                    add_effect_to_entity(&mut commands, entity, shield_effect);
                                 }
                             }
-                            println!("Shield activated - pieces protected from next attack");
+                            println!("Shield activated - pieces protected for 5 turns or until hit");
                             true
                         }
                         PowerType::Invisible => {
-                            // Make current player's pieces invisible for 3 turns
+                            // Make current player's pieces invisible for 3 turns using new effect system
                             for (entity, piece) in pieces.iter() {
                                 if piece.player == game_state.current_player {
-                                    commands.entity(entity).insert(
-                                        crate::components::power::Invisible { remaining_turns: 3 },
+                                    let invisible_effect = PowerEffect::new(
+                                        PowerType::Invisible,
+                                        3, // Duration in turns
+                                        entity,
+                                        EffectData::Status(StatusEffect::Invisible),
+                                        game_state.current_player,
+                                        game_state.turn_number,
                                     );
+                                    add_effect_to_entity(&mut commands, entity, invisible_effect);
                                 }
                             }
                             println!("Invisibility activated - pieces invisible for 3 turns");
@@ -640,14 +659,20 @@ pub fn handle_power_activation(
                             }
                         }
                         PowerType::Poison => {
-                            // Poison target piece - it dies after 3 turns
+                            // Poison target piece - it dies after 3 turns using new effect system
                             if let Some((entity, piece)) =
                                 pieces.iter().find(|(_, p)| p.board_position == board_pos)
                             {
                                 if piece.player != game_state.current_player {
-                                    commands.entity(entity).insert(
-                                        crate::components::power::Poisoned { remaining_turns: 3 },
+                                    let poison_effect = PowerEffect::new(
+                                        PowerType::Poison,
+                                        3, // Duration in turns
+                                        entity,
+                                        EffectData::Status(StatusEffect::Poisoned { death_timer: 3 }),
+                                        game_state.current_player,
+                                        game_state.turn_number,
                                     );
+                                    add_effect_to_entity(&mut commands, entity, poison_effect);
                                     println!(
                                         "Poisoned enemy piece at {:?} - dies in 3 turns",
                                         board_pos
@@ -1078,15 +1103,21 @@ pub fn handle_power_activation(
                             true
                         }
                         PowerType::Reflect => {
-                            // Add reflection ability to current player's pieces
+                            // Add reflection ability to current player's pieces using new effect system
                             for (entity, piece) in pieces.iter() {
                                 if piece.player == game_state.current_player {
-                                    commands.entity(entity).insert(
-                                        crate::components::power::Reflecting { remaining_turns: 3 },
+                                    let reflect_effect = PowerEffect::new(
+                                        PowerType::Reflect,
+                                        3, // Duration in turns
+                                        entity,
+                                        EffectData::Protection(ProtectionType::Reflection { turns_remaining: 3 }),
+                                        game_state.current_player,
+                                        game_state.turn_number,
                                     );
+                                    add_effect_to_entity(&mut commands, entity, reflect_effect);
                                 }
                             }
-                            println!("Reflection activated - powers will be reflected for 3 turns");
+                            println!("Reflection activated - attacks will be reflected for 3 turns");
                             true
                         }
                         PowerType::Absorb => {
@@ -1233,16 +1264,31 @@ pub fn handle_power_activation(
                             true
                         }
 
+                        PowerType::JumpProof => {
+                            // Give current player's pieces permanent capture immunity
+                            for (entity, piece) in pieces.iter() {
+                                if piece.player == game_state.current_player {
+                                    let jumpproof_effect = PowerEffect::new(
+                                        PowerType::JumpProof,
+                                        999, // Permanent effect (very long duration)
+                                        entity,
+                                        EffectData::Protection(ProtectionType::Immunity { 
+                                            damage_types: vec![DamageType::Capture, DamageType::All] 
+                                        }),
+                                        game_state.current_player,
+                                        game_state.turn_number,
+                                    );
+                                    add_effect_to_entity(&mut commands, entity, jumpproof_effect);
+                                }
+                            }
+                            println!("Jump Proof activated - pieces are now permanently immune to capture!");
+                            true
+                        }
                         // Missing research powers - placeholder implementations for now
                         PowerType::GrowQuadradius => {
                             println!(
                                 "Grow Quadradius activated - extending kill range to entire board"
                             );
-                            // Implementation will be added later
-                            false
-                        }
-                        PowerType::JumpProof => {
-                            println!("Jump Proof activated - piece is now immune to capture");
                             // Implementation will be added later
                             false
                         }
@@ -1252,16 +1298,14 @@ pub fn handle_power_activation(
                             false
                         }
                         PowerType::SnakeTunneling => {
-                            println!("Snake Tunneling activated - destructive snake across board");
-                            // Implementation will be added later
-                            false
+                            // Snake tunneling: destructive snake across board, raises terrain 2 levels
+                            activate_snake_tunneling(board_pos, &mut commands, &pieces, &mut tile_queries.p1());
+                            true
                         }
                         PowerType::DredgeColumn => {
-                            println!(
-                                "Dredge Column activated - sinking enemies, raising friendlies"
-                            );
-                            // Implementation will be added later
-                            false
+                            // Dredge column: sink enemies 2 levels, raise friendlies 2 levels
+                            activate_dredge_column(board_pos.0, game_state.current_player, &mut commands, &pieces, &mut tile_queries.p1());
+                            true
                         }
                         PowerType::TeachRow => {
                             println!("Teach Row activated - sharing powers with row");
@@ -1552,4 +1596,102 @@ fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
     let y = y.max(0).min(BOARD_HEIGHT as i8 - 1) as u8;
 
     (x, y)
+}
+
+fn activate_dredge_column(
+    column: u8,
+    current_player: Player,
+    commands: &mut Commands,
+    pieces: &Query<(Entity, &GamePiece)>,
+    tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>,
+) {
+    use crate::systems::terrain_height::{MAX_HEIGHT, MIN_HEIGHT};
+    
+    println!("💧 Dredge Column {} activated by {:?}", column, current_player);
+    
+    // Find all pieces in the column and adjust terrain
+    for (piece_entity, piece) in pieces.iter() {
+        if piece.board_position.0 == column {
+            // Find the tile at this piece's position
+            for (tile_entity, mut tile, mut terrain) in tiles.iter_mut() {
+                if tile.coordinates == piece.board_position {
+                    let old_height = tile.height;
+                    
+                    if piece.player == current_player {
+                        // Raise friendly pieces 2 levels
+                        tile.height = (tile.height + 2).min(MAX_HEIGHT);
+                        terrain.height = tile.height;
+                        println!("  ⬆️ Raised friendly piece at ({}, {}) from {} to {}", 
+                                tile.coordinates.0, tile.coordinates.1, old_height, tile.height);
+                    } else {
+                        // Sink enemy pieces 2 levels
+                        tile.height = (tile.height - 2).max(MIN_HEIGHT);
+                        terrain.height = tile.height;
+                        println!("  ⬇️ Sunk enemy piece at ({}, {}) from {} to {}", 
+                                tile.coordinates.0, tile.coordinates.1, old_height, tile.height);
+                    }
+                    
+                    // Add terrain animation
+                    commands.entity(tile_entity).insert(crate::systems::terrain_height::TerrainAnimation {
+                        start_height: old_height,
+                        target_height: tile.height,
+                        duration: 0.8,
+                        elapsed: 0.0,
+                    });
+                    break;
+                }
+            }
+        }
+    }
+}
+
+fn activate_snake_tunneling(
+    start_pos: (u8, u8),
+    commands: &mut Commands,
+    pieces: &Query<(Entity, &GamePiece)>,
+    tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>,
+) {
+    use crate::systems::terrain_height::{MAX_HEIGHT};
+    
+    println!("🐍 Snake Tunneling activated from ({}, {})", start_pos.0, start_pos.1);
+    
+    // Snake creates a straight line path across the entire row
+    let snake_row = start_pos.1;
+    
+    for x in 0..BOARD_WIDTH {
+        let pos = (x, snake_row);
+        
+        // Destroy any pieces in the path
+        for (piece_entity, piece) in pieces.iter() {
+            if piece.board_position == pos {
+                if let Some(mut entity_commands) = commands.get_entity(piece_entity) {
+                    entity_commands.despawn();
+                }
+                println!("  💥 Snake destroyed piece at ({}, {})", pos.0, pos.1);
+            }
+        }
+        
+        // Raise terrain 2 levels along the path
+        for (tile_entity, mut tile, mut terrain) in tiles.iter_mut() {
+            if tile.coordinates == pos {
+                let old_height = tile.height;
+                tile.height = (tile.height + 2).min(MAX_HEIGHT);
+                terrain.height = tile.height;
+                
+                // Add terrain animation
+                commands.entity(tile_entity).insert(crate::systems::terrain_height::TerrainAnimation {
+                    start_height: old_height,
+                    target_height: tile.height,
+                    duration: 1.0,
+                    elapsed: 0.0,
+                });
+                
+                println!("  ⬆️ Snake raised terrain at ({}, {}) from {} to {}", 
+                        pos.0, pos.1, old_height, tile.height);
+                break;
+            }
+        }
+    }
+    
+    println!("🐍 Snake tunneling complete - row {} devastated and raised", snake_row);
 }
