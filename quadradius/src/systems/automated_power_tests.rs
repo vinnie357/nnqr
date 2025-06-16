@@ -346,6 +346,8 @@ fn test_power_effects(
         PowerType::TeachRadial => test_meta_power(power, game_state),
         PowerType::Acid => test_self_buff_power(power, pieces),
         PowerType::RecruitRadial => test_meta_power(power, game_state),
+        PowerType::PowerEcho => test_meta_power(power, game_state),
+        PowerType::PowerMemory => test_meta_power(power, game_state),
     }
 }
 

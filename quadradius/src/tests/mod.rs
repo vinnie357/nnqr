@@ -21,3 +21,4 @@ pub mod piece_outline_cleanup_test;
 pub mod piece_outline_artifact_fix_test;
 pub mod phase2_effect_system_tests;
 pub mod phase2_integration_tests;
+pub mod phase4_power_interaction_tests;

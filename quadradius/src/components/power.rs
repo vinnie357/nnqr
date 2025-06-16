@@ -59,6 +59,8 @@ pub enum PowerType {
     PowerDrain,   // Remove all opponent powers
     Reflect,      // Reflect next power back
     Absorb,       // Gain power when attacked
+    PowerEcho,    // Repeat last opponent power
+    PowerMemory,  // Restore previously used powers
 
     // Missing research-identified powers
     GrowQuadradius, // Massively extends kill power range (most powerful)
@@ -352,6 +354,8 @@ impl PowerType {
             PowerType::PowerDrain => Color::rgb(0.4, 0.1, 0.4),
             PowerType::Reflect => Color::rgb(0.8, 0.7, 0.9),
             PowerType::Absorb => Color::rgb(0.6, 0.3, 0.8),
+            PowerType::PowerEcho => Color::rgb(0.5, 0.2, 0.7),
+            PowerType::PowerMemory => Color::rgb(0.7, 0.5, 0.9),
 
             // Missing research powers (distinctive colors)
             PowerType::GrowQuadradius => Color::rgb(1.0, 0.0, 1.0), // Bright magenta - most powerful
@@ -422,6 +426,8 @@ impl PowerType {
             PowerType::PowerDrain => "Power Drain",
             PowerType::Reflect => "Reflect",
             PowerType::Absorb => "Absorb",
+            PowerType::PowerEcho => "Power Echo",
+            PowerType::PowerMemory => "Power Memory",
 
             // Missing research powers
             PowerType::GrowQuadradius => "Grow Quadradius",
@@ -492,6 +498,8 @@ impl PowerType {
             PowerType::PowerDrain => "Remove all opponent powers",
             PowerType::Reflect => "Reflect next power back",
             PowerType::Absorb => "Gain power when attacked",
+            PowerType::PowerEcho => "Repeat the last power used by opponent",
+            PowerType::PowerMemory => "Restore previously used powers from memory",
 
             // Missing research powers
             PowerType::GrowQuadradius => {
@@ -571,7 +579,9 @@ impl PowerType {
             | PowerType::PowerGift
             | PowerType::PowerDrain
             | PowerType::Reflect
-            | PowerType::Absorb => PowerCategory::Meta,
+            | PowerType::Absorb
+            | PowerType::PowerEcho
+            | PowerType::PowerMemory => PowerCategory::Meta,
         }
     }
 }

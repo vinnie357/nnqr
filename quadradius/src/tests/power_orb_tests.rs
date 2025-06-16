@@ -124,7 +124,9 @@ fn test_power_type_random() {
             | PowerType::TeachRow
             | PowerType::TeachRadial
             | PowerType::Acid
-            | PowerType::RecruitRadial => {
+            | PowerType::RecruitRadial
+            | PowerType::PowerEcho
+            | PowerType::PowerMemory => {
                 // Valid power type
             }
         }

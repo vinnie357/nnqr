@@ -3,6 +3,7 @@ pub mod automated_power_tests;
 pub mod board;
 pub mod board_3d;
 pub mod camera_2d;
+pub mod chain_reaction_detection;
 pub mod chat_ui;
 pub mod combat_effects;
 pub mod crash_debug;
@@ -32,8 +33,10 @@ pub mod pieces_3d;
 pub mod power_activation_ui;
 pub mod power_balance;
 pub mod power_effects;
+pub mod power_interactions;
 pub mod power_orbs;
 pub mod power_orbs_3d;
+pub mod power_registry;
 pub mod power_test_report;
 pub mod power_testing;
 pub mod scoreboard;
@@ -49,6 +52,7 @@ pub mod win_condition;
 
 pub use board::*;
 pub use board_3d::*;
+pub use chain_reaction_detection::*;
 pub use chat_ui::*;
 pub use combat_effects::*;
 // pub use debug_powers::*; // Disabled for production builds
@@ -80,8 +84,10 @@ pub use pieces_3d::*;
 pub use power_activation_ui::*;
 pub use power_balance::*;
 pub use power_effects::*;
+pub use power_interactions::*;
 pub use power_orbs::*;
 pub use power_orbs_3d::*;
+pub use power_registry::*;
 // pub use power_test_report::*; // Disabled for production builds
 pub use power_testing::*;
 pub use scoreboard::*;
