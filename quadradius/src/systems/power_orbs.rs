@@ -1,6 +1,6 @@
 use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
-use crate::{components::*, resources::*};
 use crate::resources::game_state::TurnPhase;
+use crate::{components::*, resources::*};
 use bevy::prelude::*;
 
 const ORB_SPAWN_CHANCE: f32 = 0.5; // 50% chance per turn (increased for better gameplay)
@@ -45,7 +45,10 @@ pub fn spawn_power_orbs(
 
     // Check if we should spawn an orb (every 7 rounds)
     if !spawning_tracker.should_spawn_orb() {
-        println!("Not time to spawn orb yet (need {} more rounds)", 7 - spawning_tracker.rounds_since_last_spawn);
+        println!(
+            "Not time to spawn orb yet (need {} more rounds)",
+            7 - spawning_tracker.rounds_since_last_spawn
+        );
         return;
     }
 

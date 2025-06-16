@@ -5,9 +5,9 @@ use crate::systems::{
     power_effects::MoveDiagonalActive,
 };
 use crate::{
-    components::*, 
+    components::*,
     resources::{GameState, TurnPhase},
-    systems::isometric_camera::board_to_isometric
+    systems::isometric_camera::board_to_isometric,
 };
 use bevy::prelude::*;
 
@@ -44,19 +44,21 @@ pub fn show_valid_moves_for_powers_3d(
     for entity in existing_indicators.iter() {
         commands.entity(entity).despawn();
     }
-    
+
     // Only show indicators during piece movement phase
     if game_state.turn_phase != TurnPhase::PieceMovement {
         return;
     }
-    
+
     // Debug: Check if any pieces are selected (both 2D and 3D)
     let selected_2d_count = selected_2d_pieces.iter().count();
     let selected_3d_count = selected_3d_pieces.iter().count();
     let total_selected = selected_2d_count + selected_3d_count;
     if total_selected > 0 {
-        info!("🎯 3D Indicator System: Found {} selected pieces (2D: {}, 3D: {})", 
-              total_selected, selected_2d_count, selected_3d_count);
+        info!(
+            "🎯 3D Indicator System: Found {} selected pieces (2D: {}, 3D: {})",
+            total_selected, selected_2d_count, selected_3d_count
+        );
     }
 
     // Create highlight mesh - square box to match board tile shape exactly
@@ -70,7 +72,7 @@ pub fn show_valid_moves_for_powers_3d(
     // Valid move material - very bright green with strong glow for visibility
     let valid_move_material = materials.add(StandardMaterial {
         base_color: Color::rgba(0.0, 1.0, 0.0, 0.9), // Bright pure green
-        emissive: Color::rgb(0.2, 1.0, 0.2), // Strong green glow
+        emissive: Color::rgb(0.2, 1.0, 0.2),         // Strong green glow
         metallic: 0.2,
         perceptual_roughness: 0.1,
         alpha_mode: AlphaMode::Blend,
@@ -80,7 +82,7 @@ pub fn show_valid_moves_for_powers_3d(
     // Attack move material - very bright red with strong glow for visibility
     let attack_move_material = materials.add(StandardMaterial {
         base_color: Color::rgba(1.0, 0.0, 0.0, 0.9), // Bright pure red
-        emissive: Color::rgb(1.0, 0.2, 0.2), // Strong red glow
+        emissive: Color::rgb(1.0, 0.2, 0.2),         // Strong red glow
         metallic: 0.2,
         perceptual_roughness: 0.1,
         alpha_mode: AlphaMode::Blend,
@@ -89,13 +91,13 @@ pub fn show_valid_moves_for_powers_3d(
 
     // Get piece positions for validation (both 2D and 3D pieces)
     let mut piece_positions: Vec<((u8, u8), Player, Entity)> = Vec::new();
-    
+
     // Add 2D pieces
     for (entity, piece) in all_2d_pieces.iter() {
         piece_positions.push((piece.board_position, piece.player, entity));
     }
-    
-    // Add 3D pieces  
+
+    // Add 3D pieces
     for (entity, piece) in all_3d_pieces.iter() {
         piece_positions.push((piece.board_position, piece.player, entity));
     }
@@ -103,7 +105,10 @@ pub fn show_valid_moves_for_powers_3d(
     // Process selected 2D pieces
     for (entity, piece) in selected_2d_pieces.iter() {
         let from = piece.board_position;
-        info!("🎯 Processing selected 2D piece at {:?} for {:?}", from, piece.player);
+        info!(
+            "🎯 Processing selected 2D piece at {:?} for {:?}",
+            from, piece.player
+        );
         process_piece_indicators(
             &mut commands,
             &highlight_mesh,
@@ -121,11 +126,14 @@ pub fn show_valid_moves_for_powers_3d(
             &move_twice_query,
         );
     }
-    
+
     // Process selected 3D pieces
     for (entity, piece) in selected_3d_pieces.iter() {
         let from = piece.board_position;
-        info!("🎯 Processing selected 3D piece at {:?} for {:?}", from, piece.player);
+        info!(
+            "🎯 Processing selected 3D piece at {:?} for {:?}",
+            from, piece.player
+        );
         process_piece_indicators(
             &mut commands,
             &highlight_mesh,
@@ -204,7 +212,7 @@ fn process_piece_indicators(
                 let enhanced_tile_size = TILE_SIZE * TILE_SIZE_MULTIPLIER_3D;
                 let tile_top_y = enhanced_tile_size * ENHANCED_TILE_HEIGHT / 2.0;
                 let piece_bottom_y = world_pos.y + tile_top_y + PIECE_CLEARANCE;
-                
+
                 let indicator_pos = Vec3::new(
                     world_pos.x,
                     piece_bottom_y, // Position at piece bottom height
@@ -212,8 +220,10 @@ fn process_piece_indicators(
                 );
 
                 // Spawn enhanced 3D indicator at piece bottom height
-                info!("🟢 Spawning 3D indicator at {:?} (world: {}, piece_bottom_y: {:.2})", 
-                      to, world_pos, piece_bottom_y);
+                info!(
+                    "🟢 Spawning 3D indicator at {:?} (world: {}, piece_bottom_y: {:.2})",
+                    to, world_pos, piece_bottom_y
+                );
                 commands.spawn((
                     ValidMoveIndicator3D { coordinates: to },
                     PbrBundle {
@@ -338,15 +348,19 @@ pub fn cleanup_orphaned_indicators_3d(
     // Clean up indicators if no pieces are selected OR if not in piece movement phase
     let has_selected_pieces = !selected_2d_pieces.is_empty() || !selected_3d_pieces.is_empty();
     let in_movement_phase = game_state.turn_phase == TurnPhase::PieceMovement;
-    
+
     if !has_selected_pieces || !in_movement_phase {
         for entity in indicators.iter() {
             commands.entity(entity).despawn();
         }
-        
+
         if !indicators.is_empty() {
-            info!("🧹 Cleaned up {} orphaned movement indicators (selected: {}, phase: {:?})", 
-                  indicators.iter().count(), has_selected_pieces, game_state.turn_phase);
+            info!(
+                "🧹 Cleaned up {} orphaned movement indicators (selected: {}, phase: {:?})",
+                indicators.iter().count(),
+                has_selected_pieces,
+                game_state.turn_phase
+            );
         }
     }
 }

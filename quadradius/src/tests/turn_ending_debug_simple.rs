@@ -8,61 +8,73 @@ use bevy::prelude::*;
 fn test_click_without_drag_should_not_end_turn() {
     println!("🎯 Click Without Drag Test");
     println!("   Reproducing: Click piece -> turn should NOT end");
-    
+
     // Test the find_best_valid_target_enhanced function directly
     let start_pos = (3, 3);
     let click_pos = board_to_world_position(start_pos); // Click exactly on piece
-    
+
     println!("   Start position: {:?}", start_pos);
-    println!("   Click world pos: ({:.1}, {:.1})", click_pos.x, click_pos.y);
-    
+    println!(
+        "   Click world pos: ({:.1}, {:.1})",
+        click_pos.x, click_pos.y
+    );
+
     // Convert back to board to see if it's exact
     let converted_back = world_to_board_position(click_pos);
     println!("   Converted back to board: {:?}", converted_back);
-    
-    assert_eq!(start_pos, converted_back, "Position conversion should be exact");
-    
-    // The key test: if we click exactly on a piece's position, 
+
+    assert_eq!(
+        start_pos, converted_back,
+        "Position conversion should be exact"
+    );
+
+    // The key test: if we click exactly on a piece's position,
     // find_best_valid_target_enhanced should return None because
     // same-position moves aren't valid
-    
+
     // This would require setting up the full test environment, but the key insight is:
     // if drop_world_pos is very close to start position, we shouldn't find a "valid" target
     let distance_to_self = click_pos.distance(click_pos); // Should be 0.0
     println!("   Distance to self: {:.3}", distance_to_self);
-    
-    assert_eq!(distance_to_self, 0.0, "Distance to same position should be 0");
-    
+
+    assert_eq!(
+        distance_to_self, 0.0,
+        "Distance to same position should be 0"
+    );
+
     // If the player clicks at the exact piece position, the magnetic snapping
     // logic should not find any valid targets, preventing turn advancement
 }
 
-#[test] 
+#[test]
 fn test_magnetic_snapping_threshold() {
     println!("🎯 Magnetic Snapping Threshold Test");
-    
+
     let start_pos = (3, 3);
     let start_world = board_to_world_position(start_pos);
-    
+
     // Test small movements that should NOT trigger snapping
     let small_offset = Vec2::new(5.0, 5.0); // 5 pixels
     let small_movement_pos = start_world + small_offset;
-    
+
     let enhanced_tile_size = TILE_SIZE * 1.2; // 76.8
     let snapping_threshold = enhanced_tile_size * 0.7; // 53.76
-    
+
     println!("   Enhanced tile size: {:.1}", enhanced_tile_size);
     println!("   Snapping threshold: {:.1}", snapping_threshold);
     println!("   Small movement distance: {:.1}", small_offset.length());
-    
+
     // Small movements should be within snapping range
     let is_within_snapping = small_offset.length() < snapping_threshold;
     println!("   Is within snapping range: {}", is_within_snapping);
-    
+
     // But this is the problem! Even tiny movements can trigger snapping to nearby valid positions
-    assert!(is_within_snapping, "Small movements are within snapping range");
-    
-    // The fix should be: if the movement is very small AND no actual different 
+    assert!(
+        is_within_snapping,
+        "Small movements are within snapping range"
+    );
+
+    // The fix should be: if the movement is very small AND no actual different
     // position was intended, don't snap to nearby positions
 }
 

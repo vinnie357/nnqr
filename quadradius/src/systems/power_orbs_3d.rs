@@ -1,6 +1,6 @@
+use crate::resources::game_state::TurnPhase;
 use crate::systems::{isometric_camera::board_to_isometric, pieces_3d::GamePiece3D};
 use crate::{components::*, resources::*};
-use crate::resources::game_state::TurnPhase;
 use bevy::prelude::*;
 
 /// Component for 3D power orbs with glow effects
@@ -47,7 +47,10 @@ pub fn spawn_power_orbs_3d(
 
     // Check if we should spawn an orb (every 7 rounds)
     if !spawning_tracker.should_spawn_orb() {
-        println!("3D: Not time to spawn orb yet (need {} more rounds)", 7 - spawning_tracker.rounds_since_last_spawn);
+        println!(
+            "3D: Not time to spawn orb yet (need {} more rounds)",
+            7 - spawning_tracker.rounds_since_last_spawn
+        );
         return;
     }
 

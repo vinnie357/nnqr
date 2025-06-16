@@ -15,10 +15,20 @@ pub fn validate_enhanced_movement(
     jump_query: &Query<Entity, With<JumpActive>>,
     move_two_query: &Query<Entity, With<MoveTwoActive>>,
     knight_query: &Query<Entity, With<KnightMoveActive>>,
+    wall_query: Option<&Query<&crate::components::power::Wall>>,
 ) -> bool {
     // Check bounds
     if to.0 >= BOARD_WIDTH || to.1 >= BOARD_HEIGHT {
         return false;
+    }
+
+    // Check if target is blocked by a wall
+    if let Some(walls) = wall_query {
+        for wall in walls.iter() {
+            if wall.board_position == to {
+                return false; // Cannot move to tile with wall
+            }
+        }
     }
 
     // Check if target is occupied by friendly piece
@@ -147,6 +157,7 @@ pub fn show_valid_moves_for_powers(
                     &jump_query,
                     &move_two_query,
                     &knight_query,
+                    None, // No wall query available here - TODO: Add walls query
                 ) {
                     // Spawn indicator
                     let world_pos = board_to_world_position(to);

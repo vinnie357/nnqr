@@ -102,10 +102,7 @@ fn test_turn_phase_display() {
         "PowerActivation"
     );
     assert_eq!(format!("{:?}", TurnPhase::PieceMovement), "PieceMovement");
-    assert_eq!(
-        format!("{:?}", TurnPhase::PowerSpawning),
-        "PowerSpawning"
-    );
+    assert_eq!(format!("{:?}", TurnPhase::PowerSpawning), "PowerSpawning");
 }
 
 #[test]

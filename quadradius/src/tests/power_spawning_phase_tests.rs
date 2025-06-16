@@ -72,10 +72,13 @@ fn test_power_orbs_only_spawn_during_spawning_phase() {
         }
 
         let orbs_after = world.query::<&PowerOrb>().iter(&world).count();
-        
+
         // For this test, we just verify the logic would work correctly
         // The actual spawning is tested in other integration tests
-        assert_eq!(orbs_before, orbs_after, "No orbs should spawn in test setup");
+        assert_eq!(
+            orbs_before, orbs_after,
+            "No orbs should spawn in test setup"
+        );
     }
 
     println!("\n✅ Phase Restriction Test Complete");
@@ -104,12 +107,17 @@ fn test_spawning_phase_ui_enhancements() {
             TurnPhase::PowerSpawning => "Spawning Phase ⚡",
         };
 
-        assert_eq!(display_text, expected_display, 
-            "UI display text should match expected for {:?}", phase);
+        assert_eq!(
+            display_text, expected_display,
+            "UI display text should match expected for {:?}",
+            phase
+        );
 
         if phase == TurnPhase::PowerSpawning {
-            assert!(display_text.contains("⚡"), 
-                "Spawning phase should include lightning emoji for visual emphasis");
+            assert!(
+                display_text.contains("⚡"),
+                "Spawning phase should include lightning emoji for visual emphasis"
+            );
         }
     }
 
@@ -124,7 +132,7 @@ fn test_turn_phase_progression_with_spawning() {
     println!("   Verifying correct phase sequence including PowerSpawning");
 
     let mut game_state = GameState::default();
-    
+
     // Test the complete turn cycle
     let expected_sequence = [
         TurnPhase::PowerActivation,
@@ -138,10 +146,20 @@ fn test_turn_phase_progression_with_spawning() {
     let initial_player = game_state.current_player;
 
     for (i, expected_phase) in expected_sequence.iter().enumerate() {
-        println!("   Step {}: {:?} -> {:?}", i + 1, game_state.turn_phase, expected_phase);
-        
-        assert_eq!(game_state.turn_phase, *expected_phase,
-            "Phase should be {:?} at step {}", expected_phase, i + 1);
+        println!(
+            "   Step {}: {:?} -> {:?}",
+            i + 1,
+            game_state.turn_phase,
+            expected_phase
+        );
+
+        assert_eq!(
+            game_state.turn_phase,
+            *expected_phase,
+            "Phase should be {:?} at step {}",
+            expected_phase,
+            i + 1
+        );
 
         // Advance to next phase
         if i < expected_sequence.len() - 1 {
@@ -150,11 +168,15 @@ fn test_turn_phase_progression_with_spawning() {
     }
 
     // Verify player switched after PowerSpawning -> PowerActivation
-    assert_ne!(game_state.current_player, initial_player,
-        "Player should switch after completing PowerSpawning phase");
+    assert_ne!(
+        game_state.current_player, initial_player,
+        "Player should switch after completing PowerSpawning phase"
+    );
 
     println!("✅ Turn Progression Test Complete");
-    println!("   Correct sequence: PowerActivation → PieceMovement → PowerSpawning → (next player)");
+    println!(
+        "   Correct sequence: PowerActivation → PieceMovement → PowerSpawning → (next player)"
+    );
 }
 
 /// Test spawning tracker integration with spawning phase
@@ -164,15 +186,25 @@ fn test_spawning_tracker_integration() {
     println!("   Verifying spawning tracker works correctly with PowerSpawning phase");
 
     let mut tracker = PowerSpawningTracker::new();
-    
+
     // Test initial state
-    assert!(!tracker.should_spawn_orb(), "Should not spawn orb initially");
-    assert_eq!(tracker.rounds_since_last_spawn, 0, "Should start at round 0");
+    assert!(
+        !tracker.should_spawn_orb(),
+        "Should not spawn orb initially"
+    );
+    assert_eq!(
+        tracker.rounds_since_last_spawn, 0,
+        "Should start at round 0"
+    );
 
     // Simulate 6 rounds (not ready to spawn)
     for round in 1..=6 {
         tracker.increment_round();
-        assert!(!tracker.should_spawn_orb(), "Should not spawn at round {}", round);
+        assert!(
+            !tracker.should_spawn_orb(),
+            "Should not spawn at round {}",
+            round
+        );
         println!("   Round {}: Not ready to spawn", round);
     }
 
@@ -183,29 +215,35 @@ fn test_spawning_tracker_integration() {
 
     // Simulate orb spawning
     tracker.orb_spawned();
-    assert_eq!(tracker.rounds_since_last_spawn, 0, "Round counter should reset after spawning");
-    assert_eq!(tracker.total_orbs_spawned, 1, "Should track spawned orb count");
+    assert_eq!(
+        tracker.rounds_since_last_spawn, 0,
+        "Round counter should reset after spawning"
+    );
+    assert_eq!(
+        tracker.total_orbs_spawned, 1,
+        "Should track spawned orb count"
+    );
 
     println!("✅ Spawning Tracker Integration Test Complete");
     println!("   Spawning every 7 rounds as per original game specifications");
 }
 
 /// Integration test for complete spawning phase workflow
-#[test]  
+#[test]
 fn test_complete_spawning_phase_workflow() {
     println!("🎯 Complete Spawning Phase Workflow Integration Test");
     println!("   Testing full spawning phase experience from user perspective");
 
     let mut game_state = GameState::default();
     game_state.current_player = Player::Player1;
-    
+
     println!("\n📋 Simulating complete turn cycle:");
 
     // 1. PowerActivation Phase
     game_state.turn_phase = TurnPhase::PowerActivation;
     println!("   1. PowerActivation: Player can activate powers");
-    
-    // 2. PieceMovement Phase  
+
+    // 2. PieceMovement Phase
     crate::systems::turn_management::advance_turn_phase(&mut game_state);
     assert_eq!(game_state.turn_phase, TurnPhase::PieceMovement);
     println!("   2. PieceMovement: Player can move pieces");
@@ -214,7 +252,7 @@ fn test_complete_spawning_phase_workflow() {
     crate::systems::turn_management::advance_turn_phase(&mut game_state);
     assert_eq!(game_state.turn_phase, TurnPhase::PowerSpawning);
     println!("   3. PowerSpawning: Power orbs may spawn on board ⚡");
-    
+
     // Verify still same player during spawning phase
     assert_eq!(game_state.current_player, Player::Player1);
 

@@ -47,7 +47,7 @@ pub fn setup_pieces_3d(
 
     // Create crown/rim mesh for piece top
     let rim_mesh = meshes.add(Mesh::from(shape::Torus {
-        radius: TILE_SIZE * 0.4, // Larger to match increased piece size
+        radius: TILE_SIZE * 0.4,       // Larger to match increased piece size
         ring_radius: TILE_SIZE * 0.04, // Slightly thicker rim
         subdivisions_segments: 24,
         subdivisions_sides: 12,
@@ -133,7 +133,8 @@ fn spawn_piece_3d(
     let enhanced_tile_size = TILE_SIZE * TILE_SIZE_MULTIPLIER_3D;
     // The tile mesh height is tile_size * 0.6, so we need to position pieces above that
     let tile_top_y = enhanced_tile_size * ENHANCED_TILE_HEIGHT / 2.0; // Top of tile mesh
-    let piece_y = world_pos.y + tile_top_y + PIECE_CLEARANCE + enhanced_tile_size * PIECE_HEIGHT / 2.0;
+    let piece_y =
+        world_pos.y + tile_top_y + PIECE_CLEARANCE + enhanced_tile_size * PIECE_HEIGHT / 2.0;
 
     // Create metallic material for the piece with strong emissive glow
     let piece_material = materials.add(StandardMaterial {
@@ -257,7 +258,8 @@ pub fn update_piece_positions_3d(
         let enhanced_tile_size = TILE_SIZE * TILE_SIZE_MULTIPLIER_3D;
         // The tile mesh height is tile_size * 0.6, so we need to position pieces above that
         let tile_top_y = enhanced_tile_size * ENHANCED_TILE_HEIGHT / 2.0; // Top of tile mesh
-        let target_y = target_pos.y + tile_top_y + PIECE_CLEARANCE + enhanced_tile_size * PIECE_HEIGHT / 2.0;
+        let target_y =
+            target_pos.y + tile_top_y + PIECE_CLEARANCE + enhanced_tile_size * PIECE_HEIGHT / 2.0;
 
         // Smooth movement
         let current = transform.translation;

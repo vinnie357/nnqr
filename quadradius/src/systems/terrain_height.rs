@@ -254,7 +254,8 @@ pub fn animate_terrain_changes(
 
 // Spawn visual effects for column destruction
 fn spawn_column_destruction_effect(commands: &mut Commands, column: u8) {
-    for row in 0..8 {
+    use crate::components::board::BOARD_HEIGHT;
+    for row in 0..BOARD_HEIGHT {
         let world_x = column as f32 * 75.0 - 262.5;
         let world_y = row as f32 * 75.0 - 262.5;
 
@@ -421,10 +422,11 @@ pub fn debug_terrain_commands(
 
     // Print height map
     if keyboard.just_pressed(KeyCode::H) {
+        use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
         println!("\n🗺️ TERRAIN HEIGHT MAP:");
-        for row in (0..8).rev() {
+        for row in (0..BOARD_HEIGHT).rev() {
             print!("  Row {}: ", row);
-            for col in 0..8 {
+            for col in 0..BOARD_WIDTH {
                 if let Some(tile) = tiles.iter().find(|t| t.coordinates == (col, row)) {
                     print!("{:3}", tile.height);
                 } else {
@@ -433,7 +435,7 @@ pub fn debug_terrain_commands(
             }
             println!();
         }
-        println!("       Col: 0  1  2  3  4  5  6  7");
+        println!("       Col: 0  1  2  3  4  5  6  7  8  9");
     }
 }
 
@@ -471,6 +473,34 @@ pub fn is_position_accessible(pos: (u8, u8), tiles: &Query<&BoardTile>) -> bool 
     } else {
         false
     }
+}
+
+// Check if position is blocked by a wall
+pub fn is_position_blocked_by_wall(
+    pos: (u8, u8),
+    walls: &Query<&crate::components::power::Wall>,
+) -> bool {
+    for wall in walls.iter() {
+        if wall.board_position == pos {
+            return true;
+        }
+    }
+    false
+}
+
+// Combined accessibility check including terrain and walls
+pub fn is_position_passable(
+    pos: (u8, u8),
+    tiles: &Query<&BoardTile>,
+    walls: &Query<&crate::components::power::Wall>,
+) -> bool {
+    // Check terrain accessibility first
+    if !is_position_accessible(pos, tiles) {
+        return false;
+    }
+
+    // Check wall blocking
+    !is_position_blocked_by_wall(pos, walls)
 }
 
 // Helper functions for power effects

@@ -110,7 +110,8 @@ fn main() {
                 show_valid_moves_for_powers_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
                 show_valid_moves_for_powers.run_if(|config: Res<RenderConfig>| !config.use_3d),
                 // Cleanup orphaned indicators when turn phase changes or no selection
-                enhanced_move_indicators_3d::cleanup_orphaned_indicators_3d.run_if(|config: Res<RenderConfig>| config.use_3d),
+                enhanced_move_indicators_3d::cleanup_orphaned_indicators_3d
+                    .run_if(|config: Res<RenderConfig>| config.use_3d),
                 cleanup_movement_powers,
             ),
         )

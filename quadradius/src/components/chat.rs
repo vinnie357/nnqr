@@ -41,7 +41,7 @@ impl ChatState {
         Self {
             messages: Vec::new(),
             current_input: String::new(),
-            max_messages: 100, // Keep last 100 messages
+            max_messages: 100,  // Keep last 100 messages
             is_minimized: true, // Start minimized by default
             unread_count: 0,
         }

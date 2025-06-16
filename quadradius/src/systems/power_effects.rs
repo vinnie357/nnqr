@@ -1,8 +1,8 @@
 use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
-use crate::systems::TerrainHeight;
-use crate::systems::effect_processing::add_effect_to_entity;
-use crate::{components::*, resources::*};
 use crate::resources::game_state::TurnCounter;
+use crate::systems::effect_processing::add_effect_to_entity;
+use crate::systems::TerrainHeight;
+use crate::{components::*, resources::*};
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -596,14 +596,18 @@ pub fn handle_power_activation(
                                         PowerType::Shield,
                                         5, // Duration in turns
                                         entity,
-                                        EffectData::Protection(ProtectionType::Shield { hits_remaining: 1 }),
+                                        EffectData::Protection(ProtectionType::Shield {
+                                            hits_remaining: 1,
+                                        }),
                                         game_state.current_player,
                                         turn_counter.turn_number,
                                     );
                                     add_effect_to_entity(&mut commands, entity, shield_effect);
                                 }
                             }
-                            println!("Shield activated - pieces protected for 5 turns or until hit");
+                            println!(
+                                "Shield activated - pieces protected for 5 turns or until hit"
+                            );
                             true
                         }
                         PowerType::Invisible => {
@@ -641,7 +645,7 @@ pub fn handle_power_activation(
                                         Player::Player1 => QuadradiusTheme::TEAM_1_PRIMARY, // Bright metallic blue
                                         Player::Player2 => QuadradiusTheme::TEAM_2_PRIMARY, // Bright metallic red
                                     };
-                                    
+
                                     // Only update the sprite color, don't replace the entire bundle
                                     commands.entity(entity).insert(Sprite {
                                         color: new_color,
@@ -670,7 +674,9 @@ pub fn handle_power_activation(
                                         PowerType::Poison,
                                         3, // Duration in turns
                                         entity,
-                                        EffectData::Status(StatusEffect::Poisoned { death_timer: 3 }),
+                                        EffectData::Status(StatusEffect::Poisoned {
+                                            death_timer: 3,
+                                        }),
                                         game_state.current_player,
                                         turn_counter.turn_number,
                                     );
@@ -843,6 +849,9 @@ pub fn handle_power_activation(
                                 crate::components::power::Wall {
                                     height: 2,
                                     board_position: board_pos,
+                                    wall_type: crate::components::power::WallType::Stone,
+                                    health: 1,
+                                    created_turn: turn_counter.turn_number,
                                 },
                                 SpriteBundle {
                                     sprite: Sprite {
@@ -854,7 +863,7 @@ pub fn handle_power_activation(
                                     ..default()
                                 },
                             ));
-                            println!("Created wall at {:?}", board_pos);
+                            println!("Created stone wall at {:?}", board_pos);
                             true
                         }
                         PowerType::DestroyWall => {
@@ -1112,14 +1121,18 @@ pub fn handle_power_activation(
                                         PowerType::Reflect,
                                         3, // Duration in turns
                                         entity,
-                                        EffectData::Protection(ProtectionType::Reflection { turns_remaining: 3 }),
+                                        EffectData::Protection(ProtectionType::Reflection {
+                                            turns_remaining: 3,
+                                        }),
                                         game_state.current_player,
                                         turn_counter.turn_number,
                                     );
                                     add_effect_to_entity(&mut commands, entity, reflect_effect);
                                 }
                             }
-                            println!("Reflection activated - attacks will be reflected for 3 turns");
+                            println!(
+                                "Reflection activated - attacks will be reflected for 3 turns"
+                            );
                             true
                         }
                         PowerType::Absorb => {
@@ -1218,51 +1231,8 @@ pub fn handle_power_activation(
                             true
                         }
                         PowerType::Rotate => {
-                            // Rotate 3x3 area 90 degrees (simplified - just shuffle)
-                            // This is complex to implement properly, so using shuffle for now
-                            let mut area_pieces = Vec::new();
-                            let mut positions = Vec::new();
-
-                            for dx in -1i8..=1 {
-                                for dy in -1i8..=1 {
-                                    let target_x = board_pos.0 as i8 + dx;
-                                    let target_y = board_pos.1 as i8 + dy;
-                                    if target_x >= 0
-                                        && target_x < BOARD_WIDTH as i8
-                                        && target_y >= 0
-                                        && target_y < BOARD_HEIGHT as i8
-                                    {
-                                        let pos = (target_x as u8, target_y as u8);
-                                        positions.push(pos);
-                                        if let Some((entity, piece)) =
-                                            pieces.iter().find(|(_, p)| p.board_position == pos)
-                                        {
-                                            area_pieces.push((entity, piece.player));
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Simple rotation - move pieces clockwise
-                            if area_pieces.len() > 1 {
-                                for (i, (entity, player)) in area_pieces.iter().enumerate() {
-                                    let new_index = (i + 1) % positions.len();
-                                    if let Some(&new_pos) = positions.get(new_index) {
-                                        commands.entity(*entity).insert(GamePiece {
-                                            player: *player,
-                                            board_position: new_pos,
-                                        });
-                                        let world_pos = board_to_world_position(new_pos);
-                                        commands.entity(*entity).insert(Transform::from_xyz(
-                                            world_pos.x,
-                                            world_pos.y,
-                                            1.0,
-                                        ));
-                                    }
-                                }
-                            }
-
-                            println!("Rotated area around {:?}", board_pos);
+                            // Rotate 3x3 area 90 degrees clockwise
+                            activate_rotate_area(board_pos, &mut commands, &pieces);
                             true
                         }
 
@@ -1274,8 +1244,11 @@ pub fn handle_power_activation(
                                         PowerType::JumpProof,
                                         999, // Permanent effect (very long duration)
                                         entity,
-                                        EffectData::Protection(ProtectionType::Immunity { 
-                                            damage_types: vec![DamageType::Capture, DamageType::All] 
+                                        EffectData::Protection(ProtectionType::Immunity {
+                                            damage_types: vec![
+                                                DamageType::Capture,
+                                                DamageType::All,
+                                            ],
                                         }),
                                         game_state.current_player,
                                         turn_counter.turn_number,
@@ -1301,12 +1274,23 @@ pub fn handle_power_activation(
                         }
                         PowerType::SnakeTunneling => {
                             // Snake tunneling: destructive snake across board, raises terrain 2 levels
-                            activate_snake_tunneling(board_pos, &mut commands, &pieces, &mut tile_queries.p1());
+                            activate_snake_tunneling(
+                                board_pos,
+                                &mut commands,
+                                &pieces,
+                                &mut tile_queries.p1(),
+                            );
                             true
                         }
                         PowerType::DredgeColumn => {
                             // Dredge column: sink enemies 2 levels, raise friendlies 2 levels
-                            activate_dredge_column(board_pos.0, game_state.current_player, &mut commands, &pieces, &mut tile_queries.p1());
+                            activate_dredge_column(
+                                board_pos.0,
+                                game_state.current_player,
+                                &mut commands,
+                                &pieces,
+                                &mut tile_queries.p1(),
+                            );
                             true
                         }
                         PowerType::TeachRow => {
@@ -1589,8 +1573,8 @@ fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
 fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
     // Use enhanced tile size to match 2D board layout
     let enhanced_tile_size = TILE_SIZE * 1.2; // Match board.rs enhanced tile size
-    // Reverse the board.rs formula: tile_pos = (board_pos - BOARD_SIZE/2.0 + 0.5) * tile_size
-    // So: board_pos = (tile_pos / tile_size) + BOARD_SIZE/2.0 - 0.5
+                                              // Reverse the board.rs formula: tile_pos = (board_pos - BOARD_SIZE/2.0 + 0.5) * tile_size
+                                              // So: board_pos = (tile_pos / tile_size) + BOARD_SIZE/2.0 - 0.5
     let x = ((world_pos.x / enhanced_tile_size) + BOARD_WIDTH as f32 / 2.0 - 0.5).round() as i8;
     let y = ((world_pos.y / enhanced_tile_size) + BOARD_HEIGHT as f32 / 2.0 - 0.5).round() as i8;
 
@@ -1608,9 +1592,12 @@ fn activate_dredge_column(
     tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>,
 ) {
     use crate::systems::terrain_height::{MAX_HEIGHT, MIN_HEIGHT};
-    
-    println!("💧 Dredge Column {} activated by {:?}", column, current_player);
-    
+
+    println!(
+        "💧 Dredge Column {} activated by {:?}",
+        column, current_player
+    );
+
     // Find all pieces in the column and adjust terrain
     for (piece_entity, piece) in pieces.iter() {
         if piece.board_position.0 == column {
@@ -1618,28 +1605,34 @@ fn activate_dredge_column(
             for (tile_entity, mut tile, mut terrain) in tiles.iter_mut() {
                 if tile.coordinates == piece.board_position {
                     let old_height = tile.height;
-                    
+
                     if piece.player == current_player {
                         // Raise friendly pieces 2 levels
                         tile.height = (tile.height + 2).min(MAX_HEIGHT);
                         terrain.height = tile.height;
-                        println!("  ⬆️ Raised friendly piece at ({}, {}) from {} to {}", 
-                                tile.coordinates.0, tile.coordinates.1, old_height, tile.height);
+                        println!(
+                            "  ⬆️ Raised friendly piece at ({}, {}) from {} to {}",
+                            tile.coordinates.0, tile.coordinates.1, old_height, tile.height
+                        );
                     } else {
                         // Sink enemy pieces 2 levels
                         tile.height = (tile.height - 2).max(MIN_HEIGHT);
                         terrain.height = tile.height;
-                        println!("  ⬇️ Sunk enemy piece at ({}, {}) from {} to {}", 
-                                tile.coordinates.0, tile.coordinates.1, old_height, tile.height);
+                        println!(
+                            "  ⬇️ Sunk enemy piece at ({}, {}) from {} to {}",
+                            tile.coordinates.0, tile.coordinates.1, old_height, tile.height
+                        );
                     }
-                    
+
                     // Add terrain animation
-                    commands.entity(tile_entity).insert(crate::systems::terrain_height::TerrainAnimation {
-                        start_height: old_height,
-                        target_height: tile.height,
-                        duration: 0.8,
-                        elapsed: 0.0,
-                    });
+                    commands.entity(tile_entity).insert(
+                        crate::systems::terrain_height::TerrainAnimation {
+                            start_height: old_height,
+                            target_height: tile.height,
+                            duration: 0.8,
+                            elapsed: 0.0,
+                        },
+                    );
                     break;
                 }
             }
@@ -1653,16 +1646,19 @@ fn activate_snake_tunneling(
     pieces: &Query<(Entity, &GamePiece)>,
     tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>,
 ) {
-    use crate::systems::terrain_height::{MAX_HEIGHT};
-    
-    println!("🐍 Snake Tunneling activated from ({}, {})", start_pos.0, start_pos.1);
-    
+    use crate::systems::terrain_height::MAX_HEIGHT;
+
+    println!(
+        "🐍 Snake Tunneling activated from ({}, {})",
+        start_pos.0, start_pos.1
+    );
+
     // Snake creates a straight line path across the entire row
     let snake_row = start_pos.1;
-    
+
     for x in 0..BOARD_WIDTH {
         let pos = (x, snake_row);
-        
+
         // Destroy any pieces in the path
         for (piece_entity, piece) in pieces.iter() {
             if piece.board_position == pos {
@@ -1672,28 +1668,97 @@ fn activate_snake_tunneling(
                 println!("  💥 Snake destroyed piece at ({}, {})", pos.0, pos.1);
             }
         }
-        
+
         // Raise terrain 2 levels along the path
         for (tile_entity, mut tile, mut terrain) in tiles.iter_mut() {
             if tile.coordinates == pos {
                 let old_height = tile.height;
                 tile.height = (tile.height + 2).min(MAX_HEIGHT);
                 terrain.height = tile.height;
-                
+
                 // Add terrain animation
-                commands.entity(tile_entity).insert(crate::systems::terrain_height::TerrainAnimation {
-                    start_height: old_height,
-                    target_height: tile.height,
-                    duration: 1.0,
-                    elapsed: 0.0,
-                });
-                
-                println!("  ⬆️ Snake raised terrain at ({}, {}) from {} to {}", 
-                        pos.0, pos.1, old_height, tile.height);
+                commands.entity(tile_entity).insert(
+                    crate::systems::terrain_height::TerrainAnimation {
+                        start_height: old_height,
+                        target_height: tile.height,
+                        duration: 1.0,
+                        elapsed: 0.0,
+                    },
+                );
+
+                println!(
+                    "  ⬆️ Snake raised terrain at ({}, {}) from {} to {}",
+                    pos.0, pos.1, old_height, tile.height
+                );
                 break;
             }
         }
     }
-    
-    println!("🐍 Snake tunneling complete - row {} devastated and raised", snake_row);
+
+    println!(
+        "🐍 Snake tunneling complete - row {} devastated and raised",
+        snake_row
+    );
+}
+
+/// Rotate pieces in a 3x3 area 90 degrees clockwise
+fn activate_rotate_area(
+    center: (u8, u8),
+    commands: &mut Commands,
+    pieces: &Query<(Entity, &GamePiece)>,
+) {
+    use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
+
+    // Collect pieces in 3x3 area
+    let mut area_pieces = Vec::new();
+
+    for dx in -1i8..=1 {
+        for dy in -1i8..=1 {
+            let target_x = center.0 as i8 + dx;
+            let target_y = center.1 as i8 + dy;
+
+            if target_x >= 0
+                && target_x < BOARD_WIDTH as i8
+                && target_y >= 0
+                && target_y < BOARD_HEIGHT as i8
+            {
+                let pos = (target_x as u8, target_y as u8);
+                if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.board_position == pos)
+                {
+                    area_pieces.push((entity, piece.clone(), dx, dy));
+                }
+            }
+        }
+    }
+
+    // Apply 90-degree clockwise rotation
+    for (entity, piece, dx, dy) in area_pieces {
+        // Rotation matrix for 90 degrees clockwise: (x,y) -> (y, -x)
+        let new_dx = dy;
+        let new_dy = -dx;
+
+        let new_x = center.0 as i8 + new_dx;
+        let new_y = center.1 as i8 + new_dy;
+
+        if new_x >= 0 && new_x < BOARD_WIDTH as i8 && new_y >= 0 && new_y < BOARD_HEIGHT as i8 {
+            let new_pos = (new_x as u8, new_y as u8);
+
+            // Update piece position
+            commands.entity(entity).insert(GamePiece {
+                player: piece.player,
+                board_position: new_pos,
+            });
+
+            // Update visual position
+            let world_pos = board_to_world_position(new_pos);
+            commands
+                .entity(entity)
+                .insert(Transform::from_xyz(world_pos.x, world_pos.y, 1.0));
+
+            println!(
+                "  🔄 Rotated piece from {:?} to {:?}",
+                piece.board_position, new_pos
+            );
+        }
+    }
 }

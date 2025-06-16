@@ -24,7 +24,10 @@ pub fn handle_area_targeting(
     mut commands: Commands,
     mouse_input: Res<Input<MouseButton>>,
     windows: Query<&Window>,
-    camera_q: Query<(&Camera, &GlobalTransform), (With<crate::systems::settings::Camera2D>, With<Camera>)>,
+    camera_q: Query<
+        (&Camera, &GlobalTransform),
+        (With<crate::systems::settings::Camera2D>, With<Camera>),
+    >,
     mut area_state: ResMut<AreaTargetingState>,
     game_state: Res<GameState>,
     existing_indicators: Query<Entity, With<AreaTargetingIndicator>>,
@@ -48,14 +51,25 @@ pub fn handle_area_targeting(
             area_state.preview_center = Some(board_pos);
 
             // Show area preview
-            spawn_area_preview(&mut commands, board_pos, area_state.target_size, area_state.power_type.unwrap());
+            spawn_area_preview(
+                &mut commands,
+                board_pos,
+                area_state.target_size,
+                area_state.power_type.unwrap(),
+            );
 
             // Handle click to confirm targeting
             if mouse_input.just_pressed(MouseButton::Left) {
                 if let Some(power_type) = area_state.power_type {
-                    execute_area_power(&mut commands, board_pos, area_state.target_size, power_type, &game_state);
+                    execute_area_power(
+                        &mut commands,
+                        board_pos,
+                        area_state.target_size,
+                        power_type,
+                        &game_state,
+                    );
                 }
-                
+
                 // Disable area targeting
                 area_state.active = false;
                 area_state.power_type = None;
@@ -73,41 +87,35 @@ pub fn handle_area_targeting(
 }
 
 /// Start area targeting for a specific power
-pub fn start_area_targeting(
-    area_state: &mut ResMut<AreaTargetingState>,
-    power_type: PowerType,
-) {
+pub fn start_area_targeting(area_state: &mut ResMut<AreaTargetingState>, power_type: PowerType) {
     area_state.active = true;
     area_state.power_type = Some(power_type);
     area_state.target_size = get_power_area_size(power_type);
     area_state.preview_center = None;
-    
-    println!("🎯 Area targeting started for {:?} ({}x{} area)", 
-            power_type, area_state.target_size, area_state.target_size);
+
+    println!(
+        "🎯 Area targeting started for {:?} ({}x{} area)",
+        power_type, area_state.target_size, area_state.target_size
+    );
 }
 
 /// Get the area size for different powers
 fn get_power_area_size(power_type: PowerType) -> u8 {
     match power_type {
-        PowerType::SmartBomb 
-        | PowerType::RaiseArea 
-        | PowerType::LowerArea 
-        | PowerType::Rotate 
-        | PowerType::Shuffle 
-        | PowerType::TeachRadial 
+        PowerType::SmartBomb
+        | PowerType::RaiseArea
+        | PowerType::LowerArea
+        | PowerType::Rotate
+        | PowerType::Shuffle
+        | PowerType::TeachRadial
         | PowerType::RecruitRadial => 3,
         PowerType::Earthquake => 5, // Larger area for earthquake
-        _ => 3, // Default to 3x3
+        _ => 3,                     // Default to 3x3
     }
 }
 
 /// Spawn visual preview of the targeting area
-fn spawn_area_preview(
-    commands: &mut Commands,
-    center: (u8, u8),
-    size: u8,
-    power_type: PowerType,
-) {
+fn spawn_area_preview(commands: &mut Commands, center: (u8, u8), size: u8, power_type: PowerType) {
     let half_size = size / 2;
     let color = get_area_preview_color(power_type);
 
@@ -116,11 +124,13 @@ fn spawn_area_preview(
             let target_x = center.0 as i8 + dx;
             let target_y = center.1 as i8 + dy;
 
-            if target_x >= 0 && target_x < BOARD_WIDTH as i8 
-                && target_y >= 0 && target_y < BOARD_HEIGHT as i8 {
-                
+            if target_x >= 0
+                && target_x < BOARD_WIDTH as i8
+                && target_y >= 0
+                && target_y < BOARD_HEIGHT as i8
+            {
                 let world_pos = board_to_world_position((target_x as u8, target_y as u8));
-                
+
                 commands.spawn((
                     AreaTargetingIndicator {
                         center,
@@ -167,12 +177,12 @@ fn get_area_preview_color(power_type: PowerType) -> Color {
         PowerType::SmartBomb => Color::rgb(1.0, 0.2, 0.2), // Red for destruction
         PowerType::RaiseArea => Color::rgb(0.4, 0.8, 0.4), // Green for raising
         PowerType::LowerArea => Color::rgb(0.8, 0.6, 0.3), // Brown for lowering
-        PowerType::Rotate => Color::rgb(0.6, 0.8, 0.6), // Light green for rotation
-        PowerType::Shuffle => Color::rgb(0.7, 0.5, 0.7), // Purple for shuffle
+        PowerType::Rotate => Color::rgb(0.6, 0.8, 0.6),    // Light green for rotation
+        PowerType::Shuffle => Color::rgb(0.7, 0.5, 0.7),   // Purple for shuffle
         PowerType::Earthquake => Color::rgb(0.6, 0.4, 0.2), // Brown for earthquake
         PowerType::TeachRadial => Color::rgb(0.0, 0.8, 1.0), // Cyan for teaching
         PowerType::RecruitRadial => Color::rgb(1.0, 0.8, 0.4), // Gold for recruitment
-        _ => Color::rgb(0.8, 0.8, 0.8), // Default gray
+        _ => Color::rgb(0.8, 0.8, 0.8),                    // Default gray
     }
 }
 
@@ -193,8 +203,11 @@ fn execute_area_power(
             let target_x = center.0 as i8 + dx;
             let target_y = center.1 as i8 + dy;
 
-            if target_x >= 0 && target_x < BOARD_WIDTH as i8 
-                && target_y >= 0 && target_y < BOARD_HEIGHT as i8 {
+            if target_x >= 0
+                && target_x < BOARD_WIDTH as i8
+                && target_y >= 0
+                && target_y < BOARD_HEIGHT as i8
+            {
                 affected_positions.push((target_x as u8, target_y as u8));
             }
         }
@@ -233,15 +246,17 @@ fn execute_area_power(
         power_type,
     );
 
-    println!("💥 {} activated on {}x{} area at {:?}", 
-            power_type.name(), size, size, center);
+    println!(
+        "💥 {} activated on {}x{} area at {:?}",
+        power_type.name(),
+        size,
+        size,
+        center
+    );
 }
 
 /// Execute SmartBomb area effect
-fn execute_smart_bomb_area(
-    commands: &mut Commands,
-    affected_positions: &[(u8, u8)],
-) {
+fn execute_smart_bomb_area(commands: &mut Commands, affected_positions: &[(u8, u8)]) {
     for &pos in affected_positions {
         // Find pieces at this position and destroy them
         // This would need to query pieces and despawn them
@@ -253,17 +268,18 @@ fn execute_smart_bomb_area(
             Color::rgb(1.0, 0.3, 0.0), // Orange explosion
         );
     }
-    println!("💥 SmartBomb destroyed pieces in {} positions", affected_positions.len());
+    println!(
+        "💥 SmartBomb destroyed pieces in {} positions",
+        affected_positions.len()
+    );
 }
 
 /// Execute RaiseArea effect
-fn execute_raise_area(
-    commands: &mut Commands,
-    affected_positions: &[(u8, u8)],
-) {
+fn execute_raise_area(commands: &mut Commands, affected_positions: &[(u8, u8)]) {
+    // Note: This is a stub implementation. The actual terrain modification
+    // needs to be integrated with the main power system that has access to
+    // tile queries. For now, we just spawn visual effects and log the action.
     for &pos in affected_positions {
-        // This would use the terrain height system to raise tiles
-        // For now, just spawn visual effects
         let world_pos = board_to_world_position(pos);
         commands.spawn((
             SpriteBundle {
@@ -278,36 +294,36 @@ fn execute_raise_area(
             // Add a timer to fade out this effect
         ));
     }
-    println!("⬆️ Raised {} tiles", affected_positions.len());
+    println!(
+        "⬆️ RaiseArea effect on {} tiles (terrain modification in power_effects.rs)",
+        affected_positions.len()
+    );
 }
 
 /// Execute LowerArea effect
-fn execute_lower_area(
-    commands: &mut Commands,
-    affected_positions: &[(u8, u8)],
-) {
+fn execute_lower_area(commands: &mut Commands, affected_positions: &[(u8, u8)]) {
+    // Note: This is a stub implementation. The actual terrain modification
+    // is handled in power_effects.rs with proper tile query access.
     for &pos in affected_positions {
         let world_pos = board_to_world_position(pos);
-        commands.spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::rgba(0.8, 0.6, 0.3, 0.7),
-                    custom_size: Some(Vec2::splat(TILE_SIZE * 0.8)),
-                    ..default()
-                },
-                transform: Transform::from_xyz(world_pos.x, world_pos.y, 4.0),
+        commands.spawn((SpriteBundle {
+            sprite: Sprite {
+                color: Color::rgba(0.8, 0.6, 0.3, 0.7),
+                custom_size: Some(Vec2::splat(TILE_SIZE * 0.8)),
                 ..default()
             },
-        ));
+            transform: Transform::from_xyz(world_pos.x, world_pos.y, 4.0),
+            ..default()
+        },));
     }
-    println!("⬇️ Lowered {} tiles", affected_positions.len());
+    println!(
+        "⬇️ LowerArea effect on {} tiles (terrain modification in power_effects.rs)",
+        affected_positions.len()
+    );
 }
 
 /// Execute Shuffle area effect
-fn execute_shuffle_area(
-    commands: &mut Commands,
-    affected_positions: &[(u8, u8)],
-) {
+fn execute_shuffle_area(commands: &mut Commands, affected_positions: &[(u8, u8)]) {
     // This would shuffle pieces within the area
     // For now, just spawn visual effects
     for &pos in affected_positions {
@@ -318,7 +334,10 @@ fn execute_shuffle_area(
             PowerType::Shuffle,
         );
     }
-    println!("🔀 Shuffled pieces in {} positions", affected_positions.len());
+    println!(
+        "🔀 Shuffled pieces in {} positions",
+        affected_positions.len()
+    );
 }
 
 /// Execute TeachRadial effect
@@ -330,19 +349,20 @@ fn execute_teach_radial(
     // This would share powers with friendly pieces in the area
     for &pos in affected_positions {
         let world_pos = board_to_world_position(pos);
-        commands.spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::rgba(0.0, 0.8, 1.0, 0.7),
-                    custom_size: Some(Vec2::splat(TILE_SIZE * 0.6)),
-                    ..default()
-                },
-                transform: Transform::from_xyz(world_pos.x, world_pos.y, 4.0),
+        commands.spawn((SpriteBundle {
+            sprite: Sprite {
+                color: Color::rgba(0.0, 0.8, 1.0, 0.7),
+                custom_size: Some(Vec2::splat(TILE_SIZE * 0.6)),
                 ..default()
             },
-        ));
+            transform: Transform::from_xyz(world_pos.x, world_pos.y, 4.0),
+            ..default()
+        },));
     }
-    println!("📚 Taught powers to friendly pieces in {} positions", affected_positions.len());
+    println!(
+        "📚 Taught powers to friendly pieces in {} positions",
+        affected_positions.len()
+    );
 }
 
 /// Execute RecruitRadial effect
@@ -360,14 +380,17 @@ fn execute_recruit_radial(
             Color::rgb(1.0, 0.8, 0.4), // Gold recruitment effect
         );
     }
-    println!("🔄 Recruited enemy pieces in {} positions", affected_positions.len());
+    println!(
+        "🔄 Recruited enemy pieces in {} positions",
+        affected_positions.len()
+    );
 }
 
 /// Helper function for coordinate conversion
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
-    use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
+    use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
     use crate::components::TILE_SIZE;
-    
+
     let enhanced_tile_size = TILE_SIZE * 1.2;
     let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
     let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * enhanced_tile_size;
@@ -376,9 +399,9 @@ fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
 
 /// Helper function for coordinate conversion
 fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
-    use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
+    use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
     use crate::components::TILE_SIZE;
-    
+
     let enhanced_tile_size = TILE_SIZE * 1.2;
     let x = ((world_pos.x / enhanced_tile_size) + BOARD_WIDTH as f32 / 2.0 - 0.5).round() as i8;
     let y = ((world_pos.y / enhanced_tile_size) + BOARD_HEIGHT as f32 / 2.0 - 0.5).round() as i8;
@@ -390,5 +413,5 @@ fn world_to_board_position(world_pos: Vec2) -> (u8, u8) {
 }
 
 /// Import constants
-use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
+use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::components::TILE_SIZE;

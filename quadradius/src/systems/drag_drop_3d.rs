@@ -16,7 +16,6 @@ pub struct Dragging3D {
     pub start_pos: (u8, u8),
 }
 
-
 /// Handle drag start for 3D pieces
 pub fn handle_drag_start_3d(
     mut commands: Commands,
@@ -71,19 +70,25 @@ pub fn handle_drag_start_3d(
 
                         // Add selection highlighting
                         commands.entity(entity).insert(Selected);
-                        
+
                         // Immediately enable piece outline for instant visual feedback
                         if let Ok(mut piece_outline) = piece_outlines.get_mut(entity) {
                             piece_outline.active = true;
                             piece_outline.pulse_timer = 0.0;
-                            info!("🎯 Enabled piece outline for entity {:?} on selection", entity);
+                            info!(
+                                "🎯 Enabled piece outline for entity {:?} on selection",
+                                entity
+                            );
                         }
 
                         // Check if this piece can move diagonally
                         let can_move_diagonal = diagonal_pieces.iter().any(|e| e == entity);
 
                         // Valid moves will be shown by the enhanced_move_indicators_3d system
-                        info!("Selected piece at {:?} - enhanced indicators will show valid moves", board_pos);
+                        info!(
+                            "Selected piece at {:?} - enhanced indicators will show valid moves",
+                            board_pos
+                        );
 
                         // Debug logging disabled to prevent spam
                         #[cfg(debug_assertions)]
@@ -177,12 +182,15 @@ pub fn handle_drag_end_3d(
 
                 // Check if move is valid
                 if is_valid_move_3d(start_pos, target_pos, piece.player, &tiles, &all_pieces) {
-                    // Check if the piece actually moved to a different position  
+                    // Check if the piece actually moved to a different position
                     let piece_actually_moved = target_pos != start_pos;
-                    
+
                     if piece_actually_moved {
-                        info!("3D: Piece moved from {:?} to {:?} - ending turn", start_pos, target_pos);
-                        
+                        info!(
+                            "3D: Piece moved from {:?} to {:?} - ending turn",
+                            start_pos, target_pos
+                        );
+
                         // Check for capture
                         let mut captured_entity = None;
                         for (other_entity, other_piece) in all_pieces.iter() {
@@ -212,8 +220,9 @@ pub fn handle_drag_end_3d(
                             .map(|tile| tile.height)
                             .unwrap_or(0) as f32;
 
-                        let world_pos =
-                            crate::systems::isometric_camera::board_to_isometric(target_pos, height);
+                        let world_pos = crate::systems::isometric_camera::board_to_isometric(
+                            target_pos, height,
+                        );
                         transform.translation =
                             Vec3::new(world_pos.x, world_pos.y + TILE_SIZE * 0.35, world_pos.z);
 
@@ -231,8 +240,11 @@ pub fn handle_drag_end_3d(
                             info!("Moved piece from {:?} to {:?}", start_pos, target_pos);
                         }
                     } else {
-                        info!("3D: Piece returned to original position {:?} - turn continues", start_pos);
-                        
+                        info!(
+                            "3D: Piece returned to original position {:?} - turn continues",
+                            start_pos
+                        );
+
                         // Piece was dropped back on original position - just clean up, don't end turn
                         let height = tiles
                             .iter()
@@ -268,23 +280,24 @@ pub fn handle_drag_end_3d(
                 // Remove dragging and selection components
                 commands.entity(entity).remove::<Dragging3D>();
                 commands.entity(entity).remove::<Selected>();
-                
+
                 // CRITICAL FIX: Immediately disable piece outline to prevent visual artifacts
                 // This ensures the outline is turned off right when dragging ends, preventing
                 // the "circle left behind" artifact on first move of 3D pieces
                 if let Ok(mut piece_outline) = piece_outlines.get_mut(entity) {
                     piece_outline.active = false;
-                    info!("🔧 Disabled piece outline for entity {:?} to prevent visual artifacts", entity);
+                    info!(
+                        "🔧 Disabled piece outline for entity {:?} to prevent visual artifacts",
+                        entity
+                    );
                 }
-                
+
                 // Also remove Selected from any 2D counterpart at the same position
                 clear_selected_at_position_2d(&mut commands, start_pos, &all_pieces_2d);
             }
         }
     }
 }
-
-
 
 /// Check if a move is valid in 3D
 fn is_valid_move_3d(
@@ -348,11 +361,14 @@ pub fn cleanup_indicators_3d(
     // Clean up indicators if no pieces are being dragged AND no pieces are selected
     let no_dragging = dragging.is_empty();
     let no_selected = selected_pieces.is_empty() && selected_pieces_2d.is_empty();
-    
+
     if no_dragging && no_selected {
         let indicator_count = indicators.iter().count();
         if indicator_count > 0 {
-            info!("🗑️ Cleaning up {} indicators (no dragging, no selection)", indicator_count);
+            info!(
+                "🗑️ Cleaning up {} indicators (no dragging, no selection)",
+                indicator_count
+            );
             for entity in indicators.iter() {
                 commands.entity(entity).despawn();
             }

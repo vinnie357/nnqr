@@ -1,7 +1,7 @@
+use crate::components::Player;
 use bevy::prelude::*;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use crate::components::Player;
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
 pub enum PowerType {
@@ -104,7 +104,7 @@ pub enum EffectData {
 
 #[derive(Clone, Debug)]
 pub enum MovementRestriction {
-    None,           // Can't move
+    None,                   // Can't move
     Limited(Vec<(i8, i8)>), // Can only move to specific relative positions
     Enhanced(MovementType), // Enhanced movement abilities
 }
@@ -185,6 +185,17 @@ pub struct Frozen {
 pub struct Wall {
     pub height: i8,
     pub board_position: (u8, u8),
+    pub wall_type: WallType,
+    pub health: u32,
+    pub created_turn: u32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum WallType {
+    Stone,  // Permanent wall
+    Ice,    // Temporary wall (melts after N turns)
+    Energy, // Energy barrier (blocks movement but not powers)
+    Bridge, // Allows passage over gaps
 }
 
 // For pieces that can move twice in one turn
@@ -615,15 +626,11 @@ impl PowerEffect {
             (EffectData::Status(_), EffectData::Protection(_)) => true,
 
             // Same effect types - check specific stacking rules
-            (EffectData::Movement(a), EffectData::Movement(b)) => {
-                self.movement_can_stack(a, b)
-            }
+            (EffectData::Movement(a), EffectData::Movement(b)) => self.movement_can_stack(a, b),
             (EffectData::Protection(a), EffectData::Protection(b)) => {
                 self.protection_can_stack(a, b)
             }
-            (EffectData::Status(a), EffectData::Status(b)) => {
-                self.status_can_stack(a, b)
-            }
+            (EffectData::Status(a), EffectData::Status(b)) => self.status_can_stack(a, b),
 
             // Area effects don't stack
             (EffectData::Area(_), _) | (_, EffectData::Area(_)) => false,
@@ -703,11 +710,19 @@ impl EffectData {
     pub fn get_effect_name(&self) -> &'static str {
         match self {
             EffectData::Movement(MovementRestriction::None) => "Frozen",
-            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Diagonal)) => "Diagonal Movement",
-            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Teleport)) => "Teleport",
+            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Diagonal)) => {
+                "Diagonal Movement"
+            }
+            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Teleport)) => {
+                "Teleport"
+            }
             EffectData::Movement(MovementRestriction::Enhanced(MovementType::Jump)) => "Jump",
-            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Knight)) => "Knight Movement",
-            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Double)) => "Double Move",
+            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Knight)) => {
+                "Knight Movement"
+            }
+            EffectData::Movement(MovementRestriction::Enhanced(MovementType::Double)) => {
+                "Double Move"
+            }
             EffectData::Protection(ProtectionType::Shield { .. }) => "Shield",
             EffectData::Protection(ProtectionType::Immunity { .. }) => "Immunity",
             EffectData::Protection(ProtectionType::Reflection { .. }) => "Reflection",

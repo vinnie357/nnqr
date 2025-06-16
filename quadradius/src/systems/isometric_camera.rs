@@ -121,12 +121,10 @@ pub fn screen_to_board(
     // centered_x = (iso_x / (tile_spacing * 0.5) + iso_z / (tile_spacing * 0.25)) / 2.0
     // centered_z = (iso_z / (tile_spacing * 0.25) - iso_x / (tile_spacing * 0.5)) / 2.0
 
-    let centered_x = (world_pos.x / (tile_spacing * 0.5)
-        + world_pos.z / (tile_spacing * 0.25))
-        / 2.0;
-    let centered_z = (world_pos.z / (tile_spacing * 0.25)
-        - world_pos.x / (tile_spacing * 0.5))
-        / 2.0;
+    let centered_x =
+        (world_pos.x / (tile_spacing * 0.5) + world_pos.z / (tile_spacing * 0.25)) / 2.0;
+    let centered_z =
+        (world_pos.z / (tile_spacing * 0.25) - world_pos.x / (tile_spacing * 0.5)) / 2.0;
 
     // Convert back to board coordinates
     let board_x_f = centered_x + (BOARD_WIDTH as f32 / 2.0) - 0.5;

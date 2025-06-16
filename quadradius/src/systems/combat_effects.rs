@@ -1,6 +1,6 @@
 use crate::components::*;
-use crate::resources::*;
 use crate::resources::game_state::TurnCounter;
+use crate::resources::*;
 use crate::systems::effect_processing::ActiveEffects;
 use bevy::prelude::*;
 
@@ -16,35 +16,49 @@ pub fn process_combat_with_effects(
     for (attempt_entity, capture_attempt) in capture_attempts.iter() {
         let target_pos = capture_attempt.target_position;
         let attacker_player = capture_attempt.attacker_player;
-        
+
         // Find the target piece
         if let Some((target_entity, target_piece, target_effects)) = pieces_query
             .iter_mut()
             .find(|(_, piece, _)| piece.board_position == target_pos)
         {
             let mut capture_blocked = false;
-            
+
             // Check for shield protection
             if let Some(mut effects) = target_effects {
                 if let Some(shield_effect) = effects.effects.iter_mut().find(|e| {
-                    matches!(e.effect_data, EffectData::Protection(ProtectionType::Shield { .. }))
+                    matches!(
+                        e.effect_data,
+                        EffectData::Protection(ProtectionType::Shield { .. })
+                    )
                 }) {
                     // Shield blocks the attack
                     capture_blocked = true;
-                    
+
                     // Reduce shield hits
-                    if let EffectData::Protection(ProtectionType::Shield { ref mut hits_remaining }) = shield_effect.effect_data {
+                    if let EffectData::Protection(ProtectionType::Shield {
+                        ref mut hits_remaining,
+                    }) = shield_effect.effect_data
+                    {
                         *hits_remaining = hits_remaining.saturating_sub(1);
-                        
+
                         if *hits_remaining == 0 {
                             // Remove shield effect
-                            effects.effects.retain(|e| !matches!(e.effect_data, EffectData::Protection(ProtectionType::Shield { .. })));
+                            effects.effects.retain(|e| {
+                                !matches!(
+                                    e.effect_data,
+                                    EffectData::Protection(ProtectionType::Shield { .. })
+                                )
+                            });
                             println!("🛡 Shield destroyed!");
                         } else {
-                            println!("🛡 Shield absorbed attack! {} hits remaining", hits_remaining);
+                            println!(
+                                "🛡 Shield absorbed attack! {} hits remaining",
+                                hits_remaining
+                            );
                         }
                     }
-                    
+
                     // Spawn shield break visual effect
                     let world_pos = board_to_world_position(target_pos);
                     crate::systems::visual_effects::spawn_capture_explosion(
@@ -53,12 +67,12 @@ pub fn process_combat_with_effects(
                         Color::rgb(0.7, 0.7, 0.9), // Shield blue
                     );
                 }
-                
+
                 // Check for Jump Proof immunity
                 if effects.has_effect("Jump Proof") {
                     capture_blocked = true;
                     println!("🚫 Attack blocked by Jump Proof immunity!");
-                    
+
                     // Spawn immunity visual effect
                     let world_pos = board_to_world_position(target_pos);
                     crate::systems::visual_effects::spawn_capture_explosion(
@@ -67,17 +81,24 @@ pub fn process_combat_with_effects(
                         Color::rgb(0.0, 1.0, 1.0), // Cyan immunity
                     );
                 }
-                
+
                 // Check for reflection
                 if let Some(reflect_effect) = effects.effects.iter().find(|e| {
-                    matches!(e.effect_data, EffectData::Protection(ProtectionType::Reflection { .. }))
+                    matches!(
+                        e.effect_data,
+                        EffectData::Protection(ProtectionType::Reflection { .. })
+                    )
                 }) {
                     // Reflect the attack back to attacker
                     capture_blocked = true;
-                    
+
                     // Store reflection info for later processing
-                    reflection_data.push((target_piece.player, attacker_player, capture_attempt.damage_type.clone()));
-                    
+                    reflection_data.push((
+                        target_piece.player,
+                        attacker_player,
+                        capture_attempt.damage_type.clone(),
+                    ));
+
                     // Spawn reflection visual effect
                     let world_pos = board_to_world_position(target_pos);
                     crate::systems::visual_effects::spawn_capture_explosion(
@@ -87,24 +108,24 @@ pub fn process_combat_with_effects(
                     );
                 }
             }
-            
+
             if !capture_blocked {
                 // Normal capture occurs
                 execute_capture(&mut commands, target_entity, &capture_attempt);
             }
         }
-        
+
         // Remove the processed capture attempt
         commands.entity(attempt_entity).despawn();
     }
-    
+
     // Process any reflections that were queued
     for (defender_player, attacker_player, damage_type) in reflection_data {
         // Find attacker pieces to reflect damage to
         for (_, piece, _) in pieces_query.iter() {
             if piece.player == attacker_player {
                 println!("↩ Attack reflected back to attacker!");
-                
+
                 // Create reflection capture attempt
                 commands.spawn(CaptureAttempt {
                     target_position: piece.board_position,
@@ -135,7 +156,7 @@ fn execute_capture(
 ) {
     // Remove the captured piece
     commands.entity(target_entity).despawn();
-    
+
     // Spawn capture effect
     let world_pos = board_to_world_position(capture_attempt.target_position);
     crate::systems::visual_effects::spawn_capture_explosion(
@@ -143,7 +164,7 @@ fn execute_capture(
         Vec3::new(world_pos.x, world_pos.y, 0.0),
         Color::rgb(1.0, 0.4, 0.4), // Red capture explosion
     );
-    
+
     println!("💥 Piece captured at {:?}", capture_attempt.target_position);
 }
 
@@ -160,8 +181,8 @@ pub fn apply_invisibility_targeting(
             .find(|(piece, _)| piece.board_position == targeting.target_position)
         {
             // Enemy pieces with invisibility can't be targeted
-            if target_piece.player != game_state.current_player 
-                && target_effects.has_effect("Invisible") 
+            if target_piece.player != game_state.current_player
+                && target_effects.has_effect("Invisible")
             {
                 targeting.is_valid = false;
                 targeting.blocked_reason = Some("Target is invisible".to_string());
@@ -217,11 +238,12 @@ pub fn process_poison_death(
     for (entity, piece, effects) in pieces_query.iter() {
         // Check for poison effects that should trigger death
         for effect in &effects.effects {
-            if let EffectData::Status(StatusEffect::Poisoned { death_timer }) = &effect.effect_data {
+            if let EffectData::Status(StatusEffect::Poisoned { death_timer }) = &effect.effect_data
+            {
                 if effect.remaining_turns(turn_counter.turn_number) <= 1 {
                     // Piece dies from poison
                     println!("☠ Piece at {:?} dies from poison!", piece.board_position);
-                    
+
                     // Spawn poison death effect
                     let world_pos = board_to_world_position(piece.board_position);
                     crate::systems::visual_effects::spawn_capture_explosion(
@@ -229,7 +251,7 @@ pub fn process_poison_death(
                         Vec3::new(world_pos.x, world_pos.y, 0.0),
                         Color::rgb(0.4, 0.8, 0.2), // Green poison explosion
                     );
-                    
+
                     // Remove the piece
                     commands.entity(entity).despawn();
                 }
@@ -328,9 +350,9 @@ fn can_jump_to_position(_from: (u8, u8), _to: (u8, u8)) -> bool {
 
 /// Helper function for coordinate conversion
 fn board_to_world_position(board_pos: (u8, u8)) -> Vec2 {
-    use crate::components::board::{BOARD_WIDTH, BOARD_HEIGHT};
+    use crate::components::board::{BOARD_HEIGHT, BOARD_WIDTH};
     use crate::components::TILE_SIZE;
-    
+
     let enhanced_tile_size = TILE_SIZE * 1.2;
     let x = (board_pos.0 as f32 - BOARD_WIDTH as f32 / 2.0 + 0.5) * enhanced_tile_size;
     let y = (board_pos.1 as f32 - BOARD_HEIGHT as f32 / 2.0 + 0.5) * enhanced_tile_size;
@@ -362,28 +384,32 @@ pub fn apply_recruitment_effects(
     for (entity, mut piece, effects) in pieces_query.iter_mut() {
         // Check for recruitment effects
         for effect in &effects.effects {
-            if let EffectData::Status(StatusEffect::Recruiting { conversion_power }) = &effect.effect_data {
+            if let EffectData::Status(StatusEffect::Recruiting { conversion_power }) =
+                &effect.effect_data
+            {
                 if effect.remaining_turns(turn_counter.turn_number) <= 1 {
                     // Convert the piece to the effect source player
                     let old_player = piece.player;
                     piece.player = effect.source_player;
-                    
-                    println!("🔄 Piece at {:?} converted from {:?} to {:?}", 
-                            piece.board_position, old_player, effect.source_player);
-                    
+
+                    println!(
+                        "🔄 Piece at {:?} converted from {:?} to {:?}",
+                        piece.board_position, old_player, effect.source_player
+                    );
+
                     // Update piece color
                     use crate::resources::QuadradiusTheme;
                     let new_color = match effect.source_player {
                         Player::Player1 => QuadradiusTheme::TEAM_1_PRIMARY,
                         Player::Player2 => QuadradiusTheme::TEAM_2_PRIMARY,
                     };
-                    
+
                     commands.entity(entity).insert(Sprite {
                         color: new_color,
                         custom_size: Some(Vec2::splat(TILE_SIZE * 1.2)),
                         ..default()
                     });
-                    
+
                     // Spawn conversion effect
                     let world_pos = board_to_world_position(piece.board_position);
                     crate::systems::visual_effects::spawn_capture_explosion(
