@@ -52,7 +52,7 @@ pub mod win_condition;
 
 pub use board::*;
 pub use board_3d::*;
-pub use chain_reaction_detection::*;
+// pub use chain_reaction_detection::*; // Functions not currently used
 pub use chat_ui::*;
 pub use combat_effects::*;
 // pub use debug_powers::*; // Disabled for production builds
@@ -84,10 +84,10 @@ pub use pieces_3d::*;
 pub use power_activation_ui::*;
 pub use power_balance::*;
 pub use power_effects::*;
-pub use power_interactions::*;
+// pub use power_interactions::*; // Functions not currently used
 pub use power_orbs::*;
 pub use power_orbs_3d::*;
-pub use power_registry::*;
+// pub use power_registry::*; // Functions not currently used
 // pub use power_test_report::*; // Disabled for production builds
 pub use power_testing::*;
 pub use scoreboard::*;

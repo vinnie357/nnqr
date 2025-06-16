@@ -346,7 +346,6 @@ fn execute_power_activation(
 
 /// System to handle teaching powers (sharing powers with other pieces)
 pub fn handle_teaching_powers_system(
-    mut commands: Commands,
     mut registry: ResMut<PowerRegistry>,
     pieces: Query<(Entity, &GamePiece)>,
     power_histories: Query<&PowerHistory>,
@@ -422,7 +421,6 @@ pub fn handle_teaching_powers_system(
 
 /// System to handle power echoing (PowerEcho effect)
 pub fn handle_power_echo_system(
-    mut commands: Commands,
     mut activation_events: EventWriter<PowerActivationAttempt>,
     registry: Res<PowerRegistry>,
     pieces: Query<(Entity, &GamePiece)>,
