@@ -73,9 +73,9 @@ pub fn add_move_feedback(
     mut materials: ResMut<Assets<StandardMaterial>>,
     valid_moves: Query<(Entity, &BoardTile), Without<VisualFeedback>>,
 ) {
-    for (entity, tile) in valid_moves.iter() {
+    for (entity, _tile) in valid_moves.iter() {
         // Create a glowing overlay for valid move tiles
-        let overlay_material = materials.add(StandardMaterial {
+        let _overlay_material = materials.add(StandardMaterial {
             base_color: Color::rgba(0.0, 1.0, 0.0, 0.3), // Transparent green
             emissive: Color::rgb(0.0, 0.8, 0.0),
             alpha_mode: AlphaMode::Blend,

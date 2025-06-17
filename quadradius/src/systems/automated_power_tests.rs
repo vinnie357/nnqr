@@ -110,7 +110,7 @@ pub fn start_automated_power_tests(
     keyboard: Res<Input<KeyCode>>,
     mut test_runner: ResMut<AutomatedTestRunner>,
     mut game_state: ResMut<GameState>,
-    time: Res<Time>,
+    _time: Res<Time>,
 ) {
     // Auto-start testing disabled for release builds
     // Tests now only run when manually triggered with F9
@@ -461,8 +461,8 @@ fn test_piece_creation_power(
 // Clean up after test
 fn cleanup_test_environment(
     game_state: &mut GameState,
-    commands: &mut Commands,
-    pieces: &Query<(Entity, &GamePiece, &Transform)>,
+    _commands: &mut Commands,
+    _pieces: &Query<(Entity, &GamePiece, &Transform)>,
 ) {
     game_state.player1_powers.clear();
     game_state.player2_powers.clear();

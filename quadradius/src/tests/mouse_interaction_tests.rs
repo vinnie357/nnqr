@@ -9,23 +9,30 @@ fn test_board_to_isometric_conversion() {
     // Test near center of board (4, 4 on a 10x8 board)
     let center_pos = board_to_isometric((4, 4), 0.0);
 
-    // Based on the enhanced isometric transformation formula in the code:
+    // Based on the actual isometric transformation formula in the code:
     // For 10x8 board (BOARD_WIDTH=10, BOARD_HEIGHT=8) with enhanced tile size:
     // enhanced_tile_size = 64 * 1.5 = 96.0
+    // tile_spacing = enhanced_tile_size * 0.85 = 96.0 * 0.85 = 81.6
     // centered_x = 4 - (10/2) + 0.5 = 4 - 5 + 0.5 = -0.5
     // centered_z = 4 - (8/2) + 0.5 = 4 - 4 + 0.5 = 0.5
-    // iso_x = (-0.5 - 0.5) * 96.0 * 0.5 = -1.0 * 48.0 = -48.0
-    // iso_z = (-0.5 + 0.5) * 96.0 * 0.25 = 0.0 * 24.0 = 0.0
+    // iso_x = (-0.5 - 0.5) * 81.6 * 0.5 = -1.0 * 40.8 = -40.8
+    // iso_z = (-0.5 + 0.5) * 81.6 * 0.25 = 0.0 * 20.4 = 0.0
 
-    assert_eq!(
-        center_pos.x, -48.0,
-        "Center X should be -48.0 for board position (4,4) with enhanced tile size"
+    // Use epsilon comparison for floating point values to avoid precision issues
+    const EPSILON: f32 = 0.001;
+    
+    assert!(
+        (center_pos.x - (-40.8)).abs() < EPSILON,
+        "Center X should be approximately -40.8, got {}", center_pos.x
     );
-    assert_eq!(
-        center_pos.z, 0.0,
-        "Center Z should be 0.0 for board position (4,4)"
+    assert!(
+        (center_pos.z - 0.0).abs() < EPSILON,
+        "Center Z should be approximately 0.0, got {}", center_pos.z
     );
-    assert_eq!(center_pos.y, 0.0, "Center Y should be 0 for height 0");
+    assert!(
+        (center_pos.y - 0.0).abs() < EPSILON,
+        "Center Y should be approximately 0.0, got {}", center_pos.y
+    );
 }
 
 #[test]

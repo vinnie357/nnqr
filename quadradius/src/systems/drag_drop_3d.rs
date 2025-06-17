@@ -19,15 +19,15 @@ pub struct Dragging3D {
 /// Handle drag start for 3D pieces
 pub fn handle_drag_start_3d(
     mut commands: Commands,
-    meshes: ResMut<Assets<Mesh>>,
-    materials: ResMut<Assets<StandardMaterial>>,
+    _meshes: ResMut<Assets<Mesh>>,
+    _materials: ResMut<Assets<StandardMaterial>>,
     mouse_input: Res<Input<MouseButton>>,
     windows: Query<&Window>,
     camera_q: Query<(&Camera, &GlobalTransform), With<IsometricCamera>>,
     game_state: Res<GameState>,
     pieces: Query<(Entity, &GamePiece3D), Without<Dragging3D>>,
     diagonal_pieces: Query<Entity, With<MoveDiagonalActive>>,
-    tiles: Query<&BoardTile>,
+    _tiles: Query<&BoardTile>,
     mut piece_outlines: Query<&mut PieceOutline>,
 ) {
     if !mouse_input.just_pressed(MouseButton::Left) {
@@ -82,7 +82,7 @@ pub fn handle_drag_start_3d(
                         }
 
                         // Check if this piece can move diagonally
-                        let can_move_diagonal = diagonal_pieces.iter().any(|e| e == entity);
+                        let _can_move_diagonal = diagonal_pieces.iter().any(|e| e == entity);
 
                         // Valid moves will be shown by the enhanced_move_indicators_3d system
                         info!(

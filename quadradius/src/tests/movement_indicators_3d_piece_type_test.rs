@@ -1,9 +1,27 @@
 use crate::components::*;
+use crate::resources::*;
 use crate::systems::enhanced_move_indicators_3d::*;
 use crate::systems::pieces_3d::GamePiece3D;
 use bevy::app::App;
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::*;
+
+fn setup_test_app() -> App {
+    let mut app = App::new();
+    
+    // Add minimal plugins required for testing
+    app.add_plugins(MinimalPlugins);
+    
+    // Add required resources that the systems expect
+    app.insert_resource(GameState::default())
+       .insert_resource(RenderConfig::default())
+       .insert_resource(crate::resources::game_state::TurnCounter::default())
+       .insert_resource(PowerSpawningTracker::default())
+       .insert_resource(Assets::<Mesh>::default())
+       .insert_resource(Assets::<StandardMaterial>::default());
+    
+    app
+}
 
 /// Test to verify 3D movement indicators work with GamePiece3D entities (not just GamePiece)
 #[test]
@@ -11,10 +29,7 @@ fn test_3d_movement_indicators_with_gamepiece3d() {
     println!("🎯 3D Movement Indicators with GamePiece3D Test");
     println!("   This test verifies the fix for querying both GamePiece and GamePiece3D");
 
-    let mut app = App::new();
-    app.add_plugins(MinimalPlugins);
-    app.insert_resource(Assets::<Mesh>::default());
-    app.insert_resource(Assets::<StandardMaterial>::default());
+    let app = setup_test_app();
 
     let mut world = app.world;
 
@@ -82,7 +97,7 @@ fn test_3d_movement_indicators_with_gamepiece3d() {
 
     // Verify expected number of moves (should be 3-4 for center position)
     assert!(
-        final_indicators >= 3 && final_indicators <= 8,
+        (3..=8).contains(&final_indicators),
         "Should spawn 3-8 movement indicators for center piece, got {}",
         final_indicators
     );
@@ -112,10 +127,7 @@ fn test_3d_drag_system_compatibility() {
     println!("🎯 3D Drag System Compatibility Test");
     println!("   Testing the exact workflow: drag_drop_3d -> enhanced_move_indicators_3d");
 
-    let mut app = App::new();
-    app.add_plugins(MinimalPlugins);
-    app.insert_resource(Assets::<Mesh>::default());
-    app.insert_resource(Assets::<StandardMaterial>::default());
+    let app = setup_test_app();
 
     let mut world = app.world;
 

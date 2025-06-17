@@ -7,7 +7,7 @@ use bevy::prelude::*;
 /// System to handle combat interactions with effects
 pub fn process_combat_with_effects(
     mut commands: Commands,
-    game_state: Res<GameState>,
+    _game_state: Res<GameState>,
     mut pieces_query: Query<(Entity, &GamePiece, Option<&mut ActiveEffects>)>,
     capture_attempts: Query<(Entity, &CaptureAttempt)>,
 ) {
@@ -83,7 +83,7 @@ pub fn process_combat_with_effects(
                 }
 
                 // Check for reflection
-                if let Some(reflect_effect) = effects.effects.iter().find(|e| {
+                if let Some(_reflect_effect) = effects.effects.iter().find(|e| {
                     matches!(
                         e.effect_data,
                         EffectData::Protection(ProtectionType::Reflection { .. })
@@ -111,7 +111,7 @@ pub fn process_combat_with_effects(
 
             if !capture_blocked {
                 // Normal capture occurs
-                execute_capture(&mut commands, target_entity, &capture_attempt);
+                execute_capture(&mut commands, target_entity, capture_attempt);
             }
         }
 
@@ -231,14 +231,14 @@ pub struct MovementAttempt {
 /// System to handle poison death
 pub fn process_poison_death(
     mut commands: Commands,
-    game_state: Res<GameState>,
+    _game_state: Res<GameState>,
     turn_counter: Res<TurnCounter>,
     pieces_query: Query<(Entity, &GamePiece, &ActiveEffects)>,
 ) {
     for (entity, piece, effects) in pieces_query.iter() {
         // Check for poison effects that should trigger death
         for effect in &effects.effects {
-            if let EffectData::Status(StatusEffect::Poisoned { death_timer }) = &effect.effect_data
+            if let EffectData::Status(StatusEffect::Poisoned { death_timer: _ }) = &effect.effect_data
             {
                 if effect.remaining_turns(turn_counter.turn_number) <= 1 {
                     // Piece dies from poison
@@ -378,13 +378,13 @@ pub fn create_capture_attempt(
 pub fn apply_recruitment_effects(
     mut commands: Commands,
     mut pieces_query: Query<(Entity, &mut GamePiece, &ActiveEffects)>,
-    game_state: Res<GameState>,
+    _game_state: Res<GameState>,
     turn_counter: Res<TurnCounter>,
 ) {
     for (entity, mut piece, effects) in pieces_query.iter_mut() {
         // Check for recruitment effects
         for effect in &effects.effects {
-            if let EffectData::Status(StatusEffect::Recruiting { conversion_power }) =
+            if let EffectData::Status(StatusEffect::Recruiting { conversion_power: _ }) =
                 &effect.effect_data
             {
                 if effect.remaining_turns(turn_counter.turn_number) <= 1 {

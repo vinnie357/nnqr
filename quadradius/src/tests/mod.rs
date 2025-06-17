@@ -22,3 +22,4 @@ pub mod piece_outline_artifact_fix_test;
 pub mod phase2_effect_system_tests;
 pub mod phase2_integration_tests;
 pub mod phase4_power_interaction_tests;
+pub mod movement_indicators_fix_test;

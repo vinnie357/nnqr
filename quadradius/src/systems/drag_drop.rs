@@ -263,8 +263,7 @@ pub fn handle_drag_end(
                     // Extra safety: check if this might be a coordinate precision issue
                     let mouse_world_distance = {
                         let start_world = board_to_world_position(start_pos);
-                        let mouse_distance = world_pos.distance(start_world);
-                        mouse_distance
+                        world_pos.distance(start_world)
                     };
 
                     info!("2D: Drag end - start_pos: {:?}, valid_target: {:?}, moved: {}, mouse_distance: {:.2}", 
@@ -660,8 +659,8 @@ fn spawn_valid_move_indicators(
                     ValidMoveIndicator,
                     SpriteBundle {
                         sprite: Sprite {
-                            color: Color::rgba(0.0, 1.0, 0.0, 0.4), // Semi-transparent green
-                            custom_size: Some(Vec2::splat(enhanced_tile_size * 0.85)), // Match board tile size
+                            color: Color::rgba(0.0, 1.0, 0.0, 0.6), // More visible but not obscuring
+                            custom_size: Some(Vec2::splat(enhanced_tile_size * 0.6)), // Smaller to avoid obscuring tiles
                             ..default()
                         },
                         transform: Transform::from_xyz(world_pos.x, world_pos.y, 2.0),
@@ -812,8 +811,8 @@ fn spawn_enhanced_move_indicators(
             ValidMoveIndicator,
             SpriteBundle {
                 sprite: Sprite {
-                    color: color.with_a(0.6), // Semi-transparent
-                    custom_size: Some(Vec2::splat(enhanced_tile_size * 0.85)),
+                    color: color.with_a(0.7), // More visible but not obscuring
+                    custom_size: Some(Vec2::splat(enhanced_tile_size * 0.6)), // Smaller to avoid obscuring tiles
                     ..default()
                 },
                 transform: Transform::from_xyz(world_pos.x, world_pos.y, 2.0),
@@ -834,6 +833,21 @@ pub fn cleanup_indicators(
             if let Some(mut entity_commands) = commands.get_entity(entity) {
                 entity_commands.despawn();
             }
+        }
+    }
+}
+
+/// Helper function to clear Selected component from all pieces at a given position
+/// This ensures 2D and 3D representations stay synchronized
+fn clear_selected_at_position(
+    commands: &mut Commands,
+    position: (u8, u8),
+    pieces_3d: &Query<(Entity, &GamePiece3D)>,
+) {
+    // Remove Selected component from any 3D pieces at this position
+    for (entity, piece_3d) in pieces_3d.iter() {
+        if piece_3d.board_position == position {
+            commands.entity(entity).remove::<Selected>();
         }
     }
 }
@@ -959,20 +973,5 @@ mod tests {
             should_treat_as_moved,
             "Should treat as moved for large distance"
         );
-    }
-}
-
-/// Helper function to clear Selected component from all pieces at a given position
-/// This ensures 2D and 3D representations stay synchronized
-fn clear_selected_at_position(
-    commands: &mut Commands,
-    position: (u8, u8),
-    pieces_3d: &Query<(Entity, &GamePiece3D)>,
-) {
-    // Remove Selected component from any 3D pieces at this position
-    for (entity, piece_3d) in pieces_3d.iter() {
-        if piece_3d.board_position == position {
-            commands.entity(entity).remove::<Selected>();
-        }
     }
 }

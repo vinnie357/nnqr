@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::resources::*;
 use crate::systems::board_3d::TILE_SIZE_MULTIPLIER_3D;
 use crate::systems::enhanced_move_indicators_3d::*;
 use crate::systems::isometric_camera::board_to_isometric;
@@ -6,6 +7,23 @@ use crate::systems::pieces_3d::GamePiece3D;
 use bevy::app::App;
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::*;
+
+fn setup_test_app() -> App {
+    let mut app = App::new();
+    
+    // Add minimal plugins required for testing
+    app.add_plugins(MinimalPlugins);
+    
+    // Add required resources that the systems expect
+    app.insert_resource(GameState::default())
+       .insert_resource(RenderConfig::default())
+       .insert_resource(crate::resources::game_state::TurnCounter::default())
+       .insert_resource(PowerSpawningTracker::default())
+       .insert_resource(Assets::<Mesh>::default())
+       .insert_resource(Assets::<StandardMaterial>::default());
+    
+    app
+}
 
 /// Comprehensive test to verify the coordinate alignment fix addresses the user's feedback:
 /// "we need to resize, the 3d isometric board the pieces should be able to move within the grid,
@@ -15,10 +33,7 @@ fn test_movement_indicators_align_with_visual_grid() {
     println!("🎯 Movement Indicators Visual Grid Alignment Fix Verification");
     println!("   Testing that indicators now appear at valid board grid positions");
 
-    let mut app = App::new();
-    app.add_plugins(MinimalPlugins);
-    app.insert_resource(Assets::<Mesh>::default());
-    app.insert_resource(Assets::<StandardMaterial>::default());
+    let app = setup_test_app();
 
     let mut world = app.world;
 
@@ -106,7 +121,7 @@ fn test_movement_indicators_align_with_visual_grid() {
             "All movement indicators should be at valid board positions"
         );
         assert!(
-            indicator_positions.len() > 0,
+            !indicator_positions.is_empty(),
             "Should find valid moves for test position"
         );
 
@@ -190,10 +205,7 @@ fn test_grid_alignment_issue_resolution() {
         "   Full verification that 'grid doesn't appear to be valid movement locations' is fixed"
     );
 
-    let mut app = App::new();
-    app.add_plugins(MinimalPlugins);
-    app.insert_resource(Assets::<Mesh>::default());
-    app.insert_resource(Assets::<StandardMaterial>::default());
+    let app = setup_test_app();
 
     let mut world = app.world;
 

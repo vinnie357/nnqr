@@ -21,7 +21,7 @@ fn test_movement_indicator_shape_matches_board_tiles() {
 
     println!("📊 Dimensions Comparison:");
     println!("   Enhanced tile size: {:.2}", enhanced_tile_size);
-    println!("");
+    println!();
     println!(
         "   Board tiles (Box):    {:.2} × {:.2} × {:.2}",
         board_tile_width, board_tile_height, board_tile_depth
@@ -30,7 +30,7 @@ fn test_movement_indicator_shape_matches_board_tiles() {
         "   Indicators (Box):     {:.2} × {:.2} × {:.2}",
         indicator_width, indicator_height, indicator_depth
     );
-    println!("");
+    println!();
 
     // Verify width and depth match exactly
     assert_eq!(

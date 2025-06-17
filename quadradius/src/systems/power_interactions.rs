@@ -38,11 +38,11 @@ pub struct PowerChainReaction {
 /// Priority levels for power activation order
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
 pub enum PowerPriority {
-    Immediate = 0,    // Defensive reactions, interrupts
-    High = 1,         // Meta powers that affect other powers
-    Normal = 2,       // Regular powers
-    Low = 3,          // Delayed effects
-    Cleanup = 4,      // End-of-turn cleanup
+    Immediate = 0, // Defensive reactions, interrupts
+    High = 1,      // Meta powers that affect other powers
+    Normal = 2,    // Regular powers
+    Low = 3,       // Delayed effects
+    Cleanup = 4,   // End-of-turn cleanup
 }
 
 /// Represents a power activation in the queue with priority
@@ -70,13 +70,13 @@ impl PowerType {
         match self {
             // Immediate defensive reactions
             PowerType::Shield | PowerType::Reflect | PowerType::Absorb => PowerPriority::Immediate,
-            
+
             // High priority meta powers
             PowerType::NullifyPower | PowerType::DoublePower => PowerPriority::High,
-            
+
             // Low priority delayed effects
             PowerType::Poison | PowerType::Freeze => PowerPriority::Low,
-            
+
             // Everything else is normal priority
             _ => PowerPriority::Normal,
         }
@@ -188,19 +188,30 @@ pub fn process_power_queue_system(
         if let Some(target) = activation.target {
             let active_powers = registry.get_active_powers(target);
             for active_power in active_powers {
-                if let Some(interaction) = registry.check_interaction(activation.power_type, active_power.power_type) {
+                if let Some(interaction) =
+                    registry.check_interaction(activation.power_type, active_power.power_type)
+                {
                     // Handle the interaction
                     match interaction {
                         InteractionResult::Cancel => {
-                            info!("Power {:?} cancelled by {:?}", activation.power_type, active_power.power_type);
+                            info!(
+                                "Power {:?} cancelled by {:?}",
+                                activation.power_type, active_power.power_type
+                            );
                             continue; // Skip this activation
                         }
                         InteractionResult::Block => {
-                            info!("Power {:?} blocked by {:?}", activation.power_type, active_power.power_type);
+                            info!(
+                                "Power {:?} blocked by {:?}",
+                                activation.power_type, active_power.power_type
+                            );
                             continue; // Skip this activation
                         }
                         InteractionResult::Enhance(multiplier) => {
-                            info!("Power {:?} enhanced by {:?} ({}x)", activation.power_type, active_power.power_type, multiplier);
+                            info!(
+                                "Power {:?} enhanced by {:?} ({}x)",
+                                activation.power_type, active_power.power_type, multiplier
+                            );
                             // The amplification is already handled in the activation
                         }
                         InteractionResult::ChainReaction(chain_powers) => {
@@ -216,7 +227,7 @@ pub fn process_power_queue_system(
                                     is_chain_reaction: true,
                                 });
                             }
-                            
+
                             chain_events.send(PowerChainReaction {
                                 triggering_power: activation.power_type,
                                 chain_powers: chain_powers.clone(),
@@ -277,7 +288,7 @@ fn execute_power_activation(
 ) -> bool {
     // This is a simplified version - the actual power effects would be handled
     // by the existing power_effects.rs system, but with interaction awareness
-    
+
     match activation.power_type {
         PowerType::DoublePower => {
             // DoublePower creates an amplifier for the next power
@@ -317,7 +328,7 @@ fn execute_power_activation(
                     affects_powers: vec![],
                 },
             );
-            
+
             // Also add the active power effect
             registry.add_active_power(
                 activation.activator,
@@ -375,7 +386,8 @@ pub fn handle_teaching_powers_system(
                                 && student_piece.player == teacher_piece.player
                                 && match teaching_power {
                                     PowerType::TeachRow => {
-                                        student_piece.board_position.1 == teacher_piece.board_position.1
+                                        student_piece.board_position.1
+                                            == teacher_piece.board_position.1
                                     }
                                     PowerType::TeachRadial => {
                                         let dx = (student_piece.board_position.0 as i8

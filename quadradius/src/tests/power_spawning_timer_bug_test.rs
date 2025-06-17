@@ -1,7 +1,6 @@
-use crate::components::*;
+use crate::components::Player;
 use crate::resources::game_state::{GameState, TurnPhase};
 use crate::systems::turn_management::*;
-use bevy::prelude::*;
 
 /// Test to simulate the exact PowerSpawningTimer behavior and find the Player2 bug
 #[test]

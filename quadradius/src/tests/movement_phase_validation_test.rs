@@ -1,6 +1,5 @@
 use crate::components::*;
 use crate::resources::game_state::{GameState, TurnPhase};
-use bevy::prelude::*;
 
 /// Test that PowerSpawning phase only starts after successful movement
 #[test]

@@ -192,7 +192,7 @@ fn execute_area_power(
     center: (u8, u8),
     size: u8,
     power_type: PowerType,
-    game_state: &GameState,
+    _game_state: &GameState,
 ) {
     let half_size = size / 2;
     let mut affected_positions = Vec::new();
@@ -228,10 +228,10 @@ fn execute_area_power(
             execute_shuffle_area(commands, &affected_positions);
         }
         PowerType::TeachRadial => {
-            execute_teach_radial(commands, &affected_positions, game_state);
+            execute_teach_radial(commands, &affected_positions, _game_state);
         }
         PowerType::RecruitRadial => {
-            execute_recruit_radial(commands, &affected_positions, game_state);
+            execute_recruit_radial(commands, &affected_positions, _game_state);
         }
         _ => {
             println!("Area effect for {:?} not yet implemented", power_type);
@@ -344,7 +344,7 @@ fn execute_shuffle_area(commands: &mut Commands, affected_positions: &[(u8, u8)]
 fn execute_teach_radial(
     commands: &mut Commands,
     affected_positions: &[(u8, u8)],
-    game_state: &GameState,
+    _game_state: &GameState,
 ) {
     // This would share powers with friendly pieces in the area
     for &pos in affected_positions {
@@ -369,7 +369,7 @@ fn execute_teach_radial(
 fn execute_recruit_radial(
     commands: &mut Commands,
     affected_positions: &[(u8, u8)],
-    game_state: &GameState,
+    _game_state: &GameState,
 ) {
     // This would convert enemy pieces in the area
     for &pos in affected_positions {

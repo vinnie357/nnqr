@@ -1150,7 +1150,12 @@ pub fn handle_power_activation(
                             true
                         }
                         PowerType::DoublePower => {
-                            activate_double_power(&mut commands, &mut game_state, power_index, &powers);
+                            activate_double_power(
+                                &mut commands,
+                                &mut game_state,
+                                power_index,
+                                &powers,
+                            );
                             true
                         }
                         PowerType::PowerEcho => {
@@ -1254,7 +1259,12 @@ pub fn handle_power_activation(
                         }
                         // Missing research powers
                         PowerType::GrowQuadradius => {
-                            activate_grow_quadradius(&mut commands, &game_state, &pieces, &turn_counter);
+                            activate_grow_quadradius(
+                                &mut commands,
+                                &game_state,
+                                &pieces,
+                                &turn_counter,
+                            );
                             true
                         }
                         PowerType::Bombs => {
@@ -1284,12 +1294,7 @@ pub fn handle_power_activation(
                             true
                         }
                         PowerType::TeachRow => {
-                            activate_teach_row(
-                                &mut commands,
-                                &game_state,
-                                &pieces,
-                                &turn_counter,
-                            );
+                            activate_teach_row(&mut commands, &game_state, &pieces, &turn_counter);
                             true
                         }
                         PowerType::TeachRadial => {
@@ -1724,7 +1729,7 @@ fn activate_rotate_area(
                 let pos = (target_x as u8, target_y as u8);
                 if let Some((entity, piece)) = pieces.iter().find(|(_, p)| p.board_position == pos)
                 {
-                    area_pieces.push((entity, piece.clone(), dx, dy));
+                    area_pieces.push((entity, *piece, dx, dy));
                 }
             }
         }
@@ -1785,11 +1790,11 @@ fn activate_teach_row(
 
     for (teacher_entity, teacher_piece) in &current_player_pieces {
         let teacher_row = teacher_piece.board_position.1;
-        
+
         if rows_taught.contains(&teacher_row) {
             continue; // Already taught this row
         }
-        
+
         // Find all friendly pieces in the same row
         let students: Vec<_> = pieces
             .iter()
@@ -1803,7 +1808,7 @@ fn activate_teach_row(
         // Teach MoveDiagonal to all students in this row
         for (student_entity, _) in students {
             commands.entity(student_entity).insert(MoveDiagonalActive);
-            
+
             // Add a temporary effect for 5 turns
             let teach_effect = PowerEffect::new(
                 PowerType::MoveDiagonal,
@@ -1860,7 +1865,7 @@ fn activate_teach_radial(
     let student_count = students.len();
     for (student_entity, student_piece) in students {
         commands.entity(student_entity).insert(MoveDiagonalActive);
-        
+
         // Add a temporary effect for 3 turns (shorter than row teaching)
         let teach_effect = PowerEffect::new(
             PowerType::MoveDiagonal,
@@ -1880,9 +1885,7 @@ fn activate_teach_radial(
 
     println!(
         "🎓 Teach Radial complete - {} pieces learned MoveDiagonal around center ({}, {})",
-        student_count,
-        center_pos.0,
-        center_pos.1
+        student_count, center_pos.0, center_pos.1
     );
 }
 
@@ -1911,8 +1914,10 @@ fn activate_double_power(
         // Let the player choose which power to double, or pick the most recent
         if let Some(&power_to_double) = available_powers.last() {
             // Add the power back to inventory with enhanced effect
-            game_state.get_current_player_powers_mut().push(power_to_double);
-            
+            game_state
+                .get_current_player_powers_mut()
+                .push(power_to_double);
+
             println!(
                 "🔄 Double Power activated - can use {:?} again with enhanced effect",
                 power_to_double
@@ -1933,12 +1938,12 @@ fn activate_power_echo(
     // In a full implementation, this would access the power registry
     // For now, simulate echoing a common opponent power
     let echo_power = PowerType::MoveDiagonal; // Simplified - would be last opponent power
-    
+
     // Find current player's pieces and give them the echoed power
     for (entity, piece) in pieces.iter() {
         if piece.player == game_state.current_player {
             commands.entity(entity).insert(MoveDiagonalActive);
-            
+
             // Add temporary effect
             let echo_effect = PowerEffect::new(
                 echo_power,
@@ -1951,7 +1956,7 @@ fn activate_power_echo(
             add_effect_to_entity(commands, entity, echo_effect);
         }
     }
-    
+
     println!(
         "🔊 Power Echo activated - echoed {:?} back to current player's pieces",
         echo_power
@@ -1971,10 +1976,10 @@ fn activate_power_memory(
         PowerType::Teleport,
         PowerType::Shield,
     ];
-    
+
     let current_player_powers = game_state.get_current_player_powers_mut();
     let mut powers_restored = 0;
-    
+
     for power in remembered_powers {
         // Only restore if not already in inventory and limit to 2 restorations
         if !current_player_powers.contains(&power) && powers_restored < 2 {
@@ -1983,7 +1988,7 @@ fn activate_power_memory(
             println!("💾 Power Memory restored: {:?}", power);
         }
     }
-    
+
     if powers_restored == 0 {
         // If no specific powers to restore, add a random basic power
         current_player_powers.push(PowerType::MoveDiagonal);
@@ -2008,28 +2013,30 @@ fn activate_grow_quadradius(
         if piece.player == game_state.current_player {
             // Add the GrowQuadradius active component with extended range
             commands.entity(entity).insert(GrowQuadradiusActive {
-                remaining_turns: 5, // Powerful but limited duration
+                remaining_turns: 5,   // Powerful but limited duration
                 range_extension: 255, // Effectively infinite range on a 10x8 board
             });
-            
+
             // Add the power effect for tracking
             let grow_effect = PowerEffect::new(
                 PowerType::GrowQuadradius,
                 5, // Duration in turns
                 entity,
-                EffectData::Status(StatusEffect::Recruiting { conversion_power: 255 }), // Repurpose for range extension
+                EffectData::Status(StatusEffect::Recruiting {
+                    conversion_power: 255,
+                }), // Repurpose for range extension
                 game_state.current_player,
                 turn_counter.turn_number,
             );
             add_effect_to_entity(commands, entity, grow_effect);
-            
+
             println!(
                 "🌟 GrowQuadradius: Extended range for piece at ({}, {}) to entire board",
                 piece.board_position.0, piece.board_position.1
             );
         }
     }
-    
+
     println!(
         "🌟 GrowQuadradius activated - ALL {} pieces now have board-wide range for 5 turns!",
         match game_state.current_player {
@@ -2037,7 +2044,7 @@ fn activate_grow_quadradius(
             Player::Player2 => "Player 2",
         }
     );
-    
+
     // Add special visual effect for this massive power
     commands.spawn((
         ActivePowerEffect {

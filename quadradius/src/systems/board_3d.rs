@@ -373,7 +373,7 @@ pub fn highlight_board_tiles(
     }
 
     // Highlight valid move tiles with distinct green glow
-    for valid_move_entity in valid_moves.iter() {
+    for _valid_move_entity in valid_moves.iter() {
         // Valid move highlighting is handled by the ValidMoveIndicator component
         // This ensures it's not masked by other color overlays
     }

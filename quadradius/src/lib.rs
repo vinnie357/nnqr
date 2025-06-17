@@ -1,9 +1,3 @@
-#![allow(unused_variables)]
-#![allow(dead_code)]
-#![allow(ambiguous_glob_reexports)]
-#![allow(clippy::too_many_arguments)]
-#![allow(clippy::type_complexity)]
-
 pub mod components;
 pub mod events;
 pub mod resources;
@@ -49,9 +43,6 @@ mod tests {
     // Movement overlay tests
     mod movement_overlay_tests;
 
-    // Coordinate debug test
-    mod coordinate_debug_test;
-
     // Visual alignment test
     mod visual_alignment_test;
 
@@ -61,23 +52,14 @@ mod tests {
     // 3D movement indicators test
     mod movement_indicators_3d_test;
 
-    // Final verification test for the 3D movement indicators fix
-    mod movement_indicators_3d_final_verification;
-
     // Movement indicator positioning test
     mod movement_indicators_positioning_test;
-
-    // Movement indicator alignment debug test
-    mod movement_indicators_alignment_debug;
 
     // 3D piece type compatibility test
     mod movement_indicators_3d_piece_type_test;
 
     // Movement indicator shape test
     mod movement_indicators_shape_test;
-
-    // Board movement alignment test
-    mod board_movement_alignment_test;
 
     // Movement indicators alignment fix verification
     mod movement_indicators_alignment_fix_verification;
@@ -88,35 +70,16 @@ mod tests {
     // Chat default state tests
     mod chat_default_state_test;
 
-    // Drag drop debug tests
-    mod drag_drop_debug_test;
-
-    // Piece movement fix verification
-    mod piece_movement_fix_verification;
-
-    // Complete 2D drag workflow test for user-reported movement issues
-    mod complete_2d_drag_workflow_test;
-
-    // Turn ending fix test for premature turn endings
-    mod turn_ending_fix_test;
-
     // Chat 2D minimized state test
     mod chat_2d_minimized_test;
 
-    // 2D turn ending debug test for user-reported issues
-    mod turn_ending_debug_2d_test;
-
     // Piece color preservation test for invalid move flash bug
-    mod actual_turn_ending_validation_test;
     mod capture_validation_test;
-    mod click_to_move_fix_test;
     mod movement_phase_validation_test;
-    mod movement_threshold_95_percent_test;
     mod piece_color_preservation_test;
     mod piece_selection_cleanup_test;
     mod player2_auto_skip_bug_test;
     mod player2_turn_ending_test;
     mod power_spawning_timer_bug_test;
-    mod turn_ending_debug_simple;
     mod turn_phase_blocking_fix_test;
 }

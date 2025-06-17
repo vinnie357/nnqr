@@ -1,6 +1,7 @@
 use crate::components::power::{Absorbing, Frozen, Invisible, Poisoned, Reflecting, Shield};
 use crate::components::Player;
 use crate::resources::game_state::{GameState, TurnPhase};
+use crate::systems::ui::TurnIndicator;
 use bevy::prelude::*;
 
 /// Advance turn phase following the proper sequence
@@ -138,10 +139,6 @@ pub fn power_spawning_phase_ui(
     }
 }
 
-// Marker component for turn indicator UI
-#[derive(Component)]
-pub struct TurnIndicator;
-
 /// Process duration effects at the start of each turn
 pub fn process_duration_effects(
     mut commands: Commands,
@@ -186,7 +183,7 @@ pub fn process_duration_effects(
 
             if poisoned.remaining_turns == 0 {
                 // Piece dies from poison
-                if let Some(piece) = pieces.get(entity).ok() {
+                if let Ok(piece) = pieces.get(entity) {
                     info!(
                         "Piece at ({}, {}) died from poison",
                         piece.board_position.0, piece.board_position.1

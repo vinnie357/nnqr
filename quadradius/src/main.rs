@@ -1,8 +1,3 @@
-#![allow(unused_variables)]
-#![allow(dead_code)]
-#![allow(clippy::too_many_arguments)]
-#![allow(clippy::type_complexity)]
-
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 

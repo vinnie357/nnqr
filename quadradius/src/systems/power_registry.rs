@@ -115,31 +115,89 @@ impl PowerRegistry {
     /// Initialize the rules for how powers interact with each other
     fn initialize_interaction_rules(&mut self) {
         // Meta power interactions
-        self.add_interaction_rule(PowerType::DoublePower, PowerType::DoublePower, InteractionResult::Block);
-        self.add_interaction_rule(PowerType::NullifyPower, PowerType::Shield, InteractionResult::Cancel);
-        self.add_interaction_rule(PowerType::Reflect, PowerType::Sniper, InteractionResult::Combine(PowerType::Sniper));
-        self.add_interaction_rule(PowerType::Absorb, PowerType::SmartBomb, InteractionResult::Enhance(0.5));
-        
+        self.add_interaction_rule(
+            PowerType::DoublePower,
+            PowerType::DoublePower,
+            InteractionResult::Block,
+        );
+        self.add_interaction_rule(
+            PowerType::NullifyPower,
+            PowerType::Shield,
+            InteractionResult::Cancel,
+        );
+        self.add_interaction_rule(
+            PowerType::Reflect,
+            PowerType::Sniper,
+            InteractionResult::Combine(PowerType::Sniper),
+        );
+        self.add_interaction_rule(
+            PowerType::Absorb,
+            PowerType::SmartBomb,
+            InteractionResult::Enhance(0.5),
+        );
+
         // Power enhancement interactions
-        self.add_interaction_rule(PowerType::GrowQuadradius, PowerType::Sniper, InteractionResult::Enhance(3.0));
-        self.add_interaction_rule(PowerType::GrowQuadradius, PowerType::SmartBomb, InteractionResult::Enhance(2.0));
-        self.add_interaction_rule(PowerType::GrowQuadradius, PowerType::DestroyColumn, InteractionResult::Enhance(1.5));
-        
+        self.add_interaction_rule(
+            PowerType::GrowQuadradius,
+            PowerType::Sniper,
+            InteractionResult::Enhance(3.0),
+        );
+        self.add_interaction_rule(
+            PowerType::GrowQuadradius,
+            PowerType::SmartBomb,
+            InteractionResult::Enhance(2.0),
+        );
+        self.add_interaction_rule(
+            PowerType::GrowQuadradius,
+            PowerType::DestroyColumn,
+            InteractionResult::Enhance(1.5),
+        );
+
         // Defensive vs Offensive interactions
-        self.add_interaction_rule(PowerType::Shield, PowerType::Assassin, InteractionResult::Block);
-        self.add_interaction_rule(PowerType::JumpProof, PowerType::Recruit, InteractionResult::Block);
-        self.add_interaction_rule(PowerType::Invisible, PowerType::SmartBomb, InteractionResult::Independent);
-        
+        self.add_interaction_rule(
+            PowerType::Shield,
+            PowerType::Assassin,
+            InteractionResult::Block,
+        );
+        self.add_interaction_rule(
+            PowerType::JumpProof,
+            PowerType::Recruit,
+            InteractionResult::Block,
+        );
+        self.add_interaction_rule(
+            PowerType::Invisible,
+            PowerType::SmartBomb,
+            InteractionResult::Independent,
+        );
+
         // Teaching power interactions
-        self.add_interaction_rule(PowerType::TeachRow, PowerType::DoublePower, InteractionResult::ChainReaction(vec![PowerType::DoublePower]));
-        self.add_interaction_rule(PowerType::TeachRadial, PowerType::GrowQuadradius, InteractionResult::ChainReaction(vec![PowerType::GrowQuadradius]));
-        
+        self.add_interaction_rule(
+            PowerType::TeachRow,
+            PowerType::DoublePower,
+            InteractionResult::ChainReaction(vec![PowerType::DoublePower]),
+        );
+        self.add_interaction_rule(
+            PowerType::TeachRadial,
+            PowerType::GrowQuadradius,
+            InteractionResult::ChainReaction(vec![PowerType::GrowQuadradius]),
+        );
+
         // Chain reaction examples (dangerous combinations)
-        self.add_interaction_rule(PowerType::Multiply, PowerType::TeachRadial, InteractionResult::ChainReaction(vec![PowerType::Multiply, PowerType::TeachRadial]));
+        self.add_interaction_rule(
+            PowerType::Multiply,
+            PowerType::TeachRadial,
+            InteractionResult::ChainReaction(vec![PowerType::Multiply, PowerType::TeachRadial]),
+        );
     }
 
-    fn add_interaction_rule(&mut self, power1: PowerType, power2: PowerType, result: InteractionResult) {
-        self.interaction_rules.insert((power1, power2), result.clone());
+    fn add_interaction_rule(
+        &mut self,
+        power1: PowerType,
+        power2: PowerType,
+        result: InteractionResult,
+    ) {
+        self.interaction_rules
+            .insert((power1, power2), result.clone());
         // Also add the reverse interaction unless it's asymmetric
         match result {
             InteractionResult::Independent | InteractionResult::Combine(_) => {
@@ -167,7 +225,11 @@ impl PowerRegistry {
     }
 
     /// Check if a power interaction will cause problems
-    pub fn check_interaction(&self, power1: PowerType, power2: PowerType) -> Option<&InteractionResult> {
+    pub fn check_interaction(
+        &self,
+        power1: PowerType,
+        power2: PowerType,
+    ) -> Option<&InteractionResult> {
         self.interaction_rules.get(&(power1, power2))
     }
 
@@ -179,9 +241,7 @@ impl PowerRegistry {
     /// Remove expired or cancelled powers
     pub fn cleanup_expired_powers(&mut self, current_turn: u32) {
         for (_, powers) in self.active_powers.iter_mut() {
-            powers.retain(|power| {
-                power.activation_turn + power.duration_remaining > current_turn
-            });
+            powers.retain(|power| power.activation_turn + power.duration_remaining > current_turn);
         }
         self.active_powers.retain(|_, powers| !powers.is_empty());
     }
@@ -204,7 +264,10 @@ impl PowerRegistry {
 
     /// Add a power amplifier to an entity
     pub fn add_amplifier(&mut self, entity: Entity, amplifier: PowerAmplifier) {
-        self.power_amplifiers.entry(entity).or_default().push(amplifier);
+        self.power_amplifiers
+            .entry(entity)
+            .or_default()
+            .push(amplifier);
     }
 
     /// Get the amplification multiplier for a power on an entity
@@ -249,7 +312,7 @@ impl PowerRegistry {
         } else {
             return;
         };
-        
+
         // Now update the amplifiers
         if let Some(amplifiers) = self.power_amplifiers.get_mut(&entity) {
             for i in to_update {
@@ -259,11 +322,9 @@ impl PowerRegistry {
                     }
                 }
             }
-            
+
             // Remove expired amplifiers
-            amplifiers.retain(|amp| {
-                amp.remaining_uses.map(|uses| uses > 0).unwrap_or(true)
-            });
+            amplifiers.retain(|amp| amp.remaining_uses.map(|uses| uses > 0).unwrap_or(true));
         }
     }
 

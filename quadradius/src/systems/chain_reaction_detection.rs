@@ -51,7 +51,10 @@ impl ChainReactionGuard {
         }
 
         if self.current_depth >= self.max_depth {
-            warn!("Chain reaction depth limit ({}) reached, stopping chain", self.max_depth);
+            warn!(
+                "Chain reaction depth limit ({}) reached, stopping chain",
+                self.max_depth
+            );
             return false;
         }
 
@@ -94,7 +97,10 @@ impl ChainReactionGuard {
             .count();
 
         if entity_activation_count >= 3 {
-            warn!("Entity {:?} has activated too many powers in this chain, limiting", record.activator);
+            warn!(
+                "Entity {:?} has activated too many powers in this chain, limiting",
+                record.activator
+            );
             return false;
         }
 
@@ -164,9 +170,9 @@ impl ChainReactionGuard {
 pub fn chain_reaction_monitoring_system(
     mut guard: ResMut<ChainReactionGuard>,
     mut activation_events: EventReader<PowerActivationAttempt>,
-    chain_events: EventWriter<PowerChainReaction>,
+    _chain_events: EventWriter<PowerChainReaction>,
     mut commands: Commands,
-    registry: Res<PowerRegistry>,
+    _registry: Res<PowerRegistry>,
 ) {
     for event in activation_events.read() {
         // Check if this activation could start a dangerous chain
@@ -279,7 +285,7 @@ pub fn cleanup_chain_reactions_system(
 pub fn emergency_chain_detection_system(
     mut guard: ResMut<ChainReactionGuard>,
     registry: Res<PowerRegistry>,
-    time: Res<Time>,
+    _time: Res<Time>,
 ) {
     // If we've been in a chain for too long (in terms of activations), emergency stop
     if guard.activation_chain.len() > 20 {
@@ -290,7 +296,6 @@ pub fn emergency_chain_detection_system(
     // If the registry shows too much activation depth, emergency stop
     if registry.activation_depth > 10 {
         guard.emergency_stop();
-        return;
     }
 
     // Check for rapid-fire activations (too many in a short time)

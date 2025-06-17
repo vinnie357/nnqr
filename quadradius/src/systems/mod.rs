@@ -6,8 +6,6 @@ pub mod camera_2d;
 pub mod chain_reaction_detection;
 pub mod chat_ui;
 pub mod combat_effects;
-pub mod crash_debug;
-pub mod debug_powers;
 pub mod debug_visibility;
 pub mod depth_sorting;
 pub mod drag_drop;
@@ -52,10 +50,9 @@ pub mod win_condition;
 
 pub use board::*;
 pub use board_3d::*;
-// pub use chain_reaction_detection::*; // Functions not currently used
+// pub use chain_reaction_detection::*; // Currently unused but available for power chain systems
 pub use chat_ui::*;
 pub use combat_effects::*;
-// pub use debug_powers::*; // Disabled for production builds
 pub use drag_drop::*;
 pub use drag_drop_3d::*;
 // pub use enhanced_board_visuals::*; // Temporarily disabled due to HeightIndicator conflict
@@ -84,16 +81,21 @@ pub use pieces_3d::*;
 pub use power_activation_ui::*;
 pub use power_balance::*;
 pub use power_effects::*;
-// pub use power_interactions::*; // Functions not currently used
+// pub use power_interactions::*; // Currently unused but available for power interaction systems
 pub use power_orbs::*;
 pub use power_orbs_3d::*;
-// pub use power_registry::*; // Functions not currently used
-// pub use power_test_report::*; // Disabled for production builds
+// pub use power_registry::*; // Currently unused but available for power registration
+// pub use power_test_report::*; // Currently unused but available for power testing
 pub use power_testing::*;
 pub use scoreboard::*;
 pub use settings::*;
 pub use terrain_height::*;
-pub use turn_management::*;
+// Import specific items from turn_management (excluding TurnIndicator to avoid conflict)
+pub use turn_management::{
+    handle_power_spawning_phase, initialize_turn_phase, power_spawning_phase_ui,
+    PowerSpawningTimer,
+};
+// Import all from ui (includes TurnIndicator)
 pub use ui::*;
 pub use visual_effects::*;
 pub use win_condition::*;

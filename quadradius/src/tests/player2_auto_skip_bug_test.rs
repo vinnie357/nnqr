@@ -1,7 +1,5 @@
 use crate::components::*;
 use crate::resources::game_state::{GameState, TurnPhase};
-use crate::systems::power_activation_ui::*;
-use bevy::prelude::*;
 
 /// Test to reproduce and identify the Player2 auto-skip bug
 #[test]

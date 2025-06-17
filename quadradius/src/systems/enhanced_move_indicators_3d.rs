@@ -61,30 +61,30 @@ pub fn show_valid_moves_for_powers_3d(
         );
     }
 
-    // Create highlight mesh - square box to match board tile shape exactly
+    // Create highlight mesh - smaller ring/outline to avoid obscuring tiles and pieces
     let enhanced_tile_size = TILE_SIZE * TILE_SIZE_MULTIPLIER_3D;
     let highlight_mesh = meshes.add(Mesh::from(shape::Box::new(
-        enhanced_tile_size * 0.85, // Match board tile width exactly
-        enhanced_tile_size * 0.15, // Thinner than board tiles for distinction
-        enhanced_tile_size * 0.85, // Match board tile depth exactly
+        enhanced_tile_size * 0.6,  // Smaller width - only outline valid areas
+        enhanced_tile_size * 0.05, // Much thinner for minimal visual obstruction
+        enhanced_tile_size * 0.6,  // Smaller depth - only outline valid areas
     )));
 
-    // Valid move material - very bright green with strong glow for visibility
+    // Valid move material - bright outline with reduced opacity to avoid obscuring
     let valid_move_material = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.0, 1.0, 0.0, 0.9), // Bright pure green
-        emissive: Color::rgb(0.2, 1.0, 0.2),         // Strong green glow
-        metallic: 0.2,
-        perceptual_roughness: 0.1,
+        base_color: Color::rgba(0.0, 1.0, 0.0, 0.7), // Bright green with reduced opacity
+        emissive: Color::rgb(0.3, 0.8, 0.3),         // Strong green glow for visibility
+        metallic: 0.0,                               // No metallic to reduce reflections
+        perceptual_roughness: 0.8,                   // Higher roughness for matte finish
         alpha_mode: AlphaMode::Blend,
         ..default()
     });
 
-    // Attack move material - very bright red with strong glow for visibility
+    // Attack move material - bright outline with reduced opacity to avoid obscuring
     let attack_move_material = materials.add(StandardMaterial {
-        base_color: Color::rgba(1.0, 0.0, 0.0, 0.9), // Bright pure red
-        emissive: Color::rgb(1.0, 0.2, 0.2),         // Strong red glow
-        metallic: 0.2,
-        perceptual_roughness: 0.1,
+        base_color: Color::rgba(1.0, 0.0, 0.0, 0.7), // Bright red with reduced opacity
+        emissive: Color::rgb(0.8, 0.3, 0.3),         // Strong red glow for visibility
+        metallic: 0.0,                               // No metallic to reduce reflections
+        perceptual_roughness: 0.8,                   // Higher roughness for matte finish
         alpha_mode: AlphaMode::Blend,
         ..default()
     });
@@ -208,21 +208,21 @@ fn process_piece_indicators(
                     .iter()
                     .any(|(pos, piece_player, _)| *pos == to && *piece_player != player);
 
-                // Calculate indicator position to be at the bottom of where pieces would be
+                // Position indicator at board tile level to avoid obscuring pieces
                 let enhanced_tile_size = TILE_SIZE * TILE_SIZE_MULTIPLIER_3D;
                 let tile_top_y = enhanced_tile_size * ENHANCED_TILE_HEIGHT / 2.0;
-                let piece_bottom_y = world_pos.y + tile_top_y + PIECE_CLEARANCE;
-
+                
+                // Position indicator at tile surface level, below any pieces
                 let indicator_pos = Vec3::new(
                     world_pos.x,
-                    piece_bottom_y, // Position at piece bottom height
+                    world_pos.y + tile_top_y + 0.05, // Just above tile surface, well below pieces
                     world_pos.z,
                 );
 
-                // Spawn enhanced 3D indicator at piece bottom height
+                // Spawn enhanced 3D indicator at tile surface level
                 info!(
-                    "🟢 Spawning 3D indicator at {:?} (world: {}, piece_bottom_y: {:.2})",
-                    to, world_pos, piece_bottom_y
+                    "🟢 Spawning 3D indicator at {:?} (world: {}, indicator_y: {:.2})",
+                    to, world_pos, indicator_pos.y
                 );
                 commands.spawn((
                     ValidMoveIndicator3D { coordinates: to },

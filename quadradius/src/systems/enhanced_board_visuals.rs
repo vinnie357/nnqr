@@ -152,7 +152,7 @@ pub fn enhance_piece_visuals(
 ) {
     for (entity, piece, transform) in pieces.iter() {
         // Add shadow
-        let shadow_entity = commands
+        let _shadow_entity = commands
             .spawn((
                 PieceShadow { parent: entity },
                 SpriteBundle {
