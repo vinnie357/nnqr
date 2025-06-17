@@ -154,9 +154,9 @@ pub fn handle_drag_end_3d(
     windows: Query<&Window>,
     camera_q: Query<(&Camera, &GlobalTransform), With<IsometricCamera>>,
     mut game_state: ResMut<GameState>,
-    mut pieces: Query<(Entity, &mut GamePiece3D, &mut Transform, &Dragging3D)>,
+    mut pieces: Query<(Entity, &mut GamePiece3D, &mut GamePiece, &mut Transform, &Dragging3D)>,
     all_pieces: Query<(Entity, &GamePiece3D), Without<Dragging3D>>,
-    all_pieces_2d: Query<(Entity, &GamePiece)>,
+    mut all_pieces_2d: Query<(Entity, &mut GamePiece), (Without<Dragging3D>, Without<GamePiece3D>)>,
     tiles: Query<&BoardTile>,
     valid_indicators: Query<Entity, With<ValidMoveIndicator3D>>,
     mut piece_outlines: Query<&mut PieceOutline>,
@@ -177,11 +177,11 @@ pub fn handle_drag_end_3d(
     };
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(target_pos) = screen_to_board(&windows, &camera_q, cursor_pos) {
-            for (entity, mut piece, mut transform, dragging) in pieces.iter_mut() {
+            for (entity, mut piece_3d, mut piece_2d, mut transform, dragging) in pieces.iter_mut() {
                 let start_pos = dragging.start_pos;
 
                 // Check if move is valid
-                if is_valid_move_3d(start_pos, target_pos, piece.player, &tiles, &all_pieces) {
+                if is_valid_move_3d(start_pos, target_pos, piece_3d.player, &tiles, &all_pieces) {
                     // Check if the piece actually moved to a different position
                     let piece_actually_moved = target_pos != start_pos;
 
@@ -210,8 +210,19 @@ pub fn handle_drag_end_3d(
                             }
                         }
 
-                        // Update piece position
-                        piece.board_position = target_pos;
+                        // Update the 3D piece position
+                        piece_3d.board_position = target_pos;
+                        piece_2d.board_position = target_pos;
+
+                        // CRITICAL FIX: Also update any separate 2D piece at the original position
+                        // This prevents ghost pieces from being left behind
+                        for (_piece_2d_entity, mut piece_2d_separate) in all_pieces_2d.iter_mut() {
+                            if piece_2d_separate.board_position == start_pos && piece_2d_separate.player == piece_3d.player {
+                                info!("🔧 Updating separate 2D piece position from {:?} to {:?}", start_pos, target_pos);
+                                piece_2d_separate.board_position = target_pos;
+                                break;
+                            }
+                        }
 
                         // Update transform to final position
                         let height = tiles
@@ -381,7 +392,7 @@ pub fn cleanup_indicators_3d(
 fn clear_selected_at_position_2d(
     commands: &mut Commands,
     position: (u8, u8),
-    pieces_2d: &Query<(Entity, &GamePiece)>,
+    pieces_2d: &Query<(Entity, &mut GamePiece), (Without<Dragging3D>, Without<GamePiece3D>)>,
 ) {
     // Remove Selected component from any 2D pieces at this position
     for (entity, piece_2d) in pieces_2d.iter() {
