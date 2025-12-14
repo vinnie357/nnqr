@@ -35,16 +35,21 @@ jobs:
         working-directory: lua/love2d
     steps:
       - uses: actions/checkout@v4
-      - name: Install Lua build dependencies
-        run: sudo apt-get update && sudo apt-get install -y libreadline-dev
       - uses: ./.github/actions/setup-mise
-      - name: Cache mise installs
+
+      - name: Cache Lua mise installs
+        id: lua-cache
         uses: actions/cache@v4
         with:
-          path: ~/.local/share/mise/installs
-          key: mise-installs-${{ runner.os }}-${{ hashFiles('lua/love2d/mise.toml') }}
+          path: ~/.local/share/mise/installs/lua
+          key: mise-lua-${{ runner.os }}-${{ hashFiles('lua/love2d/mise.toml') }}
           restore-keys: |
-            mise-installs-${{ runner.os }}-
+            mise-lua-${{ runner.os }}-
+
+      - name: Install Lua build dependencies
+        if: steps.lua-cache.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y libreadline-dev
+
       - name: Cache LuaRocks packages
         uses: actions/cache@v4
         with:
@@ -52,7 +57,9 @@ jobs:
           key: luarocks-${{ runner.os }}-busted
           restore-keys: |
             luarocks-${{ runner.os }}-
+
       - name: Install tools
         run: mise trust && mise install
+
       - name: Run CI
         run: mise run lua-ci
