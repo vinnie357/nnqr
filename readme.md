@@ -1,169 +1,115 @@
-# Not Not Quadradius, a Quadradius Recreation Project (NNQR)
- 
- a beloved flash game was taken in its prime, and this is an effort to revive that game.
+# Not Not Quadradius (NNQR)
 
-## Overview
+A multi-implementation recreation of **Quadradius**, the beloved Flash strategy game described as "checkers on steroids". Originally created by Jimmi Heiserman and Brad Kayal in 2007, this turn-based masterpiece combined simple movement mechanics with ~70 different power-ups that dramatically altered gameplay.
 
-A faithful recreation of **Quadradius**, the beloved Flash strategy game described as "checkers on steroids". Originally created by Jimmi Heiserman and Brad Kayal in 2007, this turn-based masterpiece combined simple movement mechanics with ~70 different power-ups that dramatically altered gameplay.
+This project recreates Quadradius using multiple modern technologies, allowing exploration of different game engines and programming languages.
 
-This project recreates Quadradius using modern technology: **Rust** and the **Bevy game engine**, featuring advanced 3D isometric rendering while maintaining the strategic depth that made the original unforgettable.
+## Implementations
 
-## 🚀 Quick Start
+| Implementation | Status | Description |
+|----------------|--------|-------------|
+| [Rust/Bevy](rust/bevy/) | Production | Advanced 3D isometric with 38+ powers |
+| [Lua/Love2D](lua/love2d/) | In Development | Lightweight 2D/isometric version |
 
-### Prerequisites
-- **Rust 1.70+** - [Install Rust](https://rustup.rs/)
-- **Git** - For cloning the repository
-- **Linux/WSL** - Primary development environment (Windows cross-compilation supported)
+## Quick Start
 
-### Install and Play
-
+### Rust/Bevy (Production Ready)
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/nnqr.git
-cd nnqr
-
-# Navigate to game directory
-cd quadradius
-
-# Run the game (development mode)
-cargo run
-
-# Or run optimized version
+cd rust/bevy
 cargo run --release
 ```
 
-### Controls
-- **Left Click**: Select your piece (highlighted in yellow)
-- **Right Click**: Move selected piece or activate power
-- **Mouse Drag**: Drag pieces to move them (3D mode)
-- **Q/E Keys**: Zoom in/out (3D mode)
+### Lua/Love2D (Development)
+```bash
+cd lua/love2d
+love .
+```
 
-## 🎮 Game Features
+### Using mise tasks
+```bash
+mise run start           # Run Bevy version
+mise run love-start      # Run Love2D version
+```
 
-### Current Implementation Status
-- ✅ **Core Game**: 10×8 isometric board with terrain heights
-- ✅ **3D Rendering**: Advanced isometric view with PBR materials
-- ✅ **Power System**: 38+ powers implemented (12+ remaining)
-- ✅ **Cross-Platform**: Linux development, Windows deployment
-- ✅ **Production Ready**: Windows release v0.2.0 available
+## Game Overview
 
-### Power Categories
-- **Movement Powers**: Teleport, Jump, Diagonal movement, and more
-- **Combat Powers**: Smart bombs, Sniper, area destruction
-- **Terrain Powers**: Raise/lower columns, height manipulation
-- **Special Powers**: Piece multiplication, power stealing, invisibility
+### Core Mechanics
+- **10x8 Board**: Isometric grid with terrain heights
+- **Turn-Based**: Alternating player turns
+- **Movement**: Orthogonal movement with height restrictions
+- **Capture**: Move onto enemy pieces to eliminate them
+- **Powers**: Collect power orbs for special abilities
 
-## 🛠️ Development
+### Power System
+The original Quadradius featured ~70 unique powers across categories:
+- **Movement Powers**: Teleport, Jump, Diagonal, Knight moves
+- **Combat Powers**: Smart Bomb, Sniper, Shield, Assassin
+- **Terrain Powers**: Raise/Lower columns, Destroy terrain
+- **Special Powers**: Multiply pieces, Steal powers, Invisibility
 
-### Project Structure
+## Project Structure
+
 ```
 nnqr/
-├── quadradius/           # Main game implementation
-│   ├── src/             # Rust source code
-│   ├── windows/         # Windows deployment
-│   └── README.md        # Detailed game documentation
-├── research/            # Game analysis and technical research
-├── instructions/        # Implementation guides and task lists
-├── features/           # Feature specifications (powers, deployment)
-├── bug_reports/        # Bug tracking and fixes
-└── readme.md           # This file
+├── rust/
+│   └── bevy/              # Rust/Bevy implementation
+│       ├── src/           # Source code
+│       ├── features/      # Feature specifications
+│       ├── instructions/  # Implementation guides
+│       └── bug_reports/   # Issue tracking
+├── lua/
+│   └── love2d/            # Love2D implementation
+│       ├── src/           # Lua source
+│       ├── assets/        # Game assets
+│       └── lib/           # External libraries
+├── research/              # Shared research docs
+├── mise.toml              # Task runner config
+└── CLAUDE.md              # Development guide
 ```
 
-### Build Commands
+## Development
+
+### Prerequisites
+
+**For Rust/Bevy:**
+- Rust 1.87+ ([rustup.rs](https://rustup.rs/))
+
+**For Lua/Love2D:**
+- Love2D 11.5+ ([love2d.org](https://love2d.org/))
+
+**Shared tools (managed by mise):**
+- [mise](https://mise.jdx.dev/) - Runtime version manager
+- nushell - Development scripts
+
+### Common Tasks
+
 ```bash
-# Development build (faster compilation)
-cargo run
+# Rust/Bevy
+mise run start              # Development mode
+mise run start-release      # Optimized release
+mise run test               # Run tests
+mise run clippy             # Lint code
 
-# Release build (optimized performance)
-cargo run --release
-
-# Run tests
-cargo test
-
-# Test specific systems
-cargo test power_orb_tests     # Power system tests
-cargo test board_10x8_tests    # 10x8 board tests
-cargo test movement_tests      # Movement validation
-cargo test ui_theme_tests      # UI and visual tests
-
-# Windows cross-compilation
-./deploy_windows.sh
+# Lua/Love2D
+mise run love-start         # Run game
+mise run love-fmt           # Format code
 ```
 
-### Development Environment
-```bash
-# Install Rust (if not already installed)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source ~/.cargo/env
+## Contributing
 
-# Add Windows target for cross-compilation
-rustup target add x86_64-pc-windows-gnu
+See implementation-specific README files for detailed contribution guidelines:
+- [Rust/Bevy Contributing](rust/bevy/README.md)
+- [Lua/Love2D Contributing](lua/love2d/README.md)
 
-# Install development dependencies
-sudo apt update
-sudo apt install build-essential pkg-config
-```
+## Version History
 
-## 📚 Documentation
+### Rust/Bevy
+- **v0.2.0**: Advanced 3D rendering, 38+ powers, Windows deployment
+- **v0.1.0**: Basic board and movement
 
-### For Players
-- **[Game README](quadradius/README.md)** - Complete game documentation
-- **[How to Play](quadradius/README.md#how-to-play)** - Game rules and controls
-- **[Power System](features/powers/)** - Power documentation and testing
+### Lua/Love2D
+- **v0.1.0** *(In Progress)*: Basic isometric board scaffold
 
-### For Developers
-- **[Implementation Guide](instructions/nnqr_implementation.md)** - Current development guide
-- **[Task List](instructions/task_list.md)** - Current development priorities
-- **[Research Documents](research/)** - Game analysis and technical patterns
-- **[Testing Guide](instructions/testing.md)** - Comprehensive testing strategy
-
-## 🎯 Current Development Focus
-
-### Immediate Priorities (Week 1-2)
-1. **Fix Broken Powers** - Complete Freeze, Assassin, MoveTwice implementations
-2. **Movement Powers** - Complete remaining 5 powers (Swap, Push, Pull, Leap)
-3. **Combat Powers** - Implement Shield, Invisible, Recruit, and other abilities
-
-### Upcoming Features
-- **Board Manipulation Powers** - Wall creation, area effects, terrain transformation
-- **Meta Powers** - Power-on-power interactions and advanced mechanics
-- **Enhanced Visual Effects** - Improved animations and particle systems
-- **Multiplayer Support** - Network gameplay (future phase)
-
-## 🏆 Project Goals
-
-### Phase Status
-- ✅ **Phase 1-4**: COMPLETED (Foundation, Powers, 3D Rendering, Deployment)
-- 🚧 **Current**: Power System Completion (38+ implemented, 12+ remaining)
-- 🎯 **Target**: Full recreation with all ~50 original powers
-
-### Success Metrics
-- **Authentic Recreation**: Faithful to original Quadradius gameplay
-- **Modern Technology**: Leveraging Rust/Bevy for performance and maintainability
-- **Cross-Platform**: Working on Linux and Windows
-- **Production Quality**: Professional game with comprehensive testing
-
-## 🤝 Contributing
-
-This project welcomes contributions! Current high-priority areas:
-- **Power Implementation** - Complete missing powers using existing framework
-- **Testing** - Automated tests for power mechanics and game balance
-- **Documentation** - Keep guides current with implementation
-- **Bug Fixes** - Address issues in bug_reports/
-
-## 📈 Version History
-
-- **v0.1.0**: Basic board and movement (Phase 1 Foundation)
-- **v0.2.0**: Advanced 3D rendering + 38 powers (Phase 2-4 Complete)
-- **v0.3.0** *(In Progress)*: Complete power system recreation
-- **v1.0.0** *(Target)*: Full Quadradius recreation
-
-## 📄 License
+## License
 
 This is a fan recreation of the original Quadradius Flash game. This project is not affiliated with the original creators but aims to preserve and celebrate this classic strategy game for modern platforms.
-
----
-
-**Ready to play?** `cd quadradius && cargo run`
-
-**Want to contribute?** Check out the [task list](instructions/task_list.md) for current priorities!

@@ -1,0 +1,2353 @@
+warning: unused variable: `jump_query`
+   --> src/systems/enhanced_move_indicators_3d.rs:255:5
+    |
+255 |     jump_query: &Query<Entity, With<JumpActive>>,
+    |     ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_jump_query`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `children_query`
+   --> src/systems/pieces_3d.rs:301:5
+    |
+301 |     children_query: Query<&Children>,
+    |     ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_children_query`
+
+warning: unused variable: `piece_entity`
+    --> src/systems/power_effects.rs:1616:10
+     |
+1616 |     for (piece_entity, piece) in pieces.iter() {
+     |          ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_piece_entity`
+
+warning: unused variable: `student_entity`
+    --> src/systems/power_effects.rs:1863:19
+     |
+1863 |         .filter(|(student_entity, student_piece)| {
+     |                   ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_student_entity`
+
+warning: unused variable: `commands`
+    --> src/systems/power_effects.rs:1904:5
+     |
+1904 |     commands: &mut Commands,
+     |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_commands`
+
+warning: unused variable: `powers`
+    --> src/systems/power_effects.rs:1907:5
+     |
+1907 |     powers: &[PowerType],
+     |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_powers`
+
+warning: unused variable: `commands`
+    --> src/systems/power_effects.rs:1978:5
+     |
+1978 |     commands: &mut Commands,
+     |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_commands`
+
+warning: unused variable: `pieces`
+    --> src/systems/power_effects.rs:1980:5
+     |
+1980 |     pieces: &Query<(Entity, &GamePiece)>,
+     |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_pieces`
+
+warning: unused variable: `target_piece`
+   --> src/systems/power_interactions.rs:133:23
+    |
+133 |             if let Ok(target_piece) = pieces.get(target) {
+    |                       ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_target_piece`
+
+warning: unused variable: `commands`
+   --> src/systems/power_interactions.rs:284:5
+    |
+284 |     commands: &mut Commands,
+    |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_commands`
+
+warning: unused variable: `pieces`
+   --> src/systems/power_interactions.rs:287:5
+    |
+287 |     pieces: &Query<(Entity, &GamePiece)>,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_pieces`
+
+warning: unused variable: `echo_piece`
+   --> src/systems/power_interactions.rs:454:23
+    |
+454 |         if let Ok((_, echo_piece)) = pieces.get(echo_entity) {
+    |                       ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_echo_piece`
+
+warning: unused variable: `piece_entity`
+   --> src/systems/power_orbs.rs:132:14
+    |
+132 |         for (piece_entity, piece, mut piece_inventory) in pieces.iter_mut() {
+    |              ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_piece_entity`
+
+warning: unused variable: `piece_entity`
+   --> src/systems/power_orbs_3d.rs:290:10
+    |
+290 |     for (piece_entity, piece, mut piece_inventory) in pieces.iter_mut() {
+    |          ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_piece_entity`
+
+warning: unused variable: `commands`
+  --> src/systems/power_test_report.rs:43:5
+   |
+43 |     commands: Commands,
+   |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_commands`
+
+warning: unused variable: `pieces`
+  --> src/systems/power_test_report.rs:45:5
+   |
+45 |     pieces: Query<(Entity, &GamePiece)>,
+   |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_pieces`
+
+warning: unused variable: `entity`
+   --> src/systems/power_testing.rs:269:26
+    |
+269 |             if let Some((entity, _)) = pieces.iter().next() {
+    |                          ^^^^^^ help: if this is intentional, prefix it with an underscore: `_entity`
+
+warning: unused variable: `entity_2d`
+   --> src/systems/settings.rs:407:10
+    |
+407 |     for (entity_2d, piece_2d) in pieces_2d.iter() {
+    |          ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_entity_2d`
+
+warning: unused variable: `entity_3d`
+   --> src/systems/settings.rs:419:10
+    |
+419 |     for (entity_3d, piece_3d) in pieces_3d.iter() {
+    |          ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_entity_3d`
+
+warning: unused variable: `render_config`
+   --> src/systems/settings.rs:404:5
+    |
+404 |     render_config: Res<RenderConfig>,
+    |     ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_render_config`
+
+warning: unused variable: `rim_mesh`
+   --> src/systems/settings.rs:451:9
+    |
+451 |     let rim_mesh = meshes.add(Mesh::from(shape::Torus {
+    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_rim_mesh`
+
+warning: unused variable: `rim_material`
+   --> src/systems/settings.rs:471:9
+    |
+471 |     let rim_material = materials.add(StandardMaterial {
+    |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_rim_material`
+
+warning: unused variable: `height_factor`
+  --> src/systems/terrain_height.rs:64:13
+   |
+64 |         let height_factor = (terrain.height + 2) as f32 / 7.0; // Normalize to 0-1
+   |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_height_factor`
+
+warning: unused variable: `commands`
+   --> src/systems/visual_effects.rs:371:5
+    |
+371 |     commands: &mut Commands,
+    |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_commands`
+
+warning: function `is_valid_move_with_positions` is never used
+   --> src/systems/drag_drop.rs:401:4
+    |
+401 | fn is_valid_move_with_positions(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: function `get_valid_moves` is never used
+   --> src/systems/drag_drop.rs:578:4
+    |
+578 | fn get_valid_moves(
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `spawn_valid_move_indicators` is never used
+   --> src/systems/drag_drop.rs:615:4
+    |
+615 | fn spawn_valid_move_indicators(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `PIECE_HEIGHT` is never used
+  --> src/systems/enhanced_move_indicators_3d.rs:16:7
+   |
+16 | const PIECE_HEIGHT: f32 = 0.2; // Height of piece cylinder
+   |       ^^^^^^^^^^^^
+
+warning: constant `PIECE_CLEARANCE` is never used
+  --> src/systems/enhanced_move_indicators_3d.rs:17:7
+   |
+17 | const PIECE_CLEARANCE: f32 = 2.0; // Same clearance as pieces
+   |       ^^^^^^^^^^^^^^^
+
+warning: constant `PIECE_Y_OFFSET` is never used
+  --> src/systems/pieces_3d.rs:14:7
+   |
+14 | const PIECE_Y_OFFSET: f32 = ENHANCED_TILE_HEIGHT / 2.0 + PIECE_HEIGHT / 2.0 + PIECE_CLEARANCE; // Sit on top with clearance
+   |       ^^^^^^^^^^^^^^
+
+warning: function `activate_raise_column` is never used
+    --> src/systems/power_effects.rs:1392:4
+     |
+1392 | fn activate_raise_column(commands: &mut Commands, column: u8, tiles: &Query<&BoardTile>) {
+     |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `activate_lower_column` is never used
+    --> src/systems/power_effects.rs:1417:4
+     |
+1417 | fn activate_lower_column(commands: &mut Commands, column: u8, tiles: &Query<&BoardTile>) {
+     |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `activate_destroy_column` is never used
+    --> src/systems/power_effects.rs:1440:4
+     |
+1440 | fn activate_destroy_column(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `ORB_SPAWN_CHANCE` is never used
+ --> src/systems/power_orbs.rs:6:7
+  |
+6 | const ORB_SPAWN_CHANCE: f32 = 0.5; // 50% chance per turn (increased for better gameplay)
+  |       ^^^^^^^^^^^^^^^^
+
+warning: `quadradius` (lib) generated 34 warnings
+warning: constant `BOARD_SIZE` is never used
+  --> src/components/board.rs:14:11
+   |
+14 | pub const BOARD_SIZE: u8 = 8; // Deprecated - use BOARD_WIDTH/HEIGHT for 10x8 board
+   |           ^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: field `current_input` is never read
+  --> src/components/chat.rs:27:9
+   |
+25 | pub struct ChatState {
+   |            --------- field in this struct
+26 |     pub messages: Vec<ChatMessage>,
+27 |     pub current_input: String,
+   |         ^^^^^^^^^^^^^
+   |
+   = note: `ChatState` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: methods `clear_input`, `set_input`, `get_input`, and `message_count` are never used
+  --> src/components/chat.rs:85:12
+   |
+39 | impl ChatState {
+   | -------------- methods in this implementation
+...
+85 |     pub fn clear_input(&mut self) {
+   |            ^^^^^^^^^^^
+...
+89 |     pub fn set_input(&mut self, input: String) {
+   |            ^^^^^^^^^
+...
+93 |     pub fn get_input(&self) -> &String {
+   |            ^^^^^^^^^
+...
+97 |     pub fn message_count(&self) -> usize {
+   |            ^^^^^^^^^^^^^
+
+warning: field `message_index` is never read
+   --> src/components/chat.rs:117:9
+    |
+116 | pub struct ChatMessageText {
+    |            --------------- field in this struct
+117 |     pub message_index: usize,
+    |         ^^^^^^^^^^^^^
+
+warning: struct `SelectionHighlight` is never constructed
+  --> src/components/piece.rs:40:12
+   |
+40 | pub struct SelectionHighlight;
+   |            ^^^^^^^^^^^^^^^^^^
+
+warning: methods `remove_power`, `has_power`, `power_count`, `is_empty`, `get_powers`, and `clear` are never used
+  --> src/components/piece.rs:57:12
+   |
+48 | impl PowerInventory {
+   | ------------------- methods in this implementation
+...
+57 |     pub fn remove_power(&mut self, index: usize) -> Option<PowerType> {
+   |            ^^^^^^^^^^^^
+...
+65 |     pub fn has_power(&self, power: &PowerType) -> bool {
+   |            ^^^^^^^^^
+...
+69 |     pub fn power_count(&self) -> usize {
+   |            ^^^^^^^^^^^
+...
+73 |     pub fn is_empty(&self) -> bool {
+   |            ^^^^^^^^
+...
+77 |     pub fn get_powers(&self) -> &Vec<PowerType> {
+   |            ^^^^^^^^^^
+...
+81 |     pub fn clear(&mut self) {
+   |            ^^^^^
+
+warning: variant `Area` is never constructed
+   --> src/components/power.rs:104:5
+    |
+96  | pub enum EffectData {
+    |          ---------- variant in this enum
+...
+104 |     Area(AreaEffect),
+    |     ^^^^
+    |
+    = note: `EffectData` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `None` and `Limited` are never constructed
+   --> src/components/power.rs:109:5
+    |
+108 | pub enum MovementRestriction {
+    |          ------------------- variants in this enum
+109 |     None,                   // Can't move
+    |     ^^^^
+110 |     Limited(Vec<(i8, i8)>), // Can only move to specific relative positions
+    |     ^^^^^^^
+    |
+    = note: `MovementRestriction` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `Teleport`, `Jump`, `Knight`, and `Double` are never constructed
+   --> src/components/power.rs:117:5
+    |
+115 | pub enum MovementType {
+    |          ------------ variants in this enum
+116 |     Diagonal,
+117 |     Teleport,
+    |     ^^^^^^^^
+118 |     Jump,
+    |     ^^^^
+119 |     Knight,
+    |     ^^^^^^
+120 |     Double, // Can move twice
+    |     ^^^^^^
+    |
+    = note: `MovementType` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `damage_types` is never read
+   --> src/components/power.rs:126:16
+    |
+126 |     Immunity { damage_types: Vec<DamageType> },
+    |     --------   ^^^^^^^^^^^^
+    |     |
+    |     field in this variant
+    |
+    = note: `ProtectionType` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `turns_remaining` is never read
+   --> src/components/power.rs:127:18
+    |
+127 |     Reflection { turns_remaining: u32 },
+    |     ----------   ^^^^^^^^^^^^^^^
+    |     |
+    |     field in this variant
+    |
+    = note: `ProtectionType` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `Explosion` and `Magic` are never constructed
+   --> src/components/power.rs:133:5
+    |
+131 | pub enum DamageType {
+    |          ---------- variants in this enum
+132 |     Capture,
+133 |     Explosion,
+    |     ^^^^^^^^^
+134 |     Magic,
+    |     ^^^^^
+    |
+    = note: `DamageType` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `conversion_power` is never read
+   --> src/components/power.rs:143:18
+    |
+143 |     Recruiting { conversion_power: u32 },
+    |     ----------   ^^^^^^^^^^^^^^^^
+    |     |
+    |     field in this variant
+    |
+    = note: `StatusEffect` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: fields `center`, `radius`, and `effect_type` are never read
+   --> src/components/power.rs:148:9
+    |
+147 | pub struct AreaEffect {
+    |            ---------- fields in this struct
+148 |     pub center: (u8, u8),
+    |         ^^^^^^
+149 |     pub radius: u8,
+    |         ^^^^^^
+150 |     pub effect_type: AreaEffectType,
+    |         ^^^^^^^^^^^
+    |
+    = note: `AreaEffect` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `Damage`, `Heal`, `Convert`, and `Terrain` are never constructed
+   --> src/components/power.rs:155:5
+    |
+154 | pub enum AreaEffectType {
+    |          -------------- variants in this enum
+155 |     Damage,
+    |     ^^^^^^
+156 |     Heal,
+    |     ^^^^
+157 |     Convert,
+    |     ^^^^^^^
+158 |     Terrain,
+    |     ^^^^^^^
+    |
+    = note: `AreaEffectType` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `remaining_hits` is never read
+   --> src/components/power.rs:164:9
+    |
+163 | pub struct Shield {
+    |            ------ field in this struct
+164 |     pub remaining_hits: u32,
+    |         ^^^^^^^^^^^^^^
+
+warning: field `remaining_turns` is never read
+   --> src/components/power.rs:170:9
+    |
+169 | pub struct Invisible {
+    |            --------- field in this struct
+170 |     pub remaining_turns: u32,
+    |         ^^^^^^^^^^^^^^^
+
+warning: field `remaining_turns` is never read
+   --> src/components/power.rs:176:9
+    |
+175 | pub struct Poisoned {
+    |            -------- field in this struct
+176 |     pub remaining_turns: u32,
+    |         ^^^^^^^^^^^^^^^
+
+warning: field `remaining_turns` is never read
+   --> src/components/power.rs:182:9
+    |
+181 | pub struct Frozen {
+    |            ------ field in this struct
+182 |     pub remaining_turns: u32,
+    |         ^^^^^^^^^^^^^^^
+
+warning: fields `height`, `wall_type`, `health`, and `created_turn` are never read
+   --> src/components/power.rs:188:9
+    |
+187 | pub struct Wall {
+    |            ---- fields in this struct
+188 |     pub height: i8,
+    |         ^^^^^^
+189 |     pub board_position: (u8, u8),
+190 |     pub wall_type: WallType,
+    |         ^^^^^^^^^
+191 |     pub health: u32,
+    |         ^^^^^^
+192 |     pub created_turn: u32,
+    |         ^^^^^^^^^^^^
+
+warning: variants `Ice`, `Energy`, and `Bridge` are never constructed
+   --> src/components/power.rs:202:5
+    |
+200 | pub enum WallType {
+    |          -------- variants in this enum
+201 |     Stone,  // Permanent wall
+202 |     Ice,    // Temporary wall (melts after N turns)
+    |     ^^^
+203 |     Energy, // Energy barrier (blocks movement but not powers)
+    |     ^^^^^^
+204 |     Bridge, // Allows passage over gaps
+    |     ^^^^^^
+    |
+    = note: `WallType` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `moves_remaining` is never read
+   --> src/components/power.rs:210:9
+    |
+209 | pub struct MoveTwiceActive {
+    |            --------------- field in this struct
+210 |     pub moves_remaining: u32,
+    |         ^^^^^^^^^^^^^^^
+
+warning: struct `Reflecting` is never constructed
+   --> src/components/power.rs:215:12
+    |
+215 | pub struct Reflecting {
+    |            ^^^^^^^^^^
+
+warning: field `remaining_turns` is never read
+   --> src/components/power.rs:222:9
+    |
+221 | pub struct Absorbing {
+    |            --------- field in this struct
+222 |     pub remaining_turns: u32,
+    |         ^^^^^^^^^^^^^^^
+
+warning: fields `remaining_turns` and `range_extension` are never read
+   --> src/components/power.rs:228:9
+    |
+227 | pub struct GrowQuadradiusActive {
+    |            -------------------- fields in this struct
+228 |     pub remaining_turns: u32,
+    |         ^^^^^^^^^^^^^^^
+229 |     pub range_extension: u8,
+    |         ^^^^^^^^^^^^^^^
+
+warning: struct `JumpProof` is never constructed
+   --> src/components/power.rs:233:12
+    |
+233 | pub struct JumpProof;
+    |            ^^^^^^^^^
+
+warning: struct `DissolvedTile` is never constructed
+   --> src/components/power.rs:237:12
+    |
+237 | pub struct DissolvedTile {
+    |            ^^^^^^^^^^^^^
+
+warning: methods `description` and `power_category` are never used
+   --> src/components/power.rs:449:12
+    |
+241 | impl PowerType {
+    | -------------- methods in this implementation
+...
+449 |     pub fn description(&self) -> &'static str {
+    |            ^^^^^^^^^^^
+...
+527 |     pub fn power_category(&self) -> PowerCategory {
+    |            ^^^^^^^^^^^^^^
+
+warning: variants `Movement`, `Combat`, `Defensive`, `Terrain`, `Strategic`, and `Meta` are never constructed
+   --> src/components/power.rs:595:5
+    |
+594 | pub enum PowerCategory {
+    |          ------------- variants in this enum
+595 |     Movement,
+    |     ^^^^^^^^
+596 |     Combat,
+    |     ^^^^^^
+597 |     Defensive,
+    |     ^^^^^^^^^
+598 |     Terrain,
+    |     ^^^^^^^
+599 |     Strategic,
+    |     ^^^^^^^^^
+600 |     Meta,
+    |     ^^^^
+    |
+    = note: `PowerCategory` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: associated items `new` and `calculate_spawn_bias_for_player` are never used
+  --> src/resources/power_spawning.rs:14:12
+   |
+13 | impl PowerSpawningTracker {
+   | ------------------------- associated items in this implementation
+14 |     pub fn new() -> Self {
+   |            ^^^
+...
+36 |     pub fn calculate_spawn_bias_for_player(&self, player: Player) -> f32 {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated functions `new_2d` and `new_3d` are never used
+  --> src/resources/render_config.rs:10:12
+   |
+9  | impl RenderConfig {
+   | ----------------- associated functions in this implementation
+10 |     pub fn new_2d() -> Self {
+   |            ^^^^^^
+...
+14 |     pub fn new_3d() -> Self {
+   |            ^^^^^^
+
+warning: multiple associated items are never used
+  --> src/resources/theme.rs:8:15
+   |
+6  | impl QuadradiusTheme {
+   | -------------------- associated items in this implementation
+7  |     // Core metallic colors
+8  |     pub const METAL_SILVER: Color = Color::rgb(0.75, 0.75, 0.80);
+   |               ^^^^^^^^^^^^
+9  |     pub const METAL_GUNMETAL: Color = Color::rgb(0.32, 0.35, 0.39);
+   |               ^^^^^^^^^^^^^^
+10 |     pub const METAL_CHROME: Color = Color::rgb(0.87, 0.89, 0.91);
+   |               ^^^^^^^^^^^^
+11 |     pub const METAL_BRONZE: Color = Color::rgb(0.55, 0.42, 0.32);
+   |               ^^^^^^^^^^^^
+12 |     pub const METAL_COPPER: Color = Color::rgb(0.72, 0.45, 0.33);
+   |               ^^^^^^^^^^^^
+...
+17 |     pub const INDUSTRIAL_GREEN: Color = Color::rgb(0.35, 0.55, 0.35);
+   |               ^^^^^^^^^^^^^^^^
+18 |     pub const INDUSTRIAL_RED: Color = Color::rgb(0.75, 0.25, 0.25);
+   |               ^^^^^^^^^^^^^^
+...
+35 |     pub const TILE_BASE_2D: Color = Color::rgb(0.70, 0.72, 0.75); // Even brighter for 2D view
+   |               ^^^^^^^^^^^^
+36 |     pub const TILE_ELEVATED_1_2D: Color = Color::rgb(0.76, 0.79, 0.82); // Clear step up
+   |               ^^^^^^^^^^^^^^^^^^
+37 |     pub const TILE_ELEVATED_2_2D: Color = Color::rgb(0.82, 0.85, 0.88); // Noticeable elevation
+   |               ^^^^^^^^^^^^^^^^^^
+38 |     pub const TILE_ELEVATED_3_2D: Color = Color::rgb(0.88, 0.91, 0.94); // High elevation
+   |               ^^^^^^^^^^^^^^^^^^
+39 |     pub const TILE_ELEVATED_4_2D: Color = Color::rgb(0.94, 0.97, 1.0); // Maximum height
+   |               ^^^^^^^^^^^^^^^^^^
+40 |     pub const TILE_DEPRESSED_2D: Color = Color::rgb(0.40, 0.37, 0.35); // Visible depression
+   |               ^^^^^^^^^^^^^^^^^
+...
+43 |     pub const GRID_LINES_2D: Color = Color::rgb(0.30, 0.30, 0.35); // Lighter grid lines for visibility
+   |               ^^^^^^^^^^^^^
+...
+55 |     pub const ORB_GLOW: Color = Color::rgba(0.85, 0.88, 0.92, 0.6); // Glow effect
+   |               ^^^^^^^^
+56 |     pub const ORB_HIGHLIGHT: Color = Color::rgb(0.92, 0.94, 0.96); // Specular highlight
+   |               ^^^^^^^^^^^^^
+...
+59 |     pub const EFFECT_EXPLOSION: Color = Color::rgb(0.95, 0.65, 0.25); // Orange explosion
+   |               ^^^^^^^^^^^^^^^^
+60 |     pub const EFFECT_SELECTION: Color = Color::rgba(0.55, 0.75, 0.95, 0.4); // Blue selection
+   |               ^^^^^^^^^^^^^^^^
+61 |     pub const EFFECT_VALID_MOVE: Color = Color::rgba(0.35, 0.65, 0.35, 0.3); // Green valid move
+   |               ^^^^^^^^^^^^^^^^^
+62 |     pub const EFFECT_INVALID: Color = Color::rgba(0.75, 0.25, 0.25, 0.3); // Red invalid
+   |               ^^^^^^^^^^^^^^
+...
+77 |     pub fn tile_color_for_height_2d(height: i8) -> Color {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `UIStyle` is never constructed
+  --> src/resources/theme.rs:95:12
+   |
+95 | pub struct UIStyle;
+   |            ^^^^^^^
+
+warning: multiple associated constants are never used
+   --> src/resources/theme.rs:98:15
+    |
+97  | impl UIStyle {
+    | ------------ associated constants in this implementation
+98  |     pub const PANEL_PADDING: f32 = 12.0;
+    |               ^^^^^^^^^^^^^
+99  |     pub const BUTTON_HEIGHT: f32 = 40.0;
+    |               ^^^^^^^^^^^^^
+100 |     pub const TEXT_SIZE_TITLE: f32 = 32.0;
+    |               ^^^^^^^^^^^^^^^
+101 |     pub const TEXT_SIZE_HEADING: f32 = 24.0;
+    |               ^^^^^^^^^^^^^^^^^
+102 |     pub const TEXT_SIZE_NORMAL: f32 = 16.0;
+    |               ^^^^^^^^^^^^^^^^
+103 |     pub const TEXT_SIZE_SMALL: f32 = 14.0;
+    |               ^^^^^^^^^^^^^^^
+104 |     pub const BORDER_WIDTH: f32 = 2.0;
+    |               ^^^^^^^^^^^^
+105 |     pub const CORNER_RADIUS: f32 = 4.0;
+    |               ^^^^^^^^^^^^^
+106 |     pub const SHADOW_OFFSET: Vec2 = Vec2::new(2.0, 2.0);
+    |               ^^^^^^^^^^^^^
+107 |     pub const SHADOW_COLOR: Color = Color::rgba(0.0, 0.0, 0.0, 0.5);
+    |               ^^^^^^^^^^^^
+
+warning: fields `center`, `size`, and `power_type` are never read
+  --> src/systems/area_targeting.rs:8:9
+   |
+7  | pub struct AreaTargetingIndicator {
+   |            ---------------------- fields in this struct
+8  |     pub center: (u8, u8),
+   |         ^^^^^^
+9  |     pub size: u8, // 3 for 3x3, 5 for 5x5, etc.
+   |         ^^^^
+10 |     pub power_type: PowerType,
+   |         ^^^^^^^^^^
+
+warning: function `start_area_targeting` is never used
+  --> src/systems/area_targeting.rs:90:8
+   |
+90 | pub fn start_area_targeting(area_state: &mut ResMut<AreaTargetingState>, power_type: PowerType) {
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `get_power_area_size` is never used
+   --> src/systems/area_targeting.rs:103:4
+    |
+103 | fn get_power_area_size(power_type: PowerType) -> u8 {
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: fields `tests_running`, `current_test_index`, `test_results`, `test_timer`, and `test_phase` are never read
+  --> src/systems/automated_power_tests.rs:8:9
+   |
+7  | pub struct AutomatedTestRunner {
+   |            ------------------- fields in this struct
+8  |     pub tests_running: bool,
+   |         ^^^^^^^^^^^^^
+9  |     pub current_test_index: usize,
+   |         ^^^^^^^^^^^^^^^^^^
+10 |     pub test_results: HashMap<PowerType, TestResult>,
+   |         ^^^^^^^^^^^^
+11 |     pub test_timer: Timer,
+   |         ^^^^^^^^^^
+12 |     pub test_phase: TestPhase,
+   |         ^^^^^^^^^^
+
+warning: fields `power`, `status`, `details`, and `timestamp` are never read
+  --> src/systems/automated_power_tests.rs:17:9
+   |
+16 | pub struct TestResult {
+   |            ---------- fields in this struct
+17 |     pub power: PowerType,
+   |         ^^^^^
+18 |     pub status: TestStatus,
+   |         ^^^^^^
+19 |     pub details: String,
+   |         ^^^^^^^
+20 |     pub timestamp: f64,
+   |         ^^^^^^^^^
+   |
+   = note: `TestResult` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `NotTested`, `Pass`, `Fail`, `Partial`, and `NotImplemented` are never constructed
+  --> src/systems/automated_power_tests.rs:25:5
+   |
+24 | pub enum TestStatus {
+   |          ---------- variants in this enum
+25 |     NotTested,
+   |     ^^^^^^^^^
+26 |     Pass,
+   |     ^^^^
+27 |     Fail,
+   |     ^^^^
+28 |     Partial,
+   |     ^^^^^^^
+29 |     NotImplemented,
+   |     ^^^^^^^^^^^^^^
+   |
+   = note: `TestStatus` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `AddPower`, `ActivatePower`, `TestEffect`, `Cleanup`, and `Complete` are never constructed
+  --> src/systems/automated_power_tests.rs:35:5
+   |
+33 | pub enum TestPhase {
+   |          --------- variants in this enum
+34 |     Setup,
+35 |     AddPower,
+   |     ^^^^^^^^
+36 |     ActivatePower,
+   |     ^^^^^^^^^^^^^
+37 |     TestEffect,
+   |     ^^^^^^^^^^
+38 |     Cleanup,
+   |     ^^^^^^^
+39 |     Complete,
+   |     ^^^^^^^^
+   |
+   = note: `TestPhase` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: constant `POWERS_TO_TEST` is never used
+  --> src/systems/automated_power_tests.rs:55:7
+   |
+55 | const POWERS_TO_TEST: [PowerType; 45] = [
+   |       ^^^^^^^^^^^^^^
+
+warning: function `start_automated_power_tests` is never used
+   --> src/systems/automated_power_tests.rs:109:8
+    |
+109 | pub fn start_automated_power_tests(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `run_automated_power_tests` is never used
+   --> src/systems/automated_power_tests.rs:146:8
+    |
+146 | pub fn run_automated_power_tests(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `setup_test_environment` is never used
+   --> src/systems/automated_power_tests.rs:244:4
+    |
+244 | fn setup_test_environment(game_state: &mut GameState) {
+    |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `add_power_for_testing` is never used
+   --> src/systems/automated_power_tests.rs:253:4
+    |
+253 | fn add_power_for_testing(game_state: &mut GameState, power: PowerType) {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `test_power_activation` is never used
+   --> src/systems/automated_power_tests.rs:259:4
+    |
+259 | fn test_power_activation(game_state: &mut GameState, power: PowerType) -> bool {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `test_power_effects` is never used
+   --> src/systems/automated_power_tests.rs:277:4
+    |
+277 | fn test_power_effects(
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `test_movement_power` is never used
+   --> src/systems/automated_power_tests.rs:355:4
+    |
+355 | fn test_movement_power(
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: function `test_terrain_power` is never used
+   --> src/systems/automated_power_tests.rs:382:4
+    |
+382 | fn test_terrain_power(power: PowerType, tiles: &Query<&BoardTile>) -> TestResult {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `test_combat_power` is never used
+   --> src/systems/automated_power_tests.rs:407:4
+    |
+407 | fn test_combat_power(
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `test_piece_creation_power` is never used
+   --> src/systems/automated_power_tests.rs:434:4
+    |
+434 | fn test_piece_creation_power(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `cleanup_test_environment` is never used
+   --> src/systems/automated_power_tests.rs:462:4
+    |
+462 | fn cleanup_test_environment(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `generate_automated_test_report` is never used
+   --> src/systems/automated_power_tests.rs:476:4
+    |
+476 | fn generate_automated_test_report(test_runner: &AutomatedTestRunner) {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `test_piece_targeting_power` is never used
+   --> src/systems/automated_power_tests.rs:524:4
+    |
+524 | fn test_piece_targeting_power(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `test_self_buff_power` is never used
+   --> src/systems/automated_power_tests.rs:551:4
+    |
+551 | fn test_self_buff_power(
+    |    ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `test_self_sacrifice_power` is never used
+   --> src/systems/automated_power_tests.rs:578:4
+    |
+578 | fn test_self_sacrifice_power(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `test_area_power` is never used
+   --> src/systems/automated_power_tests.rs:605:4
+    |
+605 | fn test_area_power(power: PowerType, tiles: &Query<&BoardTile>) -> TestResult {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `test_board_wide_power` is never used
+   --> src/systems/automated_power_tests.rs:630:4
+    |
+630 | fn test_board_wide_power(power: PowerType, tiles: &Query<&BoardTile>) -> TestResult {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `test_meta_power` is never used
+   --> src/systems/automated_power_tests.rs:654:4
+    |
+654 | fn test_meta_power(power: PowerType, game_state: &GameState) -> TestResult {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `show_automated_test_controls` is never used
+   --> src/systems/automated_power_tests.rs:671:8
+    |
+671 | pub fn show_automated_test_controls(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `setup_camera` is never used
+ --> src/systems/camera_2d.rs:5:8
+  |
+5 | pub fn setup_camera(mut commands: Commands) {
+  |        ^^^^^^^^^^^^
+
+warning: field `activation_index` is never read
+  --> src/systems/chain_reaction_detection.rs:28:9
+   |
+24 | pub struct PowerActivationRecord {
+   |            --------------------- field in this struct
+...
+28 |     pub activation_index: u32,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: `PowerActivationRecord` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: fields `chain_id` and `depth` are never read
+  --> src/systems/chain_reaction_detection.rs:34:9
+   |
+33 | pub struct InChainReaction {
+   |            --------------- fields in this struct
+34 |     pub chain_id: u32,
+   |         ^^^^^^^^
+35 |     pub depth: u32,
+   |         ^^^^^
+
+warning: method `end_chain` is never used
+  --> src/systems/chain_reaction_detection.rs:66:12
+   |
+38 | impl ChainReactionGuard {
+   | ----------------------- method in this implementation
+...
+66 |     pub fn end_chain(&mut self) {
+   |            ^^^^^^^^^
+
+warning: field `can_be_blocked` is never read
+   --> src/systems/combat_effects.rs:148:9
+    |
+144 | pub struct CaptureAttempt {
+    |            -------------- field in this struct
+...
+148 |     pub can_be_blocked: bool,
+    |         ^^^^^^^^^^^^^^
+
+warning: function `create_capture_attempt` is never used
+   --> src/systems/combat_effects.rs:363:8
+    |
+363 | pub fn create_capture_attempt(
+    |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `debug_piece_visibility` is never used
+ --> src/systems/debug_visibility.rs:6:8
+  |
+6 | pub fn debug_piece_visibility(
+  |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `force_piece_visibility` is never used
+   --> src/systems/debug_visibility.rs:106:8
+    |
+106 | pub fn force_piece_visibility(
+    |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `UI_LAYER` is never used
+  --> src/systems/depth_sorting.rs:17:11
+   |
+17 | pub const UI_LAYER: f32 = 1000.0;
+   |           ^^^^^^^^
+
+warning: function `is_valid_move_with_positions` is never used
+   --> src/systems/drag_drop.rs:401:4
+    |
+401 | fn is_valid_move_with_positions(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `get_effect` is never used
+  --> src/systems/effect_processing.rs:93:12
+   |
+20 | impl ActiveEffects {
+   | ------------------ method in this implementation
+...
+93 |     pub fn get_effect(&self, effect_name: &str) -> Option<&PowerEffect> {
+   |            ^^^^^^^^^^
+
+warning: fields `effect_type` and `parent_entity` are never read
+   --> src/systems/effect_processing.rs:341:9
+    |
+340 | pub struct EffectIndicator {
+    |            --------------- fields in this struct
+341 |     pub effect_type: String,
+    |         ^^^^^^^^^^^
+342 |     pub parent_entity: Entity,
+    |         ^^^^^^^^^^^^^
+
+warning: struct `AnimatedTile` is never constructed
+ --> src/systems/enhanced_board_visuals.rs:7:12
+  |
+7 | pub struct AnimatedTile {
+  |            ^^^^^^^^^^^^
+
+warning: struct `HeightIndicator` is never constructed
+  --> src/systems/enhanced_board_visuals.rs:15:12
+   |
+15 | pub struct HeightIndicator {
+   |            ^^^^^^^^^^^^^^^
+
+warning: function `setup_enhanced_board` is never used
+  --> src/systems/enhanced_board_visuals.rs:20:8
+   |
+20 | pub fn setup_enhanced_board(
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `setup_board_background` is never used
+  --> src/systems/enhanced_board_visuals.rs:50:8
+   |
+50 | pub fn setup_board_background(mut commands: Commands) {
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `animate_board_tiles` is never used
+   --> src/systems/enhanced_board_visuals.rs:112:8
+    |
+112 | pub fn animate_board_tiles(
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `enhance_piece_visuals` is never used
+   --> src/systems/enhanced_board_visuals.rs:149:8
+    |
+149 | pub fn enhance_piece_visuals(
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `PieceShadow` is never constructed
+   --> src/systems/enhanced_board_visuals.rs:186:12
+    |
+186 | pub struct PieceShadow {
+    |            ^^^^^^^^^^^
+
+warning: struct `PieceGlow` is never constructed
+   --> src/systems/enhanced_board_visuals.rs:191:12
+    |
+191 | pub struct PieceGlow {
+    |            ^^^^^^^^^
+
+warning: function `update_piece_shadows` is never used
+   --> src/systems/enhanced_board_visuals.rs:197:8
+    |
+197 | pub fn update_piece_shadows(
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `update_piece_glow` is never used
+   --> src/systems/enhanced_board_visuals.rs:211:8
+    |
+211 | pub fn update_piece_glow(
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: field `coordinates` is never read
+  --> src/systems/enhanced_move_indicators_3d.rs:22:9
+   |
+21 | pub struct ValidMoveIndicator3D {
+   |            -------------------- field in this struct
+22 |     pub coordinates: (u8, u8),
+   |         ^^^^^^^^^^^
+
+warning: function `cleanup_valid_move_indicators_3d` is never used
+   --> src/systems/enhanced_move_indicators_3d.rs:331:8
+    |
+331 | pub fn cleanup_valid_move_indicators_3d(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `power_type` is never read
+  --> src/systems/enhanced_ui.rs:19:9
+   |
+18 | pub struct PowerTooltip {
+   |            ------------ field in this struct
+19 |     pub power_type: PowerType,
+   |         ^^^^^^^^^^
+
+warning: variants `FadeIn`, `Pulse`, and `Bounce` are never constructed
+  --> src/systems/enhanced_ui.rs:31:5
+   |
+30 | pub enum UIAnimationType {
+   |          --------------- variants in this enum
+31 |     FadeIn,
+   |     ^^^^^^
+32 |     SlideIn(Vec2),
+33 |     Pulse,
+   |     ^^^^^
+34 |     Bounce,
+   |     ^^^^^^
+   |
+   = note: `UIAnimationType` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: field `player` is never read
+   --> src/systems/enhanced_ui.rs:276:9
+    |
+274 | pub struct PowerIcon {
+    |            --------- field in this struct
+275 |     pub power_type: PowerType,
+276 |     pub player: Player,
+    |         ^^^^^^
+
+warning: fields `feedback_type` and `intensity` are never read
+ --> src/systems/enhanced_visual_feedback.rs:7:9
+  |
+6 | pub struct VisualFeedback {
+  |            -------------- fields in this struct
+7 |     pub feedback_type: FeedbackType,
+  |         ^^^^^^^^^^^^^
+8 |     pub intensity: f32,
+  |         ^^^^^^^^^
+
+warning: variants `InvalidMove` and `PowerActivation` are never constructed
+  --> src/systems/enhanced_visual_feedback.rs:17:5
+   |
+14 | pub enum FeedbackType {
+   |          ------------ variants in this enum
+...
+17 |     InvalidMove,
+   |     ^^^^^^^^^^^
+18 |     Hover,
+19 |     PowerActivation,
+   |     ^^^^^^^^^^^^^^^
+   |
+   = note: `FeedbackType` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: fields `base_emissive`, `pulse_speed`, and `current_time` are never read
+  --> src/systems/enhanced_visual_feedback.rs:34:9
+   |
+33 | pub struct GlowEffect {
+   |            ---------- fields in this struct
+34 |     pub base_emissive: Color,
+   |         ^^^^^^^^^^^^^
+35 |     pub glow_intensity: f32,
+36 |     pub pulse_speed: f32,
+   |         ^^^^^^^^^^^
+37 |     pub current_time: f32,
+   |         ^^^^^^^^^^^^
+
+warning: function `update_glow_effects` is never used
+   --> src/systems/enhanced_visual_feedback.rs:110:8
+    |
+110 | pub fn update_glow_effects(
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `add_power_activation_effects` is never used
+   --> src/systems/enhanced_visual_feedback.rs:161:8
+    |
+161 | pub fn add_power_activation_effects(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: multiple fields are never read
+  --> src/systems/game_balance.rs:8:9
+   |
+7  | pub struct GameBalanceData {
+   |            --------------- fields in this struct
+8  |     pub power_usage_count: HashMap<PowerType, u32>,
+   |         ^^^^^^^^^^^^^^^^^
+9  |     pub power_success_rate: HashMap<PowerType, (u32, u32)>, // (successes, total_uses)
+   |         ^^^^^^^^^^^^^^^^^^
+10 |     pub game_length_samples: Vec<f32>,
+   |         ^^^^^^^^^^^^^^^^^^^
+11 |     pub turn_count_samples: Vec<u32>,
+   |         ^^^^^^^^^^^^^^^^^^
+12 |     pub player_win_counts: [u32; 2], // [player1_wins, player2_wins]
+   |         ^^^^^^^^^^^^^^^^^
+13 |     pub power_spawn_locations: Vec<(u8, u8)>,
+   |         ^^^^^^^^^^^^^^^^^^^^^
+14 |     pub average_powers_per_player: f32,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+15 |     pub longest_game_turns: u32,
+   |         ^^^^^^^^^^^^^^^^^^
+16 |     pub shortest_game_turns: u32,
+   |         ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `GameBalanceTracker` is never constructed
+  --> src/systems/game_balance.rs:20:12
+   |
+20 | pub struct GameBalanceTracker;
+   |            ^^^^^^^^^^^^^^^^^^
+
+warning: fields `player`, `power_type`, `was_successful`, and `turn_number` are never read
+  --> src/systems/game_balance.rs:24:9
+   |
+23 | pub struct PowerUsageEvent {
+   |            --------------- fields in this struct
+24 |     pub player: Player,
+   |         ^^^^^^
+25 |     pub power_type: PowerType,
+   |         ^^^^^^^^^^
+26 |     pub was_successful: bool,
+   |         ^^^^^^^^^^^^^^
+27 |     pub turn_number: u32,
+   |         ^^^^^^^^^^^
+
+warning: fields `winner`, `game_duration`, `turn_count`, and `final_power_counts` are never read
+  --> src/systems/game_balance.rs:32:9
+   |
+31 | pub struct GameEndEvent {
+   |            ------------ fields in this struct
+32 |     pub winner: Option<Player>,
+   |         ^^^^^^
+33 |     pub game_duration: f32,
+   |         ^^^^^^^^^^^^^
+34 |     pub turn_count: u32,
+   |         ^^^^^^^^^^
+35 |     pub final_power_counts: [u32; 2],
+   |         ^^^^^^^^^^^^^^^^^^
+
+warning: function `track_power_usage` is never used
+  --> src/systems/game_balance.rs:39:8
+   |
+39 | pub fn track_power_usage(
+   |        ^^^^^^^^^^^^^^^^^
+
+warning: function `track_game_completion` is never used
+  --> src/systems/game_balance.rs:68:8
+   |
+68 | pub fn track_game_completion(
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `generate_balance_report` is never used
+   --> src/systems/game_balance.rs:101:8
+    |
+101 | pub fn generate_balance_report(balance_data: Res<GameBalanceData>, keyboard: Res<Input<KeyCode>>) {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `enabled`, `test_iterations`, `current_iteration`, and `test_results` are never read
+   --> src/systems/game_balance.rs:182:9
+    |
+181 | pub struct AutoBalanceTest {
+    |            --------------- fields in this struct
+182 |     pub enabled: bool,
+    |         ^^^^^^^
+183 |     pub test_iterations: u32,
+    |         ^^^^^^^^^^^^^^^
+184 |     pub current_iteration: u32,
+    |         ^^^^^^^^^^^^^^^^^
+185 |     pub test_results: Vec<BalanceTestResult>,
+    |         ^^^^^^^^^^^^
+
+warning: fields `game_duration`, `turn_count`, `winner`, `powers_used`, and `final_piece_counts` are never read
+   --> src/systems/game_balance.rs:201:9
+    |
+200 | pub struct BalanceTestResult {
+    |            ----------------- fields in this struct
+201 |     pub game_duration: f32,
+    |         ^^^^^^^^^^^^^
+202 |     pub turn_count: u32,
+    |         ^^^^^^^^^^
+203 |     pub winner: Option<Player>,
+    |         ^^^^^^
+204 |     pub powers_used: HashMap<PowerType, u32>,
+    |         ^^^^^^^^^^^
+205 |     pub final_piece_counts: [u32; 2],
+    |         ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `BalanceTestResult` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: function `analyze_power_effectiveness` is never used
+   --> src/systems/game_balance.rs:209:8
+    |
+209 | pub fn analyze_power_effectiveness(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `analyze_power_spawn_balance` is never used
+   --> src/systems/game_balance.rs:270:8
+    |
+270 | pub fn analyze_power_spawn_balance(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `generate_balance_recommendations` is never used
+   --> src/systems/game_balance.rs:345:8
+    |
+345 | pub fn generate_balance_recommendations(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `ISOMETRIC_ANGLE` is never used
+  --> src/systems/isometric_camera.rs:10:11
+   |
+10 | pub const ISOMETRIC_ANGLE: f32 = 30.0; // Classic isometric angle in degrees
+   |           ^^^^^^^^^^^^^^^
+
+warning: constant `CAMERA_HEIGHT` is never used
+  --> src/systems/isometric_camera.rs:11:11
+   |
+11 | pub const CAMERA_HEIGHT: f32 = 800.0; // Height of camera for proper board view
+   |           ^^^^^^^^^^^^^
+
+warning: constant `CAMERA_SCALE` is never used
+  --> src/systems/isometric_camera.rs:12:11
+   |
+12 | pub const CAMERA_SCALE: f32 = 1.5; // Zoom level for the camera
+   |           ^^^^^^^^^^^^
+
+warning: struct `MoveTwiceActive` is never constructed
+  --> src/systems/movement_powers.rs:19:12
+   |
+19 | pub struct MoveTwiceActive {
+   |            ^^^^^^^^^^^^^^^
+
+warning: function `activate_swap` is never used
+  --> src/systems/movement_powers.rs:73:8
+   |
+73 | pub fn activate_swap(
+   |        ^^^^^^^^^^^^^
+
+warning: function `activate_push` is never used
+   --> src/systems/movement_powers.rs:104:8
+    |
+104 | pub fn activate_push(
+    |        ^^^^^^^^^^^^^
+
+warning: function `activate_pull` is never used
+   --> src/systems/movement_powers.rs:134:8
+    |
+134 | pub fn activate_pull(
+    |        ^^^^^^^^^^^^^
+
+warning: function `activate_move_twice` is never used
+   --> src/systems/movement_powers.rs:187:8
+    |
+187 | pub fn activate_move_twice(_commands: &mut Commands, _game_state: &mut GameState) {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `activate_leap` is never used
+   --> src/systems/movement_powers.rs:193:8
+    |
+193 | pub fn activate_leap(
+    |        ^^^^^^^^^^^^^
+
+warning: function `is_valid_special_move` is never used
+   --> src/systems/movement_powers.rs:215:8
+    |
+215 | pub fn is_valid_special_move(
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `system_times` is never read
+  --> src/systems/performance.rs:11:9
+   |
+8  | pub struct PerformanceMonitor {
+   |            ------------------ field in this struct
+...
+11 |     pub system_times: std::collections::HashMap<String, f32>,
+   |         ^^^^^^^^^^^^
+
+warning: fields `pool_type`, `available`, and `in_use` are never read
+  --> src/systems/performance.rs:35:9
+   |
+34 | pub struct EntityPool {
+   |            ---------- fields in this struct
+35 |     pub pool_type: PoolType,
+   |         ^^^^^^^^^
+36 |     pub available: Vec<Entity>,
+   |         ^^^^^^^^^
+37 |     pub in_use: Vec<Entity>,
+   |         ^^^^^^
+
+warning: variant `UIElements` is never constructed
+  --> src/systems/performance.rs:44:5
+   |
+41 | pub enum PoolType {
+   |          -------- variant in this enum
+...
+44 |     UIElements,
+   |     ^^^^^^^^^^
+   |
+   = note: `PoolType` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: function `get_pooled_entity` is never used
+   --> src/systems/performance.rs:379:8
+    |
+379 | pub fn get_pooled_entity(
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `return_to_pool` is never used
+   --> src/systems/performance.rs:396:8
+    |
+396 | pub fn return_to_pool(entity: Entity, pool_type: PoolType, pools: &mut Query<&mut EntityPool>) {
+    |        ^^^^^^^^^^^^^^
+
+warning: function `spawn_optimized_power_orb` is never used
+   --> src/systems/performance.rs:409:8
+    |
+409 | pub fn spawn_optimized_power_orb(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `target_fps`, `performance_budget`, and `low_performance_threshold` are never read
+  --> src/systems/performance_optimization.rs:9:9
+   |
+7  | pub struct PerformanceMonitor {
+   |            ------------------ fields in this struct
+8  |     pub frame_times: VecDeque<f32>,
+9  |     pub target_fps: f32,
+   |         ^^^^^^^^^^
+10 |     pub performance_budget: f32,
+   |         ^^^^^^^^^^^^^^^^^^
+11 |     pub low_performance_threshold: f32,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `optimize_materials` is never used
+   --> src/systems/performance_optimization.rs:155:8
+    |
+155 | pub fn optimize_materials(
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `display_performance_debug` is never used
+   --> src/systems/performance_optimization.rs:180:8
+    |
+180 | pub fn display_performance_debug(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `PerformanceDebugText` is never constructed
+   --> src/systems/performance_optimization.rs:225:12
+    |
+225 | pub struct PerformanceDebugText;
+    |            ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `setup_tile_lod` is never used
+   --> src/systems/performance_optimization.rs:228:8
+    |
+228 | pub fn setup_tile_lod(
+    |        ^^^^^^^^^^^^^^
+
+warning: function `setup_piece_lod` is never used
+   --> src/systems/performance_optimization.rs:243:8
+    |
+243 | pub fn setup_piece_lod(
+    |        ^^^^^^^^^^^^^^^
+
+warning: function `enable_piece_outline` is never used
+   --> src/systems/pieces_3d.rs:327:8
+    |
+327 | pub fn enable_piece_outline(
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `disable_piece_outline` is never used
+   --> src/systems/pieces_3d.rs:339:8
+    |
+339 | pub fn disable_piece_outline(
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `disable_all_piece_outlines` is never used
+   --> src/systems/pieces_3d.rs:350:8
+    |
+350 | pub fn disable_all_piece_outlines(mut outline_query: Query<&mut PieceOutline>) {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `enhance_piece_visuals_3d` is never used
+   --> src/systems/pieces_3d.rs:379:8
+    |
+379 | pub fn enhance_piece_visuals_3d(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `power_strength_modifiers`, `global_spawn_rate`, and `balance_mode` are never read
+  --> src/systems/power_balance.rs:13:9
+   |
+9  | pub struct PowerBalanceConfig {
+   |            ------------------ fields in this struct
+...
+13 |     pub power_strength_modifiers: HashMap<PowerType, f32>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+14 |     pub global_spawn_rate: f32,
+   |         ^^^^^^^^^^^^^^^^^
+15 |     pub balance_mode: BalanceMode,
+   |         ^^^^^^^^^^^^
+
+warning: variants `Static` and `Adaptive` are never constructed
+  --> src/systems/power_balance.rs:79:5
+   |
+78 | pub enum BalanceMode {
+   |          ----------- variants in this enum
+79 |     Static,   // Fixed balance values
+   |     ^^^^^^
+80 |     Dynamic,  // Adjusts based on usage statistics
+81 |     Adaptive, // Real-time adjustment based on game state
+   |     ^^^^^^^^
+   |
+   = note: `BalanceMode` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: fields `usage_counts`, `success_rates`, `last_used`, and `game_usage_limits` are never read
+  --> src/systems/power_balance.rs:86:9
+   |
+85 | pub struct PowerUsageTracker {
+   |            ----------------- fields in this struct
+86 |     pub usage_counts: HashMap<PowerType, u32>,
+   |         ^^^^^^^^^^^^
+87 |     pub success_rates: HashMap<PowerType, (u32, u32)>, // (successes, attempts)
+   |         ^^^^^^^^^^^^^
+88 |     pub last_used: HashMap<PowerType, u32>,            // turn number
+   |         ^^^^^^^^^
+89 |     pub game_usage_limits: HashMap<PowerType, u32>,    // current game usage
+   |         ^^^^^^^^^^^^^^^^^
+
+warning: struct `PowerCooldown` is never constructed
+  --> src/systems/power_balance.rs:93:12
+   |
+93 | pub struct PowerCooldown {
+   |            ^^^^^^^^^^^^^
+
+warning: function `apply_dynamic_balance` is never used
+  --> src/systems/power_balance.rs:99:8
+   |
+99 | pub fn apply_dynamic_balance(
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `adjust_spawn_rates_by_usage` is never used
+   --> src/systems/power_balance.rs:125:4
+    |
+125 | fn adjust_spawn_rates_by_usage(config: &mut PowerBalanceConfig, tracker: &PowerUsageTracker) {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `adjust_spawn_rates_adaptive` is never used
+   --> src/systems/power_balance.rs:161:4
+    |
+161 | fn adjust_spawn_rates_adaptive(config: &mut PowerBalanceConfig, tracker: &PowerUsageTracker) {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `calculate_balance_adjustment` is never used
+   --> src/systems/power_balance.rs:193:4
+    |
+193 | fn calculate_balance_adjustment(usage_count: u32, success_rate: f32) -> f32 {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `spawn_balanced_power_orbs` is never used
+   --> src/systems/power_balance.rs:215:8
+    |
+215 | pub fn spawn_balanced_power_orbs(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `select_balanced_power_type` is never used
+   --> src/systems/power_balance.rs:305:4
+    |
+305 | fn select_balanced_power_type(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `enforce_power_limits` is never used
+   --> src/systems/power_balance.rs:336:8
+    |
+336 | pub fn enforce_power_limits(
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `track_power_usage_for_balance` is never used
+   --> src/systems/power_balance.rs:369:8
+    |
+369 | pub fn track_power_usage_for_balance(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `print_balance_changes` is never used
+   --> src/systems/power_balance.rs:404:4
+    |
+404 | fn print_balance_changes(config: &PowerBalanceConfig) {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `balance_mode_controls` is never used
+   --> src/systems/power_balance.rs:422:8
+    |
+422 | pub fn balance_mode_controls(
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `power_type` is never read
+  --> src/systems/power_effects.rs:14:9
+   |
+13 | pub struct ActivePowerEffect {
+   |            ----------------- field in this struct
+14 |     pub power_type: PowerType,
+   |         ^^^^^^^^^^
+
+warning: function `is_valid_move_with_diagonal` is never used
+    --> src/systems/power_effects.rs:1547:8
+     |
+1547 | pub fn is_valid_move_with_diagonal(from: (u8, u8), to: (u8, u8), allow_diagonal: bool) -> bool {
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `target_position` and `current_turn` are never read
+  --> src/systems/power_interactions.rs:16:9
+   |
+12 | pub struct PowerActivationAttempt {
+   |            ---------------------- fields in this struct
+...
+16 |     pub target_position: Option<(u8, u8)>,
+   |         ^^^^^^^^^^^^^^^
+17 |     pub current_turn: u32,
+   |         ^^^^^^^^^^^^
+
+warning: struct `PowerInteractionEvent` is never constructed
+  --> src/systems/power_interactions.rs:22:12
+   |
+22 | pub struct PowerInteractionEvent {
+   |            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: variants `Immediate`, `High`, `Normal`, `Low`, and `Cleanup` are never constructed
+  --> src/systems/power_interactions.rs:41:5
+   |
+40 | pub enum PowerPriority {
+   |          ------------- variants in this enum
+41 |     Immediate = 0, // Defensive reactions, interrupts
+   |     ^^^^^^^^^
+42 |     High = 1,      // Meta powers that affect other powers
+   |     ^^^^
+43 |     Normal = 2,    // Regular powers
+   |     ^^^^^^
+44 |     Low = 3,       // Delayed effects
+   |     ^^^
+45 |     Cleanup = 4,   // End-of-turn cleanup
+   |     ^^^^^^^
+   |
+   = note: `PowerPriority` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: multiple fields are never read
+  --> src/systems/power_interactions.rs:51:9
+   |
+50 | pub struct QueuedPowerActivation {
+   |            --------------------- fields in this struct
+51 |     pub power_type: PowerType,
+   |         ^^^^^^^^^^
+52 |     pub activator: Entity,
+   |         ^^^^^^^^^
+53 |     pub target: Option<Entity>,
+   |         ^^^^^^
+54 |     pub target_position: Option<(u8, u8)>,
+   |         ^^^^^^^^^^^^^^^
+55 |     pub priority: PowerPriority,
+   |         ^^^^^^^^
+56 |     pub amplification: f32,
+   |         ^^^^^^^^^^^^^
+57 |     pub is_chain_reaction: bool,
+   |         ^^^^^^^^^^^^^^^^^
+   |
+   = note: `QueuedPowerActivation` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: fields `queue` and `processing` are never read
+  --> src/systems/power_interactions.rs:63:9
+   |
+62 | pub struct PowerActivationQueue {
+   |            -------------------- fields in this struct
+63 |     pub queue: Vec<QueuedPowerActivation>,
+   |         ^^^^^
+64 |     pub processing: bool,
+   |         ^^^^^^^^^^
+
+warning: methods `get_priority`, `can_chain_react`, and `can_be_nullified` are never used
+   --> src/systems/power_interactions.rs:69:12
+    |
+67  | impl PowerType {
+    | -------------- methods in this implementation
+68  |     /// Get the priority level for this power type
+69  |     pub fn get_priority(&self) -> PowerPriority {
+    |            ^^^^^^^^^^^^
+...
+86  |     pub fn can_chain_react(&self) -> bool {
+    |            ^^^^^^^^^^^^^^^
+...
+106 |     pub fn can_be_nullified(&self) -> bool {
+    |            ^^^^^^^^^^^^^^^^
+
+warning: function `handle_power_activation_system` is never used
+   --> src/systems/power_interactions.rs:112:8
+    |
+112 | pub fn handle_power_activation_system(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `process_power_queue_system` is never used
+   --> src/systems/power_interactions.rs:170:8
+    |
+170 | pub fn process_power_queue_system(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `execute_power_activation` is never used
+   --> src/systems/power_interactions.rs:283:4
+    |
+283 | fn execute_power_activation(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `handle_teaching_powers_system` is never used
+   --> src/systems/power_interactions.rs:359:8
+    |
+359 | pub fn handle_teaching_powers_system(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `handle_power_echo_system` is never used
+   --> src/systems/power_interactions.rs:435:8
+    |
+435 | pub fn handle_power_echo_system(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `active_powers`, `recent_usage`, `interaction_rules`, `max_chain_depth`, and `power_amplifiers` are never read
+  --> src/systems/power_registry.rs:10:9
+   |
+8  | pub struct PowerRegistry {
+   |            ------------- fields in this struct
+9  |     /// Active powers currently in effect on entities
+10 |     pub active_powers: HashMap<Entity, Vec<ActivePower>>,
+   |         ^^^^^^^^^^^^^
+11 |     /// Recent power usage history for power echoing and memory
+12 |     pub recent_usage: VecDeque<PowerUsage>,
+   |         ^^^^^^^^^^^^
+13 |     /// Rules for how different powers interact with each other
+14 |     pub interaction_rules: HashMap<(PowerType, PowerType), InteractionResult>,
+   |         ^^^^^^^^^^^^^^^^^
+...
+18 |     pub max_chain_depth: u32,
+   |         ^^^^^^^^^^^^^^^
+19 |     /// Power amplifications currently active
+20 |     pub power_amplifiers: HashMap<Entity, Vec<PowerAmplifier>>,
+   |         ^^^^^^^^^^^^^^^^
+
+warning: fields `used_powers`, `received_powers`, and `max_history_size` are never read
+  --> src/systems/power_registry.rs:52:9
+   |
+51 | pub struct PowerHistory {
+   |            ------------ fields in this struct
+52 |     pub used_powers: VecDeque<PowerUsage>,
+   |         ^^^^^^^^^^^
+53 |     pub received_powers: VecDeque<ReceivedPower>,
+   |         ^^^^^^^^^^^^^^^
+54 |     pub max_history_size: usize,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: `PowerHistory` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `Independent`, `Cancel`, `Enhance`, `Combine`, `Block`, and `ChainReaction` are never constructed
+  --> src/systems/power_registry.rs:70:5
+   |
+68 | pub enum InteractionResult {
+   |          ----------------- variants in this enum
+69 |     /// No interaction, both powers work independently
+70 |     Independent,
+   |     ^^^^^^^^^^^
+71 |     /// Second power cancels the first
+72 |     Cancel,
+   |     ^^^^^^
+73 |     /// Second power enhances the first
+74 |     Enhance(f32), // Enhancement multiplier
+   |     ^^^^^^^
+75 |     /// Powers combine into a new effect
+76 |     Combine(PowerType),
+   |     ^^^^^^^
+77 |     /// First power prevents the second
+78 |     Block,
+   |     ^^^^^
+79 |     /// Powers create a chain reaction
+80 |     ChainReaction(Vec<PowerType>),
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `InteractionResult` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: fields `amplifier_type`, `multiplier`, `remaining_uses`, and `affects_powers` are never read
+  --> src/systems/power_registry.rs:86:9
+   |
+85 | pub struct PowerAmplifier {
+   |            -------------- fields in this struct
+86 |     pub amplifier_type: AmplifierType,
+   |         ^^^^^^^^^^^^^^
+87 |     pub multiplier: f32,
+   |         ^^^^^^^^^^
+88 |     pub remaining_uses: Option<u32>,
+   |         ^^^^^^^^^^^^^^
+89 |     pub affects_powers: Vec<PowerType>,
+   |         ^^^^^^^^^^^^^^
+   |
+   = note: `PowerAmplifier` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `Global`, `Category`, `Specific`, and `NextPowerOnly` are never constructed
+   --> src/systems/power_registry.rs:96:5
+    |
+94  | pub enum AmplifierType {
+    |          ------------- variants in this enum
+95  |     /// Affects all powers
+96  |     Global,
+    |     ^^^^^^
+97  |     /// Affects specific power categories
+98  |     Category(crate::components::power::PowerCategory),
+    |     ^^^^^^^^
+99  |     /// Affects only specific powers
+100 |     Specific(Vec<PowerType>),
+    |     ^^^^^^^^
+101 |     /// Affects next power only
+102 |     NextPowerOnly,
+    |     ^^^^^^^^^^^^^
+    |
+    = note: `AmplifierType` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: multiple associated items are never used
+   --> src/systems/power_registry.rs:106:12
+    |
+105 | impl PowerRegistry {
+    | ------------------ associated items in this implementation
+106 |     pub fn new() -> Self {
+    |            ^^^
+...
+116 |     fn initialize_interaction_rules(&mut self) {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+193 |     fn add_interaction_rule(
+    |        ^^^^^^^^^^^^^^^^^^^^
+...
+211 |     pub fn record_power_usage(&mut self, usage: PowerUsage) {
+    |            ^^^^^^^^^^^^^^^^^^
+...
+220 |     pub fn get_last_opponent_power(&self, current_player_entity: Entity) -> Option<&PowerUsage> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^
+...
+228 |     pub fn check_interaction(
+    |            ^^^^^^^^^^^^^^^^^
+...
+237 |     pub fn add_active_power(&mut self, entity: Entity, power: ActivePower) {
+    |            ^^^^^^^^^^^^^^^^
+...
+242 |     pub fn cleanup_expired_powers(&mut self, current_turn: u32) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^
+...
+250 |     pub fn get_active_powers(&self, entity: Entity) -> Vec<&ActivePower> {
+    |            ^^^^^^^^^^^^^^^^^
+...
+258 |     pub fn has_active_power(&self, entity: Entity, power_type: PowerType) -> bool {
+    |            ^^^^^^^^^^^^^^^^
+...
+266 |     pub fn add_amplifier(&mut self, entity: Entity, amplifier: PowerAmplifier) {
+    |            ^^^^^^^^^^^^^
+...
+274 |     pub fn get_amplification(&self, entity: Entity, power_type: PowerType) -> f32 {
+    |            ^^^^^^^^^^^^^^^^^
+...
+288 |     fn amplifier_affects_power(&self, amplifier: &PowerAmplifier, power_type: PowerType) -> bool {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+...
+298 |     pub fn consume_amplifier_use(&mut self, entity: Entity, power_type: PowerType) {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+...
+332 |     pub fn enter_activation(&mut self) -> bool {
+    |            ^^^^^^^^^^^^^^^^
+...
+342 |     pub fn exit_activation(&mut self) {
+    |            ^^^^^^^^^^^^^^^
+...
+347 |     pub fn reset_activation_depth(&mut self) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `record_power_use`, `record_received_power`, `get_last_used_power`, and `get_powers_used_this_turn` are never used
+   --> src/systems/power_registry.rs:361:12
+    |
+352 | impl PowerHistory {
+    | ----------------- methods in this implementation
+...
+361 |     pub fn record_power_use(&mut self, usage: PowerUsage) {
+    |            ^^^^^^^^^^^^^^^^
+...
+368 |     pub fn record_received_power(&mut self, received: ReceivedPower) {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+...
+375 |     pub fn get_last_used_power(&self) -> Option<&PowerUsage> {
+    |            ^^^^^^^^^^^^^^^^^^^
+...
+379 |     pub fn get_powers_used_this_turn(&self, current_turn: u32) -> Vec<&PowerUsage> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `cleanup_power_registry_system` is never used
+   --> src/systems/power_registry.rs:394:8
+    |
+394 | pub fn cleanup_power_registry_system(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `setup_power_registry` is never used
+   --> src/systems/power_registry.rs:403:8
+    |
+403 | pub fn setup_power_registry(mut commands: Commands) {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `generate_power_test_report` is never used
+ --> src/systems/power_test_report.rs:4:8
+  |
+4 | pub fn generate_power_test_report(keyboard: Res<Input<KeyCode>>) {
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `test_individual_power` is never used
+  --> src/systems/power_test_report.rs:41:8
+   |
+41 | pub fn test_individual_power(
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `current_test`, `test_queue`, `test_results`, `auto_mode`, `test_delay`, and `current_delay` are never read
+  --> src/systems/power_testing.rs:8:9
+   |
+7  | pub struct PowerTestSuite {
+   |            -------------- fields in this struct
+8  |     pub current_test: Option<PowerTest>,
+   |         ^^^^^^^^^^^^
+9  |     pub test_queue: VecDeque<PowerTest>,
+   |         ^^^^^^^^^^
+10 |     pub test_results: Vec<PowerTestResult>,
+   |         ^^^^^^^^^^^^
+11 |     pub auto_mode: bool,
+   |         ^^^^^^^^^
+12 |     pub test_delay: f32,
+   |         ^^^^^^^^^^
+13 |     pub current_delay: f32,
+   |         ^^^^^^^^^^^^^
+
+warning: fields `power_type`, `test_scenario`, `expected_outcome`, and `setup_description` are never read
+  --> src/systems/power_testing.rs:31:9
+   |
+30 | pub struct PowerTest {
+   |            --------- fields in this struct
+31 |     pub power_type: PowerType,
+   |         ^^^^^^^^^^
+32 |     pub test_scenario: TestScenario,
+   |         ^^^^^^^^^^^^^
+33 |     pub expected_outcome: ExpectedOutcome,
+   |         ^^^^^^^^^^^^^^^^
+34 |     pub setup_description: String,
+   |         ^^^^^^^^^^^^^^^^^
+   |
+   = note: `PowerTest` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `BasicUsage`, `EdgeCase`, `Blocked`, `EmptyBoard`, `FullBoard`, and `PowerCombination` are never constructed
+  --> src/systems/power_testing.rs:39:5
+   |
+38 | pub enum TestScenario {
+   |          ------------ variants in this enum
+39 |     BasicUsage,       // Normal conditions
+   |     ^^^^^^^^^^
+40 |     EdgeCase,         // Board edges, corners
+   |     ^^^^^^^^
+41 |     Blocked,          // Target blocked by other pieces
+   |     ^^^^^^^
+42 |     EmptyBoard,       // Minimal pieces on board
+   |     ^^^^^^^^^^
+43 |     FullBoard,        // Many pieces on board
+   |     ^^^^^^^^^
+44 |     PowerCombination, // Using with other active powers
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = note: `TestScenario` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `Success`, `Failure`, `PartialSuccess`, and `NoEffect` are never constructed
+  --> src/systems/power_testing.rs:49:5
+   |
+48 | pub enum ExpectedOutcome {
+   |          --------------- variants in this enum
+49 |     Success,
+   |     ^^^^^^^
+50 |     Failure,
+   |     ^^^^^^^
+51 |     PartialSuccess,
+   |     ^^^^^^^^^^^^^^
+52 |     NoEffect,
+   |     ^^^^^^^^
+   |
+   = note: `ExpectedOutcome` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: multiple fields are never read
+  --> src/systems/power_testing.rs:57:9
+   |
+56 | pub struct PowerTestResult {
+   |            --------------- fields in this struct
+57 |     pub power_type: PowerType,
+   |         ^^^^^^^^^^
+58 |     pub scenario: TestScenario,
+   |         ^^^^^^^^
+59 |     pub expected: ExpectedOutcome,
+   |         ^^^^^^^^
+60 |     pub actual: TestOutcome,
+   |         ^^^^^^
+61 |     pub execution_time: f32,
+   |         ^^^^^^^^^^^^^^
+62 |     pub error_message: Option<String>,
+   |         ^^^^^^^^^^^^^
+63 |     pub success: bool,
+   |         ^^^^^^^
+   |
+   = note: `PowerTestResult` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: variants `PowerActivated`, `PowerFailed`, `InvalidTarget`, `NoTargetSelected`, and `Error` are never constructed
+  --> src/systems/power_testing.rs:68:5
+   |
+67 | pub enum TestOutcome {
+   |          ----------- variants in this enum
+68 |     PowerActivated,
+   |     ^^^^^^^^^^^^^^
+69 |     PowerFailed,
+   |     ^^^^^^^^^^^
+70 |     InvalidTarget,
+   |     ^^^^^^^^^^^^^
+71 |     NoTargetSelected,
+   |     ^^^^^^^^^^^^^^^^
+72 |     Error(String),
+   |     ^^^^^
+   |
+   = note: `TestOutcome` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: function `setup_power_test_suite` is never used
+  --> src/systems/power_testing.rs:76:8
+   |
+76 | pub fn setup_power_test_suite(
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `start_automated_testing` is never used
+   --> src/systems/power_testing.rs:143:8
+    |
+143 | pub fn start_automated_testing(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `execute_automated_tests` is never used
+   --> src/systems/power_testing.rs:165:8
+    |
+165 | pub fn execute_automated_tests(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `execute_power_test` is never used
+   --> src/systems/power_testing.rs:216:4
+    |
+216 | fn execute_power_test(
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `setup_test_scenario` is never used
+   --> src/systems/power_testing.rs:257:4
+    |
+257 | fn setup_test_scenario(
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: function `simulate_power_activation` is never used
+   --> src/systems/power_testing.rs:303:4
+    |
+303 | fn simulate_power_activation(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `generate_test_summary` is never used
+   --> src/systems/power_testing.rs:356:4
+    |
+356 | fn generate_test_summary(test_suite: &PowerTestSuite) {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `manual_test_controls` is never used
+   --> src/systems/power_testing.rs:433:8
+    |
+433 | pub fn manual_test_controls(mut test_suite: ResMut<PowerTestSuite>, keyboard: Res<Input<KeyCode>>) {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `ScoreText` is never constructed
+  --> src/systems/scoreboard.rs:10:12
+   |
+10 | pub struct ScoreText;
+   |            ^^^^^^^^^
+
+warning: function `spawn_power_notification` is never used
+  --> src/systems/scoreboard.rs:79:8
+   |
+79 | pub fn spawn_power_notification(commands: &mut Commands, power_type: PowerType, player: Player) {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `is_valid_height_movement` is never used
+  --> src/systems/terrain_height.rs:79:8
+   |
+79 | pub fn is_valid_height_movement(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `debug_terrain_commands` is never used
+   --> src/systems/terrain_height.rs:384:8
+    |
+384 | pub fn debug_terrain_commands(
+    |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `validate_movement_with_terrain` is never used
+   --> src/systems/terrain_height.rs:443:8
+    |
+443 | pub fn validate_movement_with_terrain(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `get_terrain_height` is never used
+   --> src/systems/terrain_height.rs:462:8
+    |
+462 | pub fn get_terrain_height(pos: (u8, u8), tiles: &Query<&BoardTile>) -> Option<i8> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `is_position_accessible` is never used
+   --> src/systems/terrain_height.rs:470:8
+    |
+470 | pub fn is_position_accessible(pos: (u8, u8), tiles: &Query<&BoardTile>) -> bool {
+    |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `is_position_blocked_by_wall` is never used
+   --> src/systems/terrain_height.rs:479:8
+    |
+479 | pub fn is_position_blocked_by_wall(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `is_position_passable` is never used
+   --> src/systems/terrain_height.rs:492:8
+    |
+492 | pub fn is_position_passable(
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `is_valid_phase_transition` is never used
+  --> src/systems/turn_management.rs:37:8
+   |
+37 | pub fn is_valid_phase_transition(from: TurnPhase, to: TurnPhase) -> bool {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `check_move_twice_remaining` is never used
+   --> src/systems/turn_management.rs:143:8
+    |
+143 | pub fn check_move_twice_remaining(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `handle_move_twice_move` is never used
+   --> src/systems/turn_management.rs:155:8
+    |
+155 | pub fn handle_move_twice_move(
+    |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `process_duration_effects` is never used
+   --> src/systems/turn_management.rs:187:8
+    |
+187 | pub fn process_duration_effects(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `InstructionsText` is never constructed
+ --> src/systems/ui.rs:8:12
+  |
+8 | pub struct InstructionsText;
+  |            ^^^^^^^^^^^^^^^^
+
+warning: struct `PowerInventoryUI` is never constructed
+  --> src/systems/ui.rs:11:12
+   |
+11 | pub struct PowerInventoryUI;
+   |            ^^^^^^^^^^^^^^^^
+
+warning: function `setup_ui` is never used
+  --> src/systems/ui.rs:13:8
+   |
+13 | pub fn setup_ui(mut commands: Commands) {
+   |        ^^^^^^^^
+
+warning: function `update_power_inventory` is never used
+  --> src/systems/ui.rs:94:8
+   |
+94 | pub fn update_power_inventory(
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `color` is never read
+  --> src/systems/visual_effects.rs:12:9
+   |
+8  | pub struct ParticleEffect {
+   |            -------------- field in this struct
+...
+12 |     pub color: Color,
+   |         ^^^^^
+
+warning: function `setup_enhanced_visuals` is never used
+  --> src/systems/visual_effects.rs:38:8
+   |
+38 | pub fn setup_enhanced_visuals() {
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `animate_piece_movement` is never used
+   --> src/systems/visual_effects.rs:449:8
+    |
+449 | pub fn animate_piece_movement(
+    |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `quadradius` (bin "quadradius") generated 236 warnings (33 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running `target/debug/quadradius`
+[2m2025-06-17T01:38:23.008702Z[0m [32m INFO[0m [2mbevy_render::renderer[0m[2m:[0m AdapterInfo { name: "Apple M4 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+[2m2025-06-17T01:38:23.292176Z[0m [32m INFO[0m [2mbevy_winit::system[0m[2m:[0m Creating new window "Quadradius" (0v0)
+[2m2025-06-17T01:38:23.322946Z[0m [32m INFO[0m [2mquadradius::systems::pieces[0m[2m:[0m 🔵 Setting up Player 1 pieces (rows 0-1)
+[2m2025-06-17T01:38:23.323075Z[0m [32m INFO[0m [2mquadradius::systems::board[0m[2m:[0m 🎯 Setting up 2D board with 10 x 8 tiles
+Game initialized: Starting with Player1's PowerActivation phase
+[2m2025-06-17T01:38:23.323288Z[0m [32m INFO[0m [2mquadradius::systems::pieces[0m[2m:[0m 🔴 Setting up Player 2 pieces (rows 6-7)
+[2m2025-06-17T01:38:23.323299Z[0m [32m INFO[0m [2mquadradius::systems::pieces[0m[2m:[0m ✅ Piece setup complete: 10 Player1 pieces, 10 Player2 pieces
+[2m2025-06-17T01:38:23.323314Z[0m [32m INFO[0m [2mquadradius::systems::board[0m[2m:[0m ✅ 2D board setup complete: 80 tiles created
+[2m2025-06-17T01:38:23.323347Z[0m [32m INFO[0m [2mquadradius::systems::chat_ui[0m[2m:[0m 💬 Chat UI initialized
+🏔️ Terrain height system initialized - all tiles at ground level
+[2m2025-06-17T01:38:23.323473Z[0m [32m INFO[0m [2mbevy_diagnostic::system_information_diagnostics_plugin::internal[0m[2m:[0m SystemInfo { os: "MacOS 15.5 ", kernel: "24.5.0", cpu: "Apple M4 Max", core_count: "16", memory: "64.0 GiB" }
+[2m2025-06-17T01:38:23.343121Z[0m [32m INFO[0m [2mquadradius::systems::debug_visibility[0m[2m:[0m 🐛 Visibility Debug:
+[2m2025-06-17T01:38:23.343147Z[0m [32m INFO[0m [2mquadradius::systems::debug_visibility[0m[2m:[0m    2D Pieces: 20 visible, 20 hidden
+[2m2025-06-17T01:38:23.343154Z[0m [32m INFO[0m [2mquadradius::systems::debug_visibility[0m[2m:[0m    3D Pieces: 0 visible, 20 hidden
+[2m2025-06-17T01:38:23.343160Z[0m [32m INFO[0m [2mquadradius::systems::debug_visibility[0m[2m:[0m    2D Board tiles: 163 visible
+[2m2025-06-17T01:38:23.343167Z[0m [32m INFO[0m [2mquadradius::systems::debug_visibility[0m[2m:[0m    Piece at (0, 0): world (-345.6, -268.8, 5.0), visibility: Visible
+[2m2025-06-17T01:38:23.343175Z[0m [32m INFO[0m [2mquadradius::systems::debug_visibility[0m[2m:[0m    Piece at (2, 0): world (-192.0, -268.8, 5.0), visibility: Visible
+[2m2025-06-17T01:38:23.343180Z[0m [32m INFO[0m [2mquadradius::systems::debug_visibility[0m[2m:[0m    Piece at (4, 0): world (-38.4, -268.8, 5.0), visibility: Visible
+🔄 Processing effects for turn 1
+✅ Effect processing complete for turn 1
+Player Player1 has no powers - auto-skipping to movement phase
+[2m2025-06-17T01:38:27.754244Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D Click at screen: (321.2, 444.2) -> world: (-105.1, -192.2)
+[2m2025-06-17T01:38:27.754301Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: 20 pieces available for Player1
+[2m2025-06-17T01:38:27.754312Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: Selected Player1 piece at board (3, 1), world (-115.2, -192.0)
+[2m2025-06-17T01:38:28.662709Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: handle_drag_end called - 1 pieces dragging
+[2m2025-06-17T01:38:28.662756Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: Mouse movement too small: 11.50 < 75.26 (need 98% of tile) - NOT a valid move
+[2m2025-06-17T01:38:28.662767Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: No valid target found for piece at (3, 1) - turn continues, phase stays: PieceMovement
+[2m2025-06-17T01:38:28.671300Z[0m [33m WARN[0m [2mbevy_ecs::world[0m[2m:[0m error[B0003]: Could not despawn entity 518v54 because it doesn't exist in this World.
+[2m2025-06-17T01:38:28.671325Z[0m [33m WARN[0m [2mbevy_ecs::world[0m[2m:[0m error[B0003]: Could not despawn entity 519v54 because it doesn't exist in this World.
+[2m2025-06-17T01:38:28.671331Z[0m [33m WARN[0m [2mbevy_ecs::world[0m[2m:[0m error[B0003]: Could not despawn entity 520v54 because it doesn't exist in this World.
+[2m2025-06-17T01:38:28.671336Z[0m [33m WARN[0m [2mbevy_ecs::world[0m[2m:[0m error[B0003]: Could not despawn entity 521v54 because it doesn't exist in this World.
+[2m2025-06-17T01:38:28.912485Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D Click at screen: (317.1, 449.5) -> world: (-110.5, -199.4)
+[2m2025-06-17T01:38:28.912523Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: 20 pieces available for Player1
+[2m2025-06-17T01:38:28.912532Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: Selected Player1 piece at board (3, 1), world (-115.2, -192.0)
+[2m2025-06-17T01:38:29.546184Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: handle_drag_end called - 1 pieces dragging
+[2m2025-06-17T01:38:29.546375Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: Drag end - start_pos: (3, 1), valid_target: (3, 2), moved: true, mouse_distance: 87.66
+[2m2025-06-17T01:38:29.546389Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: TURN ENDING - Piece moved from (3, 1) to (3, 2), capture: false, phase: PieceMovement -> PowerSpawning
+[2m2025-06-17T01:38:29.546398Z[0m [32m INFO[0m [2mquadradius::systems::drag_drop[0m[2m:[0m 2D: Setting turn_phase to PowerSpawning (was PieceMovement)
+Spawning Phase - Turn 1 - Round 1 since last spawn for Player1
+Not time to spawn orb yet (need 6 more rounds)
+[2m2025-06-17T01:38:29.554356Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer initialized for Player1 at 6.22s
+🎯 PowerSpawning phase started for Player1 - Power orbs may spawn! Pieces CANNOT be moved during this phase.
+[2m2025-06-17T01:38:29.554505Z[0m [33m WARN[0m [2mbevy_ecs::world[0m[2m:[0m error[B0003]: Could not despawn entity 519v93 because it doesn't exist in this World.
+[2m2025-06-17T01:38:29.554516Z[0m [33m WARN[0m [2mbevy_ecs::world[0m[2m:[0m error[B0003]: Could not despawn entity 518v93 because it doesn't exist in this World.
+[2m2025-06-17T01:38:29.554521Z[0m [33m WARN[0m [2mbevy_ecs::world[0m[2m:[0m error[B0003]: Could not despawn entity 512v344 because it doesn't exist in this World.
+[2m2025-06-17T01:38:29.554524Z[0m [33m WARN[0m [2mbevy_ecs::world[0m[2m:[0m error[B0003]: Could not despawn entity 513v344 because it doesn't exist in this World.
+[2m2025-06-17T01:38:29.563031Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.570967Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.579497Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.587846Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.595936Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.604528Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.612697Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.620998Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.629218Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.637654Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.646035Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.654358Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.662466Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.671040Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.679267Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.687622Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.696118Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.704451Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.712674Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.720983Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.729387Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.737540Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.745963Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.754354Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.762686Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.770902Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.779343Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.787727Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.796281Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.804417Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.812502Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.820733Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.829297Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.837452Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.845825Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.854333Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.863235Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.871207Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.879546Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.887471Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.896034Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.904447Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.912392Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.921130Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.929553Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.937857Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.946092Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.954283Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.971238Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.979491Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.987784Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:29.996120Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.004367Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.012704Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.021141Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.029406Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.037573Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.045974Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.054394Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.062665Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.071274Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.079363Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.087605Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.096020Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.104405Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.112809Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.120933Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.129316Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.137781Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.146143Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.154517Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.162593Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.171171Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.179514Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.187874Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.195858Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.204291Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.212823Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.221133Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.229000Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.237554Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.246018Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.254111Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.262567Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.270787Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.279410Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.287560Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.295724Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.304049Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.312461Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.320742Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.329263Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.337598Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.345802Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.354132Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.362599Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.371172Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.379375Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.387672Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.395964Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.404317Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.412562Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.420749Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.429093Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.437551Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.445871Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.454480Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.462610Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.470970Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.479395Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.487828Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.496151Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.504463Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.512730Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.521160Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.529542Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.537945Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.545794Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.554136Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.562470Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.570751Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.579221Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.587443Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.595846Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.604207Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.612760Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.620968Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.629319Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.637722Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.646138Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.654233Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.662467Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.670678Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.679072Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.687613Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.695887Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.704349Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.712353Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.720859Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.729228Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.737553Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.745930Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.754318Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.762528Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.770730Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.779121Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.787503Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.795971Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.804255Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.812358Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.820951Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.829415Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.837643Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.845867Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.854219Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.862652Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.872919Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.879415Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.887695Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.895856Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.904221Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.912670Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.920989Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.929257Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.937558Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.946078Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.954677Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.962745Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.971043Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.979420Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.987475Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:30.995907Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.004261Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.012780Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.021201Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.029217Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.037556Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.046052Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.054206Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.062656Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.070965Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.079418Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.087563Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.096094Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.104344Z[0m [32m INFO[0m [2mquadradius::systems::turn_management[0m[2m:[0m ⏱️ Timer already running for Player1, started at 6.22s
+[2m2025-06-17T01:38:31.104622Z[0m [32m INFO[0m [2mbevy_window::system[0m[2m:[0m No windows are open, exiting
+[2m2025-06-17T01:38:31.150165Z[0m [32m INFO[0m [2mbevy_winit::system[0m[2m:[0m Closing window 0v0

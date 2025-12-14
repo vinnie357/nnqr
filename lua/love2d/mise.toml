@@ -1,0 +1,5 @@
+[tools]
+stylua = 'latest'
+
+[env]
+# Love2D uses bundled LuaJIT - no separate lua needed

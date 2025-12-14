@@ -1,0 +1,6 @@
+// Testing framework - intentionally comprehensive
+#[allow(dead_code)]
+// Power system framework - designed for extensibility
+#[allow(dead_code)]
+// UI theme system - complete set for future use
+#[allow(dead_code)]

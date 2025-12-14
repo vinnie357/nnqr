@@ -1,4 +1,166 @@
 [tools]
 node = 'lts'
-rust = '1.87.0'
 zig = 'latest'
+stylua = 'latest'                 # Lua formatter
+"ubi:love2d/love" = { version = "11.5", matching = "macos", extract_all = true, bin_path = "Contents/MacOS" }  # Love2D
+"ubi:nushell/nushell" = { version = "latest", exe = "nu" }
+act = "latest"  # Local GitHub Actions testing
+
+[env]
+RUST_BACKTRACE = "1"
+
+# ============================================================================
+# RUST/BEVY TASKS
+# ============================================================================
+
+[tasks.start]
+description = "Run Bevy Quadradius in development mode"
+dir = "rust/bevy"
+run = "cargo run"
+
+[tasks.start-release]
+description = "Run Bevy Quadradius in optimized release mode"
+dir = "rust/bevy"
+run = "cargo run --release"
+
+[tasks.start-debug]
+description = "Run Bevy Quadradius with debug logging"
+dir = "rust/bevy"
+env = { RUST_LOG = "debug" }
+run = "cargo run"
+
+[tasks.start-info]
+description = "Run Bevy Quadradius with info logging"
+dir = "rust/bevy"
+env = { RUST_LOG = "info" }
+run = "cargo run --release"
+
+[tasks.build]
+description = "Build Bevy Quadradius"
+dir = "rust/bevy"
+run = "cargo build"
+
+[tasks.build-release]
+description = "Build Bevy Quadradius (optimized)"
+dir = "rust/bevy"
+run = "cargo build --release"
+
+[tasks.test]
+description = "Run all Bevy tests"
+dir = "rust/bevy"
+run = "cargo test"
+
+[tasks.test-verbose]
+description = "Run Bevy tests with verbose output"
+dir = "rust/bevy"
+run = "cargo test -- --nocapture"
+
+[tasks.test-powers]
+description = "Run power system tests"
+dir = "rust/bevy"
+run = "cargo test powers"
+
+[tasks.check]
+description = "Run cargo check"
+dir = "rust/bevy"
+run = "cargo check"
+
+[tasks.clippy]
+description = "Run clippy linter"
+dir = "rust/bevy"
+run = "cargo clippy -- -D warnings"
+
+[tasks.fmt]
+description = "Format Rust code with rustfmt"
+dir = "rust/bevy"
+run = "cargo fmt"
+
+[tasks.fmt-check]
+description = "Check Rust code formatting"
+dir = "rust/bevy"
+run = "cargo fmt -- --check"
+
+[tasks.clean]
+description = "Clean Bevy build artifacts"
+dir = "rust/bevy"
+run = "cargo clean"
+
+[tasks.dev]
+description = "Quick Bevy development workflow: check, test, start"
+depends = ["check", "test", "start"]
+
+[tasks.ci]
+description = "CI workflow: format check, clippy, test"
+depends = ["fmt-check", "clippy", "test"]
+
+# Nushell-based tasks (Bevy)
+[tasks.test-powers-nu]
+description = "Run power system test (nushell version)"
+dir = "rust/bevy"
+run = "nu test_powers.nu"
+
+[tasks.fix-warnings]
+description = "Fix all unused variable warnings (nushell version)"
+dir = "rust/bevy"
+run = "nu fix_unused_warnings.nu"
+
+[tasks.fix-critical]
+description = "Fix critical warnings (nushell version)"
+dir = "rust/bevy"
+run = "nu fix_critical_warnings.nu"
+
+# Quadradius Development Utility (qdev)
+[tasks.qdev]
+description = "Quadradius development utility - run 'mise run qdev' for help"
+dir = "rust/bevy"
+run = "nu qdev.nu"
+
+[tasks.quality]
+description = "Run full quality check workflow"
+dir = "rust/bevy"
+run = "nu qdev.nu quality"
+
+[tasks.stats]
+description = "Show project statistics"
+dir = "rust/bevy"
+run = "nu qdev.nu stats"
+
+# Git helpers (qgit)
+[tasks.qgit]
+description = "Git helper utility - run 'mise run qgit' for help"
+dir = "rust/bevy"
+run = "nu qgit.nu"
+
+[tasks.git-status]
+description = "Enhanced git status"
+dir = "rust/bevy"
+run = "nu qgit.nu status"
+
+[tasks.git-log]
+description = "Pretty git log"
+dir = "rust/bevy"
+run = "nu qgit.nu log"
+
+# ============================================================================
+# LUA/LOVE2D TASKS
+# ============================================================================
+
+[tasks.love-start]
+description = "Run Love2D Quadradius"
+dir = "lua/love2d"
+run = "love ."
+
+[tasks.love-debug]
+description = "Run Love2D with debug console"
+dir = "lua/love2d"
+run = "love . --console"
+
+[tasks.love-fmt]
+description = "Format Lua code with stylua"
+dir = "lua/love2d"
+run = "stylua ."
+
+[tasks.love-check]
+description = "Check Lua code formatting"
+dir = "lua/love2d"
+run = "stylua --check ."

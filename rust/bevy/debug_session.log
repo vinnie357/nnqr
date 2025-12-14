@@ -1,0 +1,26 @@
+    Finished `release` profile [optimized] target(s) in 0.09s
+     Running `target/release/quadradius`
+[2m2025-06-09T21:17:27.740515Z[0m [32m INFO[0m [2mbevy_render::renderer[0m[2m:[0m AdapterInfo { name: "Apple M4 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+[2m2025-06-09T21:17:27.813072Z[0m [32m INFO[0m [2mbevy_winit::system[0m[2m:[0m Creating new window "Quadradius" (0v0)
+🏔️ Terrain height system initialized - all tiles at ground level
+[2m2025-06-09T21:17:27.840023Z[0m [32m INFO[0m [2mbevy_diagnostic::system_information_diagnostics_plugin::internal[0m[2m:[0m SystemInfo { os: "MacOS 15.5 ", kernel: "24.5.0", cpu: "Apple M4 Max", core_count: "16", memory: "64.0 GiB" }
+Mouse clicked - attempting piece selection (current player: Player1)
+Board position: (2, 1)
+No piece found at (2, 1) for current player Player1
+Player Player1 has no powers - auto-skipping to movement phase
+Mouse clicked - attempting piece selection (current player: Player1)
+Board position: (7, 5)
+No piece found at (7, 5) for current player Player1
+Mouse clicked - attempting piece selection (current player: Player1)
+Board position: (4, 5)
+No piece found at (4, 5) for current player Player1
+Mouse clicked - attempting piece selection (current player: Player1)
+Board position: (0, 0)
+Found piece at (0, 0) belonging to Player1
+Player Player1 has no powers - auto-skipping to movement phase
+Mouse clicked - attempting piece selection (current player: Player1)
+Could not convert cursor position to board coordinates
+Mouse clicked - attempting piece selection (current player: Player1)
+Board position: (2, 1)
+No piece found at (2, 1) for current player Player1
+Player Player1 has no powers - auto-skipping to movement phase

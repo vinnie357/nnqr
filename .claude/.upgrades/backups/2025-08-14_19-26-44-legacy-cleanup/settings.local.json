@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo run:*)",
+      "Bash(grep:*)",
+      "Bash(cargo build:*)",
+      "Bash(find:*)",
+      "Bash(./target/release/quadradius)",
+      "Bash(cargo test:*)",
+      "Bash(cargo check:*)",
+      "Bash(ls:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(rg:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(./test_powers.sh:*)",
+      "Bash(RUST_LOG=info cargo run --release)",
+      "Bash(RUST_LOG=info cargo run)",
+      "Bash(RUST_LOG=debug cargo run --release)",
+      "Bash(timeout 5s cargo run)",
+      "Bash(true)",
+      "Bash(cargo clean:*)",
+      "Bash(RUST_BACKTRACE=1 cargo test test_complete_2d_drag_workflow_all_pieces --release -- --nocapture)"
+    ],
+    "deny": []
+  }
+}

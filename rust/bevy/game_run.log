@@ -1,0 +1,33 @@
+    Finished `release` profile [optimized] target(s) in 0.08s
+     Running `target/release/quadradius`
+[2m2025-06-09T21:01:32.699917Z[0m [32m INFO[0m [2mbevy_render::renderer[0m[2m:[0m AdapterInfo { name: "Apple M4 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+[2m2025-06-09T21:01:32.775555Z[0m [32m INFO[0m [2mbevy_winit::system[0m[2m:[0m Creating new window "Quadradius" (0v0)
+🏔️ Terrain height system initialized - all tiles at ground level
+[2m2025-06-09T21:01:32.802760Z[0m [32m INFO[0m [2mbevy_diagnostic::system_information_diagnostics_plugin::internal[0m[2m:[0m SystemInfo { os: "MacOS 15.5 ", kernel: "24.5.0", cpu: "Apple M4 Max", core_count: "16", memory: "64.0 GiB" }
+Mouse clicked - attempting piece selection (current player: Player1)
+Cursor position: Vec2(334.8125, 352.0625)
+Could not convert cursor position to board coordinates
+Mouse clicked - attempting piece selection (current player: Player1)
+Cursor position: Vec2(325.60547, 357.73438)
+Could not convert cursor position to board coordinates
+Mouse clicked - attempting piece selection (current player: Player1)
+Cursor position: Vec2(595.7578, 373.46875)
+Could not convert cursor position to board coordinates
+Mouse clicked - attempting piece selection (current player: Player1)
+Cursor position: Vec2(523.375, 331.82422)
+Could not convert cursor position to board coordinates
+Mouse clicked - attempting piece selection (current player: Player1)
+Cursor position: Vec2(530.5586, 139.16406)
+Could not convert cursor position to board coordinates
+Mouse clicked - attempting piece selection (current player: Player1)
+Cursor position: Vec2(532.27734, 141.7461)
+Could not convert cursor position to board coordinates
+Mouse clicked - attempting piece selection (current player: Player1)
+Cursor position: Vec2(457.71094, 184.54688)
+Could not convert cursor position to board coordinates
+Mouse clicked - attempting piece selection (current player: Player1)
+Cursor position: Vec2(460.35938, 168.01172)
+Could not convert cursor position to board coordinates
+Mouse clicked - attempting piece selection (current player: Player1)
+Cursor position: Vec2(283.90234, 109.27344)
+Could not convert cursor position to board coordinates
