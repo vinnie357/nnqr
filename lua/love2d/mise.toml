@@ -2,6 +2,7 @@
 lua = '5.1'
 stylua = 'latest'
 "ubi:nushell/nushell" = { version = "latest", exe = "nu" }
+"ubi:love2d/love" = { version = "11.5", matching = "macos", extract_all = true, bin_path = "Contents/MacOS" }
 
 [env]
 # Love2D uses bundled LuaJIT - no separate lua needed for runtime

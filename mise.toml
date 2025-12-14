@@ -87,43 +87,36 @@ description = "Quick Bevy development workflow: check, test, start"
 depends = ["rust-check", "rust-test", "rust-start"]
 
 # ============================================================================
-# LUA/LOVE2D TASKS (aliases to lua/love2d/mise.toml)
+# LUA/LOVE2D TASKS (delegates to lua/love2d/mise.toml)
 # ============================================================================
 
 [tasks.love-start]
 description = "Run Love2D Quadradius"
-dir = "lua/love2d"
-run = "love ."
+run = "mise run -C lua/love2d start"
 
 [tasks.love-debug]
 description = "Run Love2D with debug console"
-dir = "lua/love2d"
-run = "love . --console"
+run = "mise run -C lua/love2d debug"
 
 [tasks.love-fmt]
 description = "Format Lua code with stylua"
-dir = "lua/love2d"
-run = "stylua --glob '**/*.lua' --glob '!lib/**' --glob '!test/**' ."
+run = "mise run -C lua/love2d fmt"
 
 [tasks.love-check]
 description = "Check Lua code formatting"
-dir = "lua/love2d"
-run = "stylua --check --glob '**/*.lua' --glob '!lib/**' --glob '!test/**' ."
+run = "mise run -C lua/love2d check"
 
 [tasks.love-test]
 description = "Run Love2D tests in-game"
-dir = "lua/love2d"
-run = "love . --test"
+run = "mise run -C lua/love2d test"
 
 [tasks.love-test-busted]
 description = "Run Lua unit tests with busted"
-dir = "lua/love2d"
-run = """
-export PATH="$HOME/.luarocks/bin:$PATH"
-export LUA_PATH="$HOME/.luarocks/share/lua/5.1/?.lua;$HOME/.luarocks/share/lua/5.1/?/init.lua;./?.lua;./src/?.lua;;"
-export LUA_CPATH="$HOME/.luarocks/lib/lua/5.1/?.so;;"
-busted spec/
-"""
+run = "mise run -C lua/love2d test-busted"
+
+[tasks.love-setup]
+description = "Install luarocks and busted for Love2D testing"
+run = "mise run -C lua/love2d setup"
 
 # ============================================================================
 # CI/CD TASKS
