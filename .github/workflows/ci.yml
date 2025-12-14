@@ -35,6 +35,8 @@ jobs:
         working-directory: lua/love2d
     steps:
       - uses: actions/checkout@v4
+      - name: Install Lua build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libreadline-dev
       - uses: ./.github/actions/setup-mise
       - name: Cache LuaRocks packages
         uses: actions/cache@v4
