@@ -12,10 +12,11 @@ describe("PowerEffects", function()
 	end)
 
 	describe("move_diagonal", function()
-		it("enables diagonal movement for piece", function()
+		it("enables diagonal movement for piece with flag", function()
 			local state = GameLogic.createInitialState()
 			local piece = GameLogic.getPieceAt(state, 2, 5)
-			piece.powers = { "move_diagonal" }
+			-- Flag is set after activation, not by having power in inventory
+			piece.canMoveDiagonally = true
 
 			local moves = PowerEffects.getValidMovesWithPowers(state, piece)
 			-- Should include diagonal moves
@@ -31,7 +32,7 @@ describe("PowerEffects", function()
 		it("still allows orthogonal movement", function()
 			local state = GameLogic.createInitialState()
 			local piece = GameLogic.getPieceAt(state, 2, 5)
-			piece.powers = { "move_diagonal" }
+			piece.canMoveDiagonally = true
 
 			local moves = PowerEffects.getValidMovesWithPowers(state, piece)
 			local hasOrthogonal = false
@@ -46,7 +47,7 @@ describe("PowerEffects", function()
 		it("respects height restrictions for diagonal", function()
 			local state = GameLogic.createInitialState()
 			local piece = GameLogic.getPieceAt(state, 2, 5)
-			piece.powers = { "move_diagonal" }
+			piece.canMoveDiagonally = true
 			-- Set diagonal tile too high
 			state.heightMap[3][6] = 3
 
@@ -62,11 +63,11 @@ describe("PowerEffects", function()
 	end)
 
 	describe("jump_proof", function()
-		it("prevents capture by normal movement", function()
+		it("prevents capture by normal movement when flag is set", function()
 			local state = GameLogic.createInitialState()
-			-- Get P2 piece and give it jump_proof
+			-- Get P2 piece and give it jump_proof flag (set after activation)
 			local defender = GameLogic.getPieceAt(state, 7, 5)
-			defender.powers = { "jump_proof" }
+			defender.isJumpProof = true
 
 			-- Move P1 piece adjacent
 			local attacker = GameLogic.getPieceAt(state, 2, 5)
@@ -78,7 +79,7 @@ describe("PowerEffects", function()
 		end)
 
 		it("allows capture by destroy powers", function()
-			local defender = { powers = { "jump_proof" } }
+			local defender = { isJumpProof = true }
 			local canDestroy = PowerEffects.canDestroyWithPower(defender, "destroy_row")
 			assert.is_true(canDestroy)
 		end)
@@ -86,7 +87,7 @@ describe("PowerEffects", function()
 		it("does not affect non-jump-proof pieces", function()
 			local state = GameLogic.createInitialState()
 			local defender = GameLogic.getPieceAt(state, 7, 5)
-			defender.powers = {}
+			defender.isJumpProof = false
 
 			local attacker = GameLogic.getPieceAt(state, 2, 5)
 			attacker.row = 6
@@ -466,6 +467,126 @@ describe("PowerEffects", function()
 
 			state = PowerEffects.activateMoveAgain(state, piece)
 			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("activateMoveDiagonal", function()
+		it("sets piece canMoveDiagonally flag", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.powers = { "move_diagonal" }
+
+			state = PowerEffects.activateMoveDiagonal(state, piece)
+			assert.is_true(piece.canMoveDiagonally)
+		end)
+
+		it("removes power from inventory after activation", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.powers = { "move_diagonal" }
+
+			state = PowerEffects.activateMoveDiagonal(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+
+		it("flag persists permanently on piece", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.powers = { "move_diagonal" }
+
+			state = PowerEffects.activateMoveDiagonal(state, piece)
+			assert.is_true(piece.canMoveDiagonally)
+			-- Power consumed but effect remains
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("activateJumpProof", function()
+		it("sets piece isJumpProof flag", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.powers = { "jump_proof" }
+
+			state = PowerEffects.activateJumpProof(state, piece)
+			assert.is_true(piece.isJumpProof)
+		end)
+
+		it("removes power from inventory after activation", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.powers = { "jump_proof" }
+
+			state = PowerEffects.activateJumpProof(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("activateInvisible", function()
+		it("sets piece isInvisible flag", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.powers = { "invisible" }
+
+			state = PowerEffects.activateInvisible(state, piece)
+			assert.is_true(piece.isInvisible)
+		end)
+
+		it("removes power from inventory after activation", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.powers = { "invisible" }
+
+			state = PowerEffects.activateInvisible(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("revealInvisible", function()
+		it("clears isInvisible flag when piece captures", function()
+			local piece = { isInvisible = true }
+			PowerEffects.revealInvisible(piece)
+			assert.is_false(piece.isInvisible)
+		end)
+
+		it("does nothing if piece is not invisible", function()
+			local piece = { isInvisible = false }
+			PowerEffects.revealInvisible(piece)
+			assert.is_false(piece.isInvisible)
+		end)
+	end)
+
+	describe("getValidMovesWithPowers with flags", function()
+		it("includes diagonal moves when canMoveDiagonally is true", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.canMoveDiagonally = true
+
+			local moves = PowerEffects.getValidMovesWithPowers(state, piece)
+			local hasDiagonal = false
+			for _, move in ipairs(moves) do
+				if move.row == 3 and move.col == 6 then
+					hasDiagonal = true
+				end
+			end
+			assert.is_true(hasDiagonal)
+		end)
+
+		it("excludes capture of isJumpProof pieces", function()
+			local state = GameLogic.createInitialState()
+			local attacker = GameLogic.getPieceAt(state, 2, 5)
+			attacker.row = 6
+
+			local defender = GameLogic.getPieceAt(state, 7, 5)
+			defender.isJumpProof = true
+
+			local moves = PowerEffects.getValidMovesWithPowers(state, attacker)
+			local canCapture = false
+			for _, move in ipairs(moves) do
+				if move.row == 7 and move.col == 5 then
+					canCapture = true
+				end
+			end
+			assert.is_false(canCapture)
 		end)
 	end)
 end)

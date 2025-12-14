@@ -46,18 +46,21 @@ local function getEmptyTiles(state)
 end
 
 --- Get valid moves considering powers (especially move_diagonal)
+--- Uses piece flags (canMoveDiagonally, isJumpProof) set by activation
 ---@param state table Game state
 ---@param piece table Piece to get moves for
 ---@return table Array of valid moves
 function PowerEffects.getValidMovesWithPowers(state, piece)
 	local moves = {}
 	local pieceHeight = Height.getHeight(state.heightMap, piece.row, piece.col)
-	local canDiagonal = Powers.hasPower(piece, "move_diagonal")
+
+	-- Check for diagonal movement - uses FLAG not power inventory
+	local canDiagonal = piece.canMoveDiagonally == true
 
 	-- Orthogonal directions
 	local directions = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } }
 
-	-- Add diagonal directions if piece has move_diagonal
+	-- Add diagonal directions if piece has activated move_diagonal
 	if canDiagonal then
 		table.insert(directions, { -1, -1 })
 		table.insert(directions, { -1, 1 })
@@ -85,7 +88,7 @@ function PowerEffects.getValidMovesWithPowers(state, piece)
 
 				-- Can't capture own piece
 				if not targetPiece or targetPiece.player ~= piece.player then
-					-- Check jump_proof for capture
+					-- Check jump_proof for capture - uses FLAG not power inventory
 					if not targetPiece or PowerEffects.canCapture(state, piece, targetPiece) then
 						table.insert(moves, { row = newRow, col = newCol })
 					end
@@ -98,12 +101,13 @@ function PowerEffects.getValidMovesWithPowers(state, piece)
 end
 
 --- Check if attacker can capture defender (considering jump_proof)
+--- Uses isJumpProof FLAG not power inventory
 ---@param state table Game state
 ---@param attacker table Attacking piece
 ---@param defender table Defending piece
 ---@return boolean True if capture is allowed
 function PowerEffects.canCapture(state, attacker, defender)
-	if Powers.hasPower(defender, "jump_proof") then
+	if defender.isJumpProof == true then
 		return false
 	end
 	return true
@@ -400,6 +404,48 @@ function PowerEffects.activateMoveAgain(state, piece)
 	removePower(piece, "move_again")
 
 	return state
+end
+
+--- Activate move_diagonal power (permanent effect)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateMoveDiagonal(state, piece)
+	piece.canMoveDiagonally = true
+
+	removePower(piece, "move_diagonal")
+
+	return state
+end
+
+--- Activate jump_proof power (permanent effect)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateJumpProof(state, piece)
+	piece.isJumpProof = true
+
+	removePower(piece, "jump_proof")
+
+	return state
+end
+
+--- Activate invisible power (permanent until capture)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateInvisible(state, piece)
+	piece.isInvisible = true
+
+	removePower(piece, "invisible")
+
+	return state
+end
+
+--- Reveal an invisible piece (called when piece captures)
+---@param piece table Piece to reveal
+function PowerEffects.revealInvisible(piece)
+	piece.isInvisible = false
 end
 
 return PowerEffects
