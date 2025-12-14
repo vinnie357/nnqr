@@ -38,6 +38,13 @@ jobs:
       - name: Install Lua build dependencies
         run: sudo apt-get update && sudo apt-get install -y libreadline-dev
       - uses: ./.github/actions/setup-mise
+      - name: Cache mise installs
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/mise/installs
+          key: mise-installs-${{ runner.os }}-${{ hashFiles('lua/love2d/mise.toml') }}
+          restore-keys: |
+            mise-installs-${{ runner.os }}-
       - name: Cache LuaRocks packages
         uses: actions/cache@v4
         with:
