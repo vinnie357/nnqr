@@ -1,5 +1,7 @@
-use crate::components::power::{Absorbing, Frozen, Invisible, Poisoned, Reflecting, Shield, MoveTwiceActive};
-use crate::components::{Player, GamePiece};
+use crate::components::power::{
+    Absorbing, Frozen, Invisible, MoveTwiceActive, Poisoned, Reflecting, Shield,
+};
+use crate::components::{GamePiece, Player};
 use crate::resources::game_state::{GameState, TurnPhase};
 use crate::systems::ui::TurnIndicator;
 use bevy::prelude::*;
@@ -144,11 +146,9 @@ pub fn check_move_twice_remaining(
     move_twice_pieces: &Query<(Entity, &MoveTwiceActive, &GamePiece)>,
     current_player: Player,
 ) -> bool {
-    move_twice_pieces
-        .iter()
-        .any(|(_, move_twice, piece)| {
-            piece.player == current_player && move_twice.moves_remaining > 1
-        })
+    move_twice_pieces.iter().any(|(_, move_twice, piece)| {
+        piece.player == current_player && move_twice.moves_remaining > 1
+    })
 }
 
 /// Handle MoveTwice power when a piece moves
@@ -166,18 +166,16 @@ pub fn handle_move_twice_move(
                 "MoveTwice: Piece has {} moves remaining",
                 move_twice.moves_remaining
             );
-            
+
             if move_twice.moves_remaining == 0 {
                 commands.entity(moved_entity).remove::<MoveTwiceActive>();
                 info!("MoveTwice: No more moves for this piece");
             }
-            
+
             // Return true if this player still has pieces with moves remaining
-            return move_twice_pieces
-                .iter()
-                .any(|(_, move_twice, piece)| {
-                    piece.player == current_player && move_twice.moves_remaining > 1
-                });
+            return move_twice_pieces.iter().any(|(_, move_twice, piece)| {
+                piece.player == current_player && move_twice.moves_remaining > 1
+            });
         }
     }
     false

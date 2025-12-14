@@ -276,7 +276,10 @@ pub fn optimize_visual_effects(
 }
 
 // System performance analysis
-pub fn analyze_system_performance(keyboard: Res<Input<KeyCode>>, _monitor: Res<PerformanceMonitor>) {
+pub fn analyze_system_performance(
+    keyboard: Res<Input<KeyCode>>,
+    _monitor: Res<PerformanceMonitor>,
+) {
     if keyboard.just_pressed(KeyCode::F11) {
         println!("\n🔍 SYSTEM PERFORMANCE ANALYSIS");
         println!("=====================================");

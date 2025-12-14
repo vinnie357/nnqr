@@ -211,7 +211,7 @@ fn process_piece_indicators(
                 // Position indicator at board tile level to avoid obscuring pieces
                 let enhanced_tile_size = TILE_SIZE * TILE_SIZE_MULTIPLIER_3D;
                 let tile_top_y = enhanced_tile_size * ENHANCED_TILE_HEIGHT / 2.0;
-                
+
                 // Position indicator at tile surface level, below any pieces
                 let indicator_pos = Vec3::new(
                     world_pos.x,

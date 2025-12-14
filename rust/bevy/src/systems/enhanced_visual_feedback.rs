@@ -109,8 +109,8 @@ pub fn update_pulse_animations(
 /// Update glow effects for enhanced visual feedback
 pub fn update_glow_effects(
     mut query: Query<&mut GlowEffect>,
-_materials: ResMut<Assets<StandardMaterial>>,
-_material_query: Query<&Handle<StandardMaterial>>,
+    _materials: ResMut<Assets<StandardMaterial>>,
+    _material_query: Query<&Handle<StandardMaterial>>,
     time: Res<Time>,
 ) {
     for mut glow in query.iter_mut() {

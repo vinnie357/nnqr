@@ -92,8 +92,7 @@ pub use settings::*;
 pub use terrain_height::*;
 // Import specific items from turn_management (excluding TurnIndicator to avoid conflict)
 pub use turn_management::{
-    handle_power_spawning_phase, initialize_turn_phase, power_spawning_phase_ui,
-    PowerSpawningTimer,
+    handle_power_spawning_phase, initialize_turn_phase, power_spawning_phase_ui, PowerSpawningTimer,
 };
 // Import all from ui (includes TurnIndicator)
 pub use ui::*;

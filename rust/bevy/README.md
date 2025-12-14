@@ -1,4 +1,6 @@
-# Quadradius - Advanced 3D Implementation
+# Quadradius - Rust/Bevy Implementation
+
+*Built with Claude AI*
 
 ## Status
 **🚀 PRODUCTION READY** - 38+ powers implemented, Windows release v0.2.0 deployed

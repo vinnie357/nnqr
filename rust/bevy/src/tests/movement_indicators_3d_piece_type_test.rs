@@ -8,18 +8,18 @@ use bevy::prelude::*;
 
 fn setup_test_app() -> App {
     let mut app = App::new();
-    
+
     // Add minimal plugins required for testing
     app.add_plugins(MinimalPlugins);
-    
+
     // Add required resources that the systems expect
     app.insert_resource(GameState::default())
-       .insert_resource(RenderConfig::default())
-       .insert_resource(crate::resources::game_state::TurnCounter::default())
-       .insert_resource(PowerSpawningTracker::default())
-       .insert_resource(Assets::<Mesh>::default())
-       .insert_resource(Assets::<StandardMaterial>::default());
-    
+        .insert_resource(RenderConfig::default())
+        .insert_resource(crate::resources::game_state::TurnCounter::default())
+        .insert_resource(PowerSpawningTracker::default())
+        .insert_resource(Assets::<Mesh>::default())
+        .insert_resource(Assets::<StandardMaterial>::default());
+
     app
 }
 

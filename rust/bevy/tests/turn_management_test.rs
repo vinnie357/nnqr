@@ -185,7 +185,7 @@ fn test_raycast_selection_does_not_interfere_with_drag() {
 
     // Add window plugin for proper window handling
     app.add_plugins(WindowPlugin::default());
-    
+
     // Add asset resources needed by 3D systems
     app.init_resource::<Assets<Mesh>>();
     app.init_resource::<Assets<StandardMaterial>>();

@@ -313,17 +313,23 @@ pub fn handle_power_activation(
                             // Find current player's piece and target piece
                             let mut current_piece = None;
                             let mut target_piece = None;
-                            
+
                             for (entity, piece) in pieces.iter() {
-                                if piece.player == game_state.current_player && current_piece.is_none() {
+                                if piece.player == game_state.current_player
+                                    && current_piece.is_none()
+                                {
                                     current_piece = Some((entity, piece.board_position));
                                 }
-                                if piece.board_position == board_pos && piece.player != game_state.current_player {
+                                if piece.board_position == board_pos
+                                    && piece.player != game_state.current_player
+                                {
                                     target_piece = Some((entity, piece.board_position));
                                 }
                             }
 
-                            if let (Some((entity1, pos1)), Some((entity2, pos2))) = (current_piece, target_piece) {
+                            if let (Some((entity1, pos1)), Some((entity2, pos2))) =
+                                (current_piece, target_piece)
+                            {
                                 // Update board positions
                                 if let Ok((_, piece1)) = pieces.get(entity1) {
                                     commands.entity(entity1).insert(GamePiece {
@@ -1043,7 +1049,9 @@ pub fn handle_power_activation(
                         // Individual Tile Terrain Powers (Phase 3 implementation plan)
                         PowerType::RaiseTile => {
                             // Raise a single tile by 1-3 levels
-                            use crate::systems::terrain_height::{get_tile_height, set_tile_height};
+                            use crate::systems::terrain_height::{
+                                get_tile_height, set_tile_height,
+                            };
                             let current_height =
                                 get_tile_height(board_pos.0, board_pos.1, &tile_queries.p1());
                             let raise_amount = rand::thread_rng().gen_range(1..=3);
@@ -1063,7 +1071,9 @@ pub fn handle_power_activation(
                         }
                         PowerType::LowerTile => {
                             // Lower a single tile by 1-3 levels
-                            use crate::systems::terrain_height::{get_tile_height, set_tile_height};
+                            use crate::systems::terrain_height::{
+                                get_tile_height, set_tile_height,
+                            };
                             let current_height =
                                 get_tile_height(board_pos.0, board_pos.1, &tile_queries.p1());
                             let lower_amount = rand::thread_rng().gen_range(1..=3);
@@ -1083,7 +1093,9 @@ pub fn handle_power_activation(
                         }
                         PowerType::Flatten => {
                             // Set all tiles in 3x3 area to uniform height (average of area)
-                            use crate::systems::terrain_height::{get_tile_height, set_tile_height};
+                            use crate::systems::terrain_height::{
+                                get_tile_height, set_tile_height,
+                            };
                             let mut total_height: i32 = 0;
                             let mut tile_count = 0;
 
@@ -1097,11 +1109,9 @@ pub fn handle_power_activation(
                                         && ny >= 0
                                         && ny < BOARD_HEIGHT as i8
                                     {
-                                        total_height += get_tile_height(
-                                            nx as u8,
-                                            ny as u8,
-                                            &tile_queries.p1(),
-                                        ) as i32;
+                                        total_height +=
+                                            get_tile_height(nx as u8, ny as u8, &tile_queries.p1())
+                                                as i32;
                                         tile_count += 1;
                                     }
                                 }
@@ -1194,7 +1204,9 @@ pub fn handle_power_activation(
                         PowerType::Flood => {
                             // Fill low areas with water (mark tiles as flooded, blocks movement)
                             // For now, we lower all tiles in 3x3 area to create a "flooded" zone
-                            use crate::systems::terrain_height::{get_tile_height, set_tile_height};
+                            use crate::systems::terrain_height::{
+                                get_tile_height, set_tile_height,
+                            };
                             let flood_level = -1; // Flood level
 
                             for dx in -1i8..=1 {
@@ -2295,7 +2307,10 @@ fn activate_acid_attack(
     pieces: &Query<(Entity, &GamePiece)>,
     tiles: &mut Query<(Entity, &mut BoardTile, &mut TerrainHeight)>,
 ) {
-    println!("💧 Acid attack at ({}, {}) - creating permanent hole", target_pos.0, target_pos.1);
+    println!(
+        "💧 Acid attack at ({}, {}) - creating permanent hole",
+        target_pos.0, target_pos.1
+    );
 
     // Remove any piece at the target position
     for (entity, piece) in pieces.iter() {
@@ -2317,9 +2332,11 @@ fn activate_acid_attack(
             // Set to below minimum height to indicate hole
             tile.height = MIN_HEIGHT - 1;
             terrain.height = MIN_HEIGHT - 1;
-            
+
             // Add acid marker component
-            commands.entity(entity).insert(crate::components::power::AcidHole);
+            commands
+                .entity(entity)
+                .insert(crate::components::power::AcidHole);
             break;
         }
     }
@@ -2329,7 +2346,7 @@ fn activate_acid_attack(
     for _ in 0..8 {
         let offset_x = (rand::random::<f32>() - 0.5) * 30.0;
         let offset_y = (rand::random::<f32>() - 0.5) * 30.0;
-        
+
         commands.spawn((
             SpriteBundle {
                 sprite: Sprite {

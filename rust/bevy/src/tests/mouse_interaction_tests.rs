@@ -20,18 +20,21 @@ fn test_board_to_isometric_conversion() {
 
     // Use epsilon comparison for floating point values to avoid precision issues
     const EPSILON: f32 = 0.001;
-    
+
     assert!(
         (center_pos.x - (-40.8)).abs() < EPSILON,
-        "Center X should be approximately -40.8, got {}", center_pos.x
+        "Center X should be approximately -40.8, got {}",
+        center_pos.x
     );
     assert!(
         (center_pos.z - 0.0).abs() < EPSILON,
-        "Center Z should be approximately 0.0, got {}", center_pos.z
+        "Center Z should be approximately 0.0, got {}",
+        center_pos.z
     );
     assert!(
         (center_pos.y - 0.0).abs() < EPSILON,
-        "Center Y should be approximately 0.0, got {}", center_pos.y
+        "Center Y should be approximately 0.0, got {}",
+        center_pos.y
     );
 }
 

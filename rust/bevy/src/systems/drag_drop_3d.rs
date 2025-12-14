@@ -154,7 +154,13 @@ pub fn handle_drag_end_3d(
     windows: Query<&Window>,
     camera_q: Query<(&Camera, &GlobalTransform), With<IsometricCamera>>,
     mut game_state: ResMut<GameState>,
-    mut pieces: Query<(Entity, &mut GamePiece3D, &mut GamePiece, &mut Transform, &Dragging3D)>,
+    mut pieces: Query<(
+        Entity,
+        &mut GamePiece3D,
+        &mut GamePiece,
+        &mut Transform,
+        &Dragging3D,
+    )>,
     all_pieces: Query<(Entity, &GamePiece3D), Without<Dragging3D>>,
     mut all_pieces_2d: Query<(Entity, &mut GamePiece), (Without<Dragging3D>, Without<GamePiece3D>)>,
     tiles: Query<&BoardTile>,
@@ -217,8 +223,13 @@ pub fn handle_drag_end_3d(
                         // CRITICAL FIX: Also update any separate 2D piece at the original position
                         // This prevents ghost pieces from being left behind
                         for (_piece_2d_entity, mut piece_2d_separate) in all_pieces_2d.iter_mut() {
-                            if piece_2d_separate.board_position == start_pos && piece_2d_separate.player == piece_3d.player {
-                                info!("🔧 Updating separate 2D piece position from {:?} to {:?}", start_pos, target_pos);
+                            if piece_2d_separate.board_position == start_pos
+                                && piece_2d_separate.player == piece_3d.player
+                            {
+                                info!(
+                                    "🔧 Updating separate 2D piece position from {:?} to {:?}",
+                                    start_pos, target_pos
+                                );
                                 piece_2d_separate.board_position = target_pos;
                                 break;
                             }

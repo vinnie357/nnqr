@@ -238,7 +238,8 @@ pub fn process_poison_death(
     for (entity, piece, effects) in pieces_query.iter() {
         // Check for poison effects that should trigger death
         for effect in &effects.effects {
-            if let EffectData::Status(StatusEffect::Poisoned { death_timer: _ }) = &effect.effect_data
+            if let EffectData::Status(StatusEffect::Poisoned { death_timer: _ }) =
+                &effect.effect_data
             {
                 if effect.remaining_turns(turn_counter.turn_number) <= 1 {
                     // Piece dies from poison
@@ -384,8 +385,9 @@ pub fn apply_recruitment_effects(
     for (entity, mut piece, effects) in pieces_query.iter_mut() {
         // Check for recruitment effects
         for effect in &effects.effects {
-            if let EffectData::Status(StatusEffect::Recruiting { conversion_power: _ }) =
-                &effect.effect_data
+            if let EffectData::Status(StatusEffect::Recruiting {
+                conversion_power: _,
+            }) = &effect.effect_data
             {
                 if effect.remaining_turns(turn_counter.turn_number) <= 1 {
                     // Convert the piece to the effect source player

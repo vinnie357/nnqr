@@ -49,12 +49,12 @@ pub enum PowerType {
     Terraform,   // Set specific tile height
 
     // Phase 3: Individual Tile Terrain Powers (from implementation plan)
-    RaiseTile,   // Raise single tile by 1-3 levels
-    LowerTile,   // Lower single tile by 1-3 levels
-    Flatten,     // Set all tiles in 3x3 area to uniform height
-    Scramble,    // Randomize heights in 3x3 area
-    Crater,      // Create large depression in 3x3 area
-    Flood,       // Fill low areas with water (blocks movement)
+    RaiseTile, // Raise single tile by 1-3 levels
+    LowerTile, // Lower single tile by 1-3 levels
+    Flatten,   // Set all tiles in 3x3 area to uniform height
+    Scramble,  // Randomize heights in 3x3 area
+    Crater,    // Create large depression in 3x3 area
+    Flood,     // Fill low areas with water (blocks movement)
 
     // Phase 3: Meta Powers
     StealPower,   // Steal opponent's power
@@ -360,12 +360,12 @@ impl PowerType {
             PowerType::Terraform => Color::rgb(0.5, 0.7, 0.4),
 
             // Individual tile terrain powers
-            PowerType::RaiseTile => Color::rgb(0.5, 0.9, 0.5),   // Light green - raise
-            PowerType::LowerTile => Color::rgb(0.9, 0.7, 0.4),   // Tan/sand - lower
-            PowerType::Flatten => Color::rgb(0.6, 0.6, 0.5),     // Gray-brown - uniform
-            PowerType::Scramble => Color::rgb(0.8, 0.5, 0.6),    // Dusty rose - chaos
-            PowerType::Crater => Color::rgb(0.3, 0.2, 0.2),      // Dark brown - depression
-            PowerType::Flood => Color::rgb(0.3, 0.5, 0.9),       // Blue - water
+            PowerType::RaiseTile => Color::rgb(0.5, 0.9, 0.5), // Light green - raise
+            PowerType::LowerTile => Color::rgb(0.9, 0.7, 0.4), // Tan/sand - lower
+            PowerType::Flatten => Color::rgb(0.6, 0.6, 0.5),   // Gray-brown - uniform
+            PowerType::Scramble => Color::rgb(0.8, 0.5, 0.6),  // Dusty rose - chaos
+            PowerType::Crater => Color::rgb(0.3, 0.2, 0.2),    // Dark brown - depression
+            PowerType::Flood => Color::rgb(0.3, 0.5, 0.9),     // Blue - water
 
             // Meta powers (shades of purple/pink)
             PowerType::StealPower => Color::rgb(0.8, 0.2, 0.8),

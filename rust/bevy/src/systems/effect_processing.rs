@@ -163,7 +163,8 @@ pub fn process_turn_effects(
     for (entity, mut active_effects, piece) in entities_with_effects.iter_mut() {
         // Process death effects first (poison)
         for effect in &active_effects.effects {
-            if let EffectData::Status(StatusEffect::Poisoned { death_timer: _ }) = &effect.effect_data
+            if let EffectData::Status(StatusEffect::Poisoned { death_timer: _ }) =
+                &effect.effect_data
             {
                 if effect.remaining_turns(turn_counter.turn_number) <= 1 {
                     println!("💀 Piece dies from poison!");
