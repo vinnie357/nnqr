@@ -1,6 +1,6 @@
 # NNQR Love2D - Progress Tracker
 
-## Current Phase: Phase 4 - Power-Up Framework (Core Complete)
+## Current Phase: Phase 4B - Power Activation & Animations
 
 ## Overall Progress
 
@@ -11,9 +11,10 @@
 - [x] Phase 2: Terrain Height System
 - [~] Phase 3: Network Architecture (protocol done, server pending)
 - [x] Phase 4: Power-Up Framework (core logic)
+- [ ] Phase 4B: Power Activation & Animations
 - [ ] Phase 5: Polish & Integration
 
-**Test Count: 197 passing**
+**Test Count: 243 passing**
 
 ---
 
@@ -94,32 +95,60 @@
 - [x] Power inventory add/remove
 - [x] Orb collection mechanics
 - [x] Power checks (isJumpProof, canMoveDiagonally)
+- [x] Power effect functions (all 12 powers)
+- [x] Passive power activation (flag-based system)
 
 ### Implementation - CORE COMPLETE
 - [x] Powers module `src/shared/powers.lua`
+- [x] PowerEffects module `src/shared/power_effects.lua`
 - [x] 12 power definitions
 - [x] Orb spawning system
 - [x] Power inventory per piece
 - [x] Orb collection on move
 - [x] Power indicator on pieces
-- [ ] Power activation UI
-- [ ] Individual power effects
+- [x] Power activation UI (basic menu, 1-9 keys)
+- [x] Power targeting mode (for targeted powers)
+- [x] All 12 power effect implementations
 
 ### Powers Defined
 | Power | Category | Duration | Status |
 |-------|----------|----------|--------|
-| Move Diagonal | Movement | Permanent | Defined |
-| Move Again | Movement | Single use | Defined |
-| Relocate | Movement | Single use | Defined |
-| Destroy Row | Offensive | Single use | Defined |
-| Destroy Column | Offensive | Single use | Defined |
-| Bomb | Offensive | Single use | Defined |
-| Jump Proof | Defensive | Permanent | Defined |
-| Raise Tile | Terrain | Single use | Defined |
-| Lower Tile | Terrain | Single use | Defined |
-| Recruit | Strategic | Single use | Defined |
-| Multiply | Strategic | Single use | Defined |
-| Invisible | Utility | Permanent | Defined |
+| Move Diagonal | Movement | Permanent | Implemented |
+| Move Again | Movement | Single use | Implemented |
+| Relocate | Movement | Single use | Implemented |
+| Destroy Row | Offensive | Single use | Implemented |
+| Destroy Column | Offensive | Single use | Implemented |
+| Bomb | Offensive | Single use | Implemented |
+| Jump Proof | Defensive | Permanent | Implemented |
+| Raise Tile | Terrain | Single use | Implemented |
+| Lower Tile | Terrain | Single use | Implemented |
+| Recruit | Strategic | Single use | Implemented |
+| Multiply | Strategic | Single use | Implemented |
+| Invisible | Utility | Permanent | Implemented |
+
+---
+
+## Phase 4B: Power Activation & Animations - IN PROGRESS
+
+### Design Decisions
+- Animation style: Elaborate (~0.8s+) with particles, screen shake, multi-phase
+- Blocking behavior: Hybrid (destructive powers block, passive powers don't)
+- Invisibility: Semi-transparent (30%) for now, enhance with multiplayer
+
+### Tests - PENDING
+- [ ] Step 1: Animation foundation (~7 tests)
+- [ ] Step 2: Animation queue (~7 tests)
+- [ ] Step 3: Animation type definitions (~12 tests)
+- [ ] Step 4: Animation interpolation (~6 tests)
+- [ ] Step 5: Power logic wiring (~7 tests)
+- [ ] Step 6: Game integration (~10 tests)
+
+### Implementation - PENDING
+- [ ] `src/shared/animations.lua` - Animation module
+- [ ] Animation queue in game.lua
+- [ ] Passive power integration in executepower()
+- [ ] Use getValidMovesWithPowers() for move calculation
+- [ ] Visual rendering of animations
 
 ---
 
@@ -203,4 +232,16 @@
 | game_logic_spec.lua | 31 |
 | powers_spec.lua | 30 |
 | rendering_spec.lua | 24 |
-| **Total** | **197** |
+| power_effects_spec.lua | 46 |
+| **Total** | **243** |
+
+### Phase 4B Target (Additional)
+
+| Spec File | Planned Tests |
+|-----------|---------------|
+| animations_spec.lua | ~40 |
+| game_integration_spec.lua | ~10 |
+| power_effects_spec.lua | +4 |
+| game_logic_spec.lua | +3 |
+| **Phase 4B Total** | **~57** |
+| **Grand Total Target** | **~300** |
