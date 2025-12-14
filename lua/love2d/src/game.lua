@@ -5,6 +5,7 @@ local GameLogic = require("src.shared.game_logic")
 local Rendering = require("src.shared.rendering")
 local Height = require("src.shared.height")
 local Powers = require("src.shared.powers")
+local PowerEffects = require("src.shared.power_effects")
 
 local Game = {}
 
@@ -18,6 +19,10 @@ Game.boardOffsetY = 0
 -- Animation/interaction state
 Game.hoveredTile = nil
 Game.orbs = {}
+
+-- Power activation mode
+Game.powerMode = nil -- nil or {powerId, piece, targets}
+Game.powerTargets = {}
 
 -- Colors - Clean Modern Style
 Game.colors = {
@@ -76,8 +81,71 @@ function Game.draw()
 	Game.drawBoard()
 	Game.drawOrbs()
 	Game.drawValidMoves()
+	Game.drawPowerTargets()
 	Game.drawPieces()
 	Game.drawUI()
+	Game.drawPowerMenu()
+end
+
+function Game.drawPowerTargets()
+	if not Game.powerMode then
+		return
+	end
+
+	for _, target in ipairs(Game.powerTargets) do
+		local height = GameLogic.getHeight(Game.state, target.row, target.col)
+		local x, y = Rendering.boardToScreen(target.row, target.col, Game.boardOffsetX, Game.boardOffsetY)
+		y = y + Rendering.getHeightOffset(height)
+
+		-- Purple for power targets
+		love.graphics.setColor(0.8, 0.3, 0.9, 0.5)
+		local verts = Rendering.getTileVertices(x, y)
+		love.graphics.polygon("fill", verts)
+
+		love.graphics.setColor(0.9, 0.4, 1.0)
+		love.graphics.setLineWidth(2)
+		love.graphics.polygon("line", verts)
+		love.graphics.setLineWidth(1)
+	end
+end
+
+function Game.drawPowerMenu()
+	local piece = Game.state.selectedPiece
+	if not piece or not piece.powers or #piece.powers == 0 then
+		return
+	end
+
+	-- Draw power menu on right side
+	local menuX = love.graphics.getWidth() - 200
+	local menuY = 100
+	local menuWidth = 190
+	local itemHeight = 30
+
+	love.graphics.setColor(0, 0, 0, 0.7)
+	love.graphics.rectangle("fill", menuX, menuY, menuWidth, 30 + #piece.powers * itemHeight, 8, 8)
+
+	love.graphics.setColor(1, 0.9, 0.3)
+	love.graphics.print("Powers (1-9 to use):", menuX + 10, menuY + 8)
+
+	for i, powerId in ipairs(piece.powers) do
+		local def = Powers.definitions[powerId]
+		local itemY = menuY + 25 + (i - 1) * itemHeight
+
+		-- Highlight if in power mode for this power
+		if Game.powerMode and Game.powerMode.powerId == powerId then
+			love.graphics.setColor(0.8, 0.3, 0.9, 0.5)
+			love.graphics.rectangle("fill", menuX + 5, itemY, menuWidth - 10, itemHeight - 2, 4, 4)
+		end
+
+		love.graphics.setColor(1, 1, 1)
+		love.graphics.print(i .. ". " .. (def and def.name or powerId), menuX + 10, itemY + 5)
+	end
+
+	-- Instructions if in power mode
+	if Game.powerMode then
+		love.graphics.setColor(0.9, 0.4, 1.0)
+		love.graphics.print("Click target or ESC to cancel", menuX + 10, menuY + 30 + #piece.powers * itemHeight + 5)
+	end
 end
 
 function Game.drawBoard()
@@ -317,6 +385,30 @@ function Game.mousepressed(x, y, button)
 		local row, col = Rendering.screenToBoard(x, y, Game.boardOffsetX, Game.boardOffsetY)
 
 		if row >= 1 and row <= Game.state.rows and col >= 1 and col <= Game.state.cols then
+			-- Check if in power targeting mode
+			if Game.powerMode then
+				local validTarget = nil
+				for _, target in ipairs(Game.powerTargets) do
+					if target.row == row and target.col == col then
+						validTarget = target
+						break
+					end
+				end
+
+				if validTarget then
+					-- For recruit, find the actual piece
+					if Game.powerMode.powerId == "recruit" then
+						validTarget = GameLogic.getPieceAt(Game.state, row, col)
+					end
+					Game.executepower(Game.powerMode.piece, Game.powerMode.powerId, validTarget)
+				else
+					-- Invalid target, cancel power mode
+					Game.powerMode = nil
+					Game.powerTargets = {}
+				end
+				return
+			end
+
 			local clickedPiece = GameLogic.getPieceAt(Game.state, row, col)
 
 			if Game.state.selectedPiece then
@@ -330,21 +422,29 @@ function Game.mousepressed(x, y, button)
 				end
 
 				if isValid then
-					Game.state = GameLogic.movePiece(Game.state, Game.state.selectedPiece, row, col)
+					local movingPiece = Game.state.selectedPiece
+					Game.state = GameLogic.movePiece(Game.state, movingPiece, row, col)
 					-- Collect orb if present
-					Powers.collectOrb(Game.state.selectedPiece, Game.orbs)
-					Game.state = GameLogic.endTurn(Game.state)
-					-- Check for orb spawn
-					if Powers.shouldSpawnOrbs(Game.state.turn) then
-						local newOrbs = Powers.spawnOrbs(
-							Game.state.cols,
-							Game.state.rows,
-							Game.state.pieces,
-							Game.orbs,
-							Powers.getOrbSpawnCount()
-						)
-						for _, orb in ipairs(newOrbs) do
-							table.insert(Game.orbs, orb)
+					Powers.collectOrb(movingPiece, Game.orbs)
+
+					-- Check for extra move from move_again
+					if Game.state.extraMove then
+						Game.state.extraMove = nil
+						Game.state = GameLogic.selectPiece(Game.state, movingPiece)
+					else
+						Game.state = GameLogic.endTurn(Game.state)
+						-- Check for orb spawn
+						if Powers.shouldSpawnOrbs(Game.state.turn) then
+							local newOrbs = Powers.spawnOrbs(
+								Game.state.cols,
+								Game.state.rows,
+								Game.state.pieces,
+								Game.orbs,
+								Powers.getOrbSpawnCount()
+							)
+							for _, orb in ipairs(newOrbs) do
+								table.insert(Game.orbs, orb)
+							end
 						end
 					end
 				elseif clickedPiece and clickedPiece.player == Game.state.currentPlayer then
@@ -364,7 +464,12 @@ function Game.mousereleased(x, y, button) end
 function Game.mousemoved(x, y, dx, dy) end
 
 function Game.keypressed(key)
-	if key == "r" then
+	if key == "escape" then
+		if Game.powerMode then
+			Game.powerMode = nil
+			Game.powerTargets = {}
+		end
+	elseif key == "r" then
 		Game.init()
 	elseif key == "h" and Game.hoveredTile then
 		local h = GameLogic.getHeight(Game.state, Game.hoveredTile.row, Game.hoveredTile.col)
@@ -384,6 +489,76 @@ function Game.keypressed(key)
 		for _, orb in ipairs(newOrbs) do
 			table.insert(Game.orbs, orb)
 		end
+	elseif tonumber(key) and Game.state.selectedPiece then
+		-- Number key: activate power
+		local index = tonumber(key)
+		local piece = Game.state.selectedPiece
+		if piece.powers and piece.powers[index] then
+			Game.activatePower(piece, piece.powers[index])
+		end
+	end
+end
+
+function Game.activatePower(piece, powerId)
+	local def = Powers.definitions[powerId]
+	if not def then
+		return
+	end
+
+	-- Check if power needs targeting
+	local needsTarget = def.targeting == "adjacent"
+		or def.targeting == "adjacent_enemy"
+		or def.targeting == "adjacent_empty"
+
+	if needsTarget then
+		-- Enter power targeting mode
+		Game.powerMode = { powerId = powerId, piece = piece }
+		Game.powerTargets = Game.getPowerTargets(piece, powerId)
+	else
+		-- Activate immediately
+		Game.executepower(piece, powerId, nil)
+	end
+end
+
+function Game.getPowerTargets(piece, powerId)
+	if powerId == "raise_tile" or powerId == "lower_tile" then
+		return PowerEffects.getRaiseTileTargets(Game.state, piece)
+	elseif powerId == "recruit" then
+		return PowerEffects.getRecruitTargets(Game.state, piece)
+	elseif powerId == "multiply" then
+		return PowerEffects.getMultiplyTargets(Game.state, piece)
+	end
+	return {}
+end
+
+function Game.executepower(piece, powerId, target)
+	if powerId == "destroy_row" then
+		Game.state = PowerEffects.activateDestroyRow(Game.state, piece)
+	elseif powerId == "destroy_column" then
+		Game.state = PowerEffects.activateDestroyColumn(Game.state, piece)
+	elseif powerId == "raise_tile" and target then
+		Game.state = PowerEffects.activateRaiseTile(Game.state, piece, target)
+	elseif powerId == "lower_tile" and target then
+		Game.state = PowerEffects.activateLowerTile(Game.state, piece, target)
+	elseif powerId == "recruit" and target then
+		Game.state = PowerEffects.activateRecruit(Game.state, piece, target)
+	elseif powerId == "multiply" and target then
+		Game.state = PowerEffects.activateMultiply(Game.state, piece, target)
+	elseif powerId == "bomb" then
+		Game.state = PowerEffects.activateBomb(Game.state, piece)
+	elseif powerId == "relocate" then
+		Game.state = PowerEffects.activateRelocate(Game.state, piece)
+	elseif powerId == "move_again" then
+		Game.state = PowerEffects.activateMoveAgain(Game.state, piece)
+	end
+
+	-- Clear power mode and refresh selection
+	Game.powerMode = nil
+	Game.powerTargets = {}
+
+	-- Refresh valid moves if piece still selected
+	if Game.state.selectedPiece then
+		Game.state = GameLogic.selectPiece(Game.state, Game.state.selectedPiece)
 	end
 end
 
