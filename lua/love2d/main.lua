@@ -2,8 +2,15 @@
 -- A faithful recreation of the classic Flash strategy game
 
 local Game = require("src.game")
+local lovetest = require("test.lovetest")
 
-function love.load()
+function love.load(arg)
+	-- Run tests if --test flag is passed
+	if lovetest.detect(arg) then
+		lovetest.run()
+		return
+	end
+
 	love.window.setTitle("Quadradius - Love2D")
 	Game.init()
 end

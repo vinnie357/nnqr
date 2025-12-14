@@ -1,5 +1,7 @@
 # Quadradius - Love2D Implementation
 
+*Built with Claude AI*
+
 A Lua/Love2D implementation of Quadradius, the classic Flash strategy game.
 
 ## Prerequisites
