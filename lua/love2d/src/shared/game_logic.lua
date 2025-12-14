@@ -4,6 +4,7 @@
 
 local Height = require("src.shared.height")
 local Logic = require("src.logic")
+local PowerEffects = require("src.shared.power_effects")
 
 local GameLogic = {}
 
@@ -118,6 +119,7 @@ function GameLogic.getValidMoves(state, piece)
 end
 
 --- Select a piece and calculate its valid moves
+--- Uses PowerEffects.getValidMovesWithPowers to consider piece flags
 ---@param state table Game state
 ---@param piece table|nil Piece to select, or nil to deselect
 ---@return table Updated game state
@@ -134,7 +136,8 @@ function GameLogic.selectPiece(state, piece)
 	end
 
 	state.selectedPiece = piece
-	state.validMoves = GameLogic.getValidMoves(state, piece)
+	-- Use power-aware move calculation that considers flags like canMoveDiagonally, isJumpProof
+	state.validMoves = PowerEffects.getValidMovesWithPowers(state, piece)
 	return state
 end
 
@@ -148,6 +151,11 @@ function GameLogic.movePiece(state, piece, toRow, toCol)
 	-- Check for capture
 	local targetPiece = GameLogic.getPieceAt(state, toRow, toCol)
 	if targetPiece then
+		-- Reveal invisible attacker if capturing
+		if piece.isInvisible then
+			PowerEffects.revealInvisible(piece)
+		end
+
 		-- Remove captured piece
 		for i, p in ipairs(state.pieces) do
 			if p == targetPiece then

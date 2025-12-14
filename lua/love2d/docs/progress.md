@@ -11,10 +11,10 @@
 - [x] Phase 2: Terrain Height System
 - [~] Phase 3: Network Architecture (protocol done, server pending)
 - [x] Phase 4: Power-Up Framework (core logic)
-- [ ] Phase 4B: Power Activation & Animations
+- [x] Phase 4B: Power Activation & Animations
 - [ ] Phase 5: Polish & Integration
 
-**Test Count: 243 passing**
+**Test Count: 376 passing**
 
 ---
 
@@ -128,27 +128,29 @@
 
 ---
 
-## Phase 4B: Power Activation & Animations - IN PROGRESS
+## Phase 4B: Power Activation & Animations - COMPLETE
 
 ### Design Decisions
 - Animation style: Elaborate (~0.8s+) with particles, screen shake, multi-phase
 - Blocking behavior: Hybrid (destructive powers block, passive powers don't)
 - Invisibility: Semi-transparent (30%) for now, enhance with multiplayer
 
-### Tests - PENDING
-- [ ] Step 1: Animation foundation (~7 tests)
-- [ ] Step 2: Animation queue (~7 tests)
-- [ ] Step 3: Animation type definitions (~12 tests)
-- [ ] Step 4: Animation interpolation (~6 tests)
-- [ ] Step 5: Power logic wiring (~7 tests)
-- [ ] Step 6: Game integration (~10 tests)
+### Tests - COMPLETE
+- [x] Step 1: Animation foundation (7 tests)
+- [x] Step 2: Animation queue (7 tests)
+- [x] Step 3: Animation type definitions (24 tests)
+- [x] Step 4: Animation interpolation (8 tests)
+- [x] Step 5: Easing functions (66 tests)
+- [x] Step 6: Game animations integration (15 tests)
+- [x] Step 7: Power-aware movement (6 tests)
 
-### Implementation - PENDING
-- [ ] `src/shared/animations.lua` - Animation module
-- [ ] Animation queue in game.lua
-- [ ] Passive power integration in executepower()
-- [ ] Use getValidMovesWithPowers() for move calculation
-- [ ] Visual rendering of animations
+### Implementation - COMPLETE
+- [x] `src/shared/animations.lua` - Animation module (476 lines)
+- [x] `src/shared/game_animations.lua` - Game integration layer (127 lines)
+- [x] Animation queue in game.lua
+- [x] Passive power integration in executepower()
+- [x] Use getValidMovesWithPowers() for move calculation
+- [x] Visual rendering of all 12 animation types
 
 ---
 
@@ -220,6 +222,40 @@
 
 **Total Tests: 197 passing**
 
+### Session 3 (Phase 4B)
+**TDD Cycle - Animation System:**
+- Wrote 112 animation tests (RED)
+- Implemented `src/shared/animations.lua` (GREEN)
+- Core animation state, easing functions, animation factories, queue system
+
+**TDD Cycle - Game Animations Integration:**
+- Wrote 15 game animations integration tests (RED)
+- Implemented `src/shared/game_animations.lua` (GREEN)
+- Bridge between animation system and game logic
+
+**TDD Cycle - Power-Aware Movement:**
+- Added 6 power-aware movement tests to game_logic_spec.lua (RED)
+- Updated `GameLogic.selectPiece()` to use `PowerEffects.getValidMovesWithPowers()` (GREEN)
+
+**Visual Rendering Integration:**
+- Added animation queue to `game.lua`
+- Implemented visual rendering for all 12 power animations
+- Added input blocking during destructive power animations
+- Animations trigger effects via onComplete callbacks
+
+**Files Created This Session:**
+- `src/shared/animations.lua` - Core animation system (476 lines)
+- `src/shared/game_animations.lua` - Game integration layer (127 lines)
+- `spec/animations_spec.lua` - Animation tests (112 tests)
+- `spec/game_animations_spec.lua` - Integration tests (15 tests)
+
+**Files Modified This Session:**
+- `src/game.lua` - Animation integration, visual rendering
+- `src/shared/game_logic.lua` - Power-aware movement
+- `spec/game_logic_spec.lua` - Power-aware tests
+
+**Total Tests: 376 passing** (+133 from Phase 4B)
+
 ---
 
 ## Test Breakdown
@@ -229,19 +265,10 @@
 | logic_spec.lua | 43 |
 | height_spec.lua | 42 |
 | protocol_spec.lua | 27 |
-| game_logic_spec.lua | 31 |
+| game_logic_spec.lua | 37 |
 | powers_spec.lua | 30 |
 | rendering_spec.lua | 24 |
 | power_effects_spec.lua | 46 |
-| **Total** | **243** |
-
-### Phase 4B Target (Additional)
-
-| Spec File | Planned Tests |
-|-----------|---------------|
-| animations_spec.lua | ~40 |
-| game_integration_spec.lua | ~10 |
-| power_effects_spec.lua | +4 |
-| game_logic_spec.lua | +3 |
-| **Phase 4B Total** | **~57** |
-| **Grand Total Target** | **~300** |
+| animations_spec.lua | 112 |
+| game_animations_spec.lua | 15 |
+| **Total** | **376** |

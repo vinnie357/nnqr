@@ -6,6 +6,8 @@ local Rendering = require("src.shared.rendering")
 local Height = require("src.shared.height")
 local Powers = require("src.shared.powers")
 local PowerEffects = require("src.shared.power_effects")
+local GameAnimations = require("src.shared.game_animations")
+local Animations = require("src.shared.animations")
 
 local Game = {}
 
@@ -23,6 +25,9 @@ Game.orbs = {}
 -- Power activation mode
 Game.powerMode = nil -- nil or {powerId, piece, targets}
 Game.powerTargets = {}
+
+-- Animation state
+Game.animations = nil
 
 -- Colors - Clean Modern Style
 Game.colors = {
@@ -52,6 +57,9 @@ function Game.init()
 
 	-- Initialize orbs
 	Game.orbs = {}
+
+	-- Initialize animation system
+	Game.animations = GameAnimations.create()
 end
 
 function Game.generateTerrain()
@@ -67,6 +75,11 @@ function Game.generateTerrain()
 end
 
 function Game.update(dt)
+	-- Update animations
+	if Game.animations then
+		GameAnimations.update(Game.animations, dt)
+	end
+
 	-- Update hovered tile
 	local mx, my = love.mouse.getPosition()
 	local row, col = Rendering.screenToBoard(mx, my, Game.boardOffsetX, Game.boardOffsetY)
@@ -83,6 +96,7 @@ function Game.draw()
 	Game.drawValidMoves()
 	Game.drawPowerTargets()
 	Game.drawPieces()
+	Game.drawAnimations()
 	Game.drawUI()
 	Game.drawPowerMenu()
 end
@@ -380,7 +394,397 @@ function Game.drawUI()
 	end
 end
 
+function Game.drawAnimations()
+	if not Game.animations then
+		return
+	end
+
+	local activeAnims = GameAnimations.getActiveAnimations(Game.animations)
+	for _, anim in ipairs(activeAnims) do
+		local progress = Animations.getProgress(anim)
+		Game.drawAnimation(anim, progress)
+	end
+end
+
+function Game.drawAnimation(anim, progress)
+	if anim.type == "destroy_row" then
+		Game.drawDestroyRowAnimation(anim, progress)
+	elseif anim.type == "destroy_column" then
+		Game.drawDestroyColumnAnimation(anim, progress)
+	elseif anim.type == "bomb" then
+		Game.drawBombAnimation(anim, progress)
+	elseif anim.type == "relocate" then
+		Game.drawRelocateAnimation(anim, progress)
+	elseif anim.type == "raise_tile" or anim.type == "lower_tile" then
+		Game.drawTileHeightAnimation(anim, progress)
+	elseif anim.type == "recruit" then
+		Game.drawRecruitAnimation(anim, progress)
+	elseif anim.type == "multiply" then
+		Game.drawMultiplyAnimation(anim, progress)
+	elseif anim.type == "move_diagonal" then
+		Game.drawMoveDiagonalAnimation(anim, progress)
+	elseif anim.type == "jump_proof" then
+		Game.drawJumpProofAnimation(anim, progress)
+	elseif anim.type == "invisible" then
+		Game.drawInvisibleAnimation(anim, progress)
+	elseif anim.type == "move_again" then
+		Game.drawMoveAgainAnimation(anim, progress)
+	end
+end
+
+-- Destroy Row: Horizontal energy wave sweeping across the row
+function Game.drawDestroyRowAnimation(anim, progress)
+	local wavePos = Animations.getDestroyRowWavePosition(anim, progress)
+	local row = anim.data.row
+	local originCol = anim.data.originCol
+
+	-- Calculate wave X position (0-1 maps to full board width)
+	for col = 1, Game.state.cols do
+		local colProgress = (col - 1) / (Game.state.cols - 1)
+		local distance = math.abs(colProgress - wavePos)
+
+		if distance < 0.15 then
+			local height = GameLogic.getHeight(Game.state, row, col)
+			local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+			y = y + Rendering.getHeightOffset(height)
+
+			-- Bright energy glow
+			local intensity = 1 - (distance / 0.15)
+			love.graphics.setColor(1, 0.8, 0.2, intensity * 0.8)
+			local verts = Rendering.getTileVertices(x, y)
+			love.graphics.polygon("fill", verts)
+
+			-- Energy core
+			love.graphics.setColor(1, 1, 1, intensity)
+			love.graphics.circle("fill", x, y, 8 * intensity)
+		end
+	end
+
+	-- Draw horizontal beam
+	local startX, startY = Rendering.boardToScreen(row, 1, Game.boardOffsetX, Game.boardOffsetY)
+	local endX, endY = Rendering.boardToScreen(row, Game.state.cols, Game.boardOffsetX, Game.boardOffsetY)
+	local beamX = startX + (endX - startX) * wavePos
+
+	love.graphics.setColor(1, 0.9, 0.3, 0.6)
+	love.graphics.setLineWidth(4)
+	love.graphics.line(beamX - 30, startY, beamX + 30, startY)
+	love.graphics.setLineWidth(1)
+end
+
+-- Destroy Column: Vertical energy wave sweeping down the column
+function Game.drawDestroyColumnAnimation(anim, progress)
+	local wavePos = Animations.getDestroyRowWavePosition(anim, progress) -- reuse same easing
+	local col = anim.data.col
+	local originRow = anim.data.originRow
+
+	for row = 1, Game.state.rows do
+		local rowProgress = (row - 1) / (Game.state.rows - 1)
+		local distance = math.abs(rowProgress - wavePos)
+
+		if distance < 0.15 then
+			local height = GameLogic.getHeight(Game.state, row, col)
+			local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+			y = y + Rendering.getHeightOffset(height)
+
+			local intensity = 1 - (distance / 0.15)
+			love.graphics.setColor(0.2, 0.8, 1, intensity * 0.8)
+			local verts = Rendering.getTileVertices(x, y)
+			love.graphics.polygon("fill", verts)
+
+			love.graphics.setColor(1, 1, 1, intensity)
+			love.graphics.circle("fill", x, y, 8 * intensity)
+		end
+	end
+
+	-- Draw vertical beam
+	local startX, startY = Rendering.boardToScreen(1, col, Game.boardOffsetX, Game.boardOffsetY)
+	local endX, endY = Rendering.boardToScreen(Game.state.rows, col, Game.boardOffsetX, Game.boardOffsetY)
+	local beamY = startY + (endY - startY) * wavePos
+
+	love.graphics.setColor(0.3, 0.9, 1, 0.6)
+	love.graphics.setLineWidth(4)
+	love.graphics.line(startX, beamY - 30, startX, beamY + 30)
+	love.graphics.setLineWidth(1)
+end
+
+-- Bomb: Expanding explosion circle with screen shake effect
+function Game.drawBombAnimation(anim, progress)
+	local row, col = anim.data.row, anim.data.col
+	local height = GameLogic.getHeight(Game.state, row, col)
+	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+	y = y + Rendering.getHeightOffset(height)
+
+	local radius = Animations.getBombRadius(anim, progress) * Rendering.TILE_WIDTH
+
+	-- Outer glow
+	love.graphics.setColor(1, 0.5, 0, 0.3)
+	love.graphics.circle("fill", x, y, radius * 1.5)
+
+	-- Main explosion
+	love.graphics.setColor(1, 0.7, 0.2, 0.7)
+	love.graphics.circle("fill", x, y, radius)
+
+	-- Inner core
+	love.graphics.setColor(1, 1, 0.8, 0.9)
+	love.graphics.circle("fill", x, y, radius * 0.5)
+
+	-- Explosion particles
+	local particleCount = 8
+	for i = 1, particleCount do
+		local angle = (i / particleCount) * math.pi * 2 + progress * 2
+		local dist = radius * (0.8 + math.sin(progress * 10 + i) * 0.3)
+		local px = x + math.cos(angle) * dist
+		local py = y + math.sin(angle) * dist * 0.5 -- isometric squash
+
+		love.graphics.setColor(1, 0.8, 0.3, 1 - progress)
+		love.graphics.circle("fill", px, py, 4)
+	end
+end
+
+-- Relocate: Fade out -> particles -> fade in at new location
+function Game.drawRelocateAnimation(anim, progress)
+	local alpha = Animations.getRelocateFadeAlpha(anim, progress)
+	local row, col = Animations.getRelocatePosition(anim, progress)
+	local height = GameLogic.getHeight(Game.state, row, col)
+	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+	y = y + Rendering.getHeightOffset(height)
+
+	-- Teleport particles
+	local particleAlpha = 1 - math.abs(progress - 0.5) * 2
+	if particleAlpha > 0 then
+		for i = 1, 12 do
+			local angle = (i / 12) * math.pi * 2
+			local dist = 30 * particleAlpha
+			local px = x + math.cos(angle) * dist
+			local py = y + math.sin(angle) * dist * 0.5
+
+			love.graphics.setColor(0.6, 0.3, 1, particleAlpha * 0.8)
+			love.graphics.circle("fill", px, py - 10, 3)
+		end
+	end
+
+	-- Glow ring at position
+	love.graphics.setColor(0.7, 0.4, 1, alpha * 0.5)
+	love.graphics.setLineWidth(3)
+	love.graphics.ellipse("line", x, y - 10, 25, 12)
+	love.graphics.setLineWidth(1)
+end
+
+-- Raise/Lower Tile: Tile smoothly changes height
+function Game.drawTileHeightAnimation(anim, progress)
+	local row, col = anim.data.row, anim.data.col
+	local currentHeight = Animations.getTileHeightOffset(anim, progress)
+
+	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+	y = y + Rendering.getHeightOffset(currentHeight)
+
+	-- Highlight tile being modified
+	local isRaising = anim.type == "raise_tile"
+	if isRaising then
+		love.graphics.setColor(0.3, 1, 0.5, 0.5 * (1 - progress))
+	else
+		love.graphics.setColor(1, 0.5, 0.3, 0.5 * (1 - progress))
+	end
+
+	local verts = Rendering.getTileVertices(x, y)
+	love.graphics.polygon("fill", verts)
+
+	-- Rising/falling particles
+	for i = 1, 6 do
+		local angle = (i / 6) * math.pi * 2
+		local dist = 20
+		local px = x + math.cos(angle) * dist
+		local baseY = y + math.sin(angle) * dist * 0.5
+		local particleOffset = isRaising and (-20 * progress) or (20 * progress)
+
+		love.graphics.setColor(isRaising and 0.5 or 1, isRaising and 1 or 0.5, 0.3, 1 - progress)
+		love.graphics.circle("fill", px, baseY + particleOffset, 2)
+	end
+end
+
+-- Recruit: Enemy piece changes color to your team
+function Game.drawRecruitAnimation(anim, progress)
+	local row, col = anim.data.row, anim.data.col
+	local height = GameLogic.getHeight(Game.state, row, col)
+	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+	y = y + Rendering.getHeightOffset(height)
+
+	local r, g, b = Animations.getRecruitColor(anim, progress)
+
+	-- Conversion glow ring
+	love.graphics.setColor(r, g, b, 0.6)
+	love.graphics.setLineWidth(3)
+	love.graphics.ellipse("line", x, y - 10, 30 - 5 * progress, 15 - 2.5 * progress)
+	love.graphics.setLineWidth(1)
+
+	-- Spiraling particles
+	for i = 1, 8 do
+		local angle = (i / 8) * math.pi * 2 + progress * math.pi * 4
+		local dist = 25 * (1 - progress * 0.5)
+		local px = x + math.cos(angle) * dist
+		local py = y - 10 + math.sin(angle) * dist * 0.5
+
+		love.graphics.setColor(r, g, b, 1 - progress * 0.5)
+		love.graphics.circle("fill", px, py, 3)
+	end
+end
+
+-- Multiply: Clone splits from original piece
+function Game.drawMultiplyAnimation(anim, progress)
+	local fromRow, fromCol = anim.data.originRow, anim.data.originCol
+	local toRow, toCol = anim.data.targetRow, anim.data.targetCol
+
+	local fromHeight = GameLogic.getHeight(Game.state, fromRow, fromCol)
+	local toHeight = GameLogic.getHeight(Game.state, toRow, toCol)
+
+	local fromX, fromY = Rendering.boardToScreen(fromRow, fromCol, Game.boardOffsetX, Game.boardOffsetY)
+	fromY = fromY + Rendering.getHeightOffset(fromHeight)
+
+	local toX, toY = Rendering.boardToScreen(toRow, toCol, Game.boardOffsetX, Game.boardOffsetY)
+	toY = toY + Rendering.getHeightOffset(toHeight)
+
+	-- Interpolate clone position
+	local easedProgress = Animations.ease.easeOutBack(progress)
+	local cloneX = fromX + (toX - fromX) * easedProgress
+	local cloneY = fromY + (toY - fromY) * easedProgress
+
+	-- Draw ghost clone
+	love.graphics.setColor(1, 1, 1, 0.7 * progress)
+	love.graphics.ellipse("fill", cloneX, cloneY - 10, 18, 9)
+
+	-- Trail particles
+	for i = 1, 5 do
+		local t = (progress - i * 0.1)
+		if t > 0 then
+			local trailX = fromX + (toX - fromX) * t
+			local trailY = fromY + (toY - fromY) * t
+			love.graphics.setColor(0.8, 0.9, 1, 0.3 * (1 - t))
+			love.graphics.circle("fill", trailX, trailY - 10, 4)
+		end
+	end
+end
+
+-- Move Diagonal: Diagonal arrows flash around piece
+function Game.drawMoveDiagonalAnimation(anim, progress)
+	local row, col = anim.data.row, anim.data.col
+	local height = GameLogic.getHeight(Game.state, row, col)
+	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+	y = y + Rendering.getHeightOffset(height)
+
+	-- Pulsing diagonal indicators
+	local alpha = Animations.ease.easeOutQuad(1 - progress)
+	local scale = Animations.ease.easeOutBack(progress)
+
+	-- Four diagonal directions
+	local dirs = { { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } }
+	for _, dir in ipairs(dirs) do
+		local dx, dy = dir[1] * 25 * scale, dir[2] * 15 * scale
+		love.graphics.setColor(0.3, 0.9, 0.5, alpha * 0.8)
+		love.graphics.circle("fill", x + dx, y - 10 + dy, 5)
+
+		-- Arrow line
+		love.graphics.setLineWidth(2)
+		love.graphics.line(x, y - 10, x + dx * 0.8, y - 10 + dy * 0.8)
+		love.graphics.setLineWidth(1)
+	end
+end
+
+-- Jump Proof: Shield bubble appears around piece
+function Game.drawJumpProofAnimation(anim, progress)
+	local row, col = anim.data.row, anim.data.col
+	local height = GameLogic.getHeight(Game.state, row, col)
+	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+	y = y + Rendering.getHeightOffset(height)
+
+	local scale = Animations.getShieldScale(anim, progress)
+
+	-- Shield bubble
+	love.graphics.setColor(0.3, 0.7, 1, 0.4 * scale)
+	love.graphics.ellipse("fill", x, y - 12, 28 * scale, 16 * scale)
+
+	-- Shield outline
+	love.graphics.setColor(0.5, 0.8, 1, 0.8)
+	love.graphics.setLineWidth(2)
+	love.graphics.ellipse("line", x, y - 12, 28 * scale, 16 * scale)
+	love.graphics.setLineWidth(1)
+
+	-- Shield sparkles
+	if progress < 0.8 then
+		for i = 1, 4 do
+			local angle = (i / 4) * math.pi * 2 + progress * 3
+			local dist = 20 * scale
+			local sx = x + math.cos(angle) * dist
+			local sy = y - 12 + math.sin(angle) * dist * 0.5
+
+			love.graphics.setColor(1, 1, 1, 1 - progress)
+			love.graphics.circle("fill", sx, sy, 2)
+		end
+	end
+end
+
+-- Invisible: Piece fades to semi-transparent
+function Game.drawInvisibleAnimation(anim, progress)
+	local row, col = anim.data.row, anim.data.col
+	local height = GameLogic.getHeight(Game.state, row, col)
+	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+	y = y + Rendering.getHeightOffset(height)
+
+	local alpha = Animations.getInvisibleAlpha(anim, progress)
+
+	-- Fading mist effect
+	love.graphics.setColor(0.7, 0.7, 0.9, (1 - alpha) * 0.5)
+	love.graphics.ellipse("fill", x, y - 10, 25, 12)
+
+	-- Sparkling fade particles
+	for i = 1, 6 do
+		local angle = (i / 6) * math.pi * 2 + progress * 2
+		local dist = 20 + 10 * progress
+		local px = x + math.cos(angle) * dist
+		local py = y - 10 + math.sin(angle) * dist * 0.5
+
+		love.graphics.setColor(0.8, 0.8, 1, (1 - progress) * 0.6)
+		love.graphics.circle("fill", px, py, 2)
+	end
+end
+
+-- Move Again: Speed lines burst from piece
+function Game.drawMoveAgainAnimation(anim, progress)
+	local row, col = anim.data.row, anim.data.col
+	local height = GameLogic.getHeight(Game.state, row, col)
+	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+	y = y + Rendering.getHeightOffset(height)
+
+	-- Burst of speed lines
+	local lineCount = 12
+	for i = 1, lineCount do
+		local angle = (i / lineCount) * math.pi * 2
+		local innerDist = 15 + 20 * progress
+		local outerDist = 25 + 40 * progress
+
+		local x1 = x + math.cos(angle) * innerDist
+		local y1 = y - 10 + math.sin(angle) * innerDist * 0.5
+		local x2 = x + math.cos(angle) * outerDist
+		local y2 = y - 10 + math.sin(angle) * outerDist * 0.5
+
+		love.graphics.setColor(1, 0.9, 0.3, 1 - progress)
+		love.graphics.setLineWidth(2)
+		love.graphics.line(x1, y1, x2, y2)
+	end
+	love.graphics.setLineWidth(1)
+
+	-- Central flash
+	if progress < 0.3 then
+		love.graphics.setColor(1, 1, 0.8, 1 - progress * 3)
+		love.graphics.circle("fill", x, y - 10, 15)
+	end
+end
+
 function Game.mousepressed(x, y, button)
+	-- Block input during blocking animations
+	if Game.animations and GameAnimations.isBlocking(Game.animations) then
+		return
+	end
+
 	if button == 1 and Game.state.gameState == "playing" then
 		local row, col = Rendering.screenToBoard(x, y, Game.boardOffsetX, Game.boardOffsetY)
 
@@ -464,14 +868,24 @@ function Game.mousereleased(x, y, button) end
 function Game.mousemoved(x, y, dx, dy) end
 
 function Game.keypressed(key)
+	-- Allow escape and reset even during animations
 	if key == "escape" then
 		if Game.powerMode then
 			Game.powerMode = nil
 			Game.powerTargets = {}
 		end
+		return
 	elseif key == "r" then
 		Game.init()
-	elseif key == "h" and Game.hoveredTile then
+		return
+	end
+
+	-- Block other input during blocking animations
+	if Game.animations and GameAnimations.isBlocking(Game.animations) then
+		return
+	end
+
+	if key == "h" and Game.hoveredTile then
 		local h = GameLogic.getHeight(Game.state, Game.hoveredTile.row, Game.hoveredTile.col)
 		Game.state = GameLogic.setHeight(Game.state, Game.hoveredTile.row, Game.hoveredTile.col, h + 1)
 		if Game.state.selectedPiece then
@@ -532,30 +946,87 @@ function Game.getPowerTargets(piece, powerId)
 end
 
 function Game.executepower(piece, powerId, target)
+	local anim = nil
+
+	-- Create animation with onComplete callback to apply effect
 	if powerId == "destroy_row" then
-		Game.state = PowerEffects.activateDestroyRow(Game.state, piece)
+		anim = Animations.createDestroyRow(piece.row, piece.col, function()
+			Game.state = PowerEffects.activateDestroyRow(Game.state, piece)
+			Game.refreshSelection()
+		end)
 	elseif powerId == "destroy_column" then
-		Game.state = PowerEffects.activateDestroyColumn(Game.state, piece)
+		anim = Animations.createDestroyColumn(piece.col, piece.row, function()
+			Game.state = PowerEffects.activateDestroyColumn(Game.state, piece)
+			Game.refreshSelection()
+		end)
 	elseif powerId == "raise_tile" and target then
-		Game.state = PowerEffects.activateRaiseTile(Game.state, piece, target)
+		local fromHeight = GameLogic.getHeight(Game.state, target.row, target.col)
+		anim = Animations.createRaiseTile(target.row, target.col, fromHeight, fromHeight + 1, function()
+			Game.state = PowerEffects.activateRaiseTile(Game.state, piece, target)
+			Game.refreshSelection()
+		end)
 	elseif powerId == "lower_tile" and target then
-		Game.state = PowerEffects.activateLowerTile(Game.state, piece, target)
+		local fromHeight = GameLogic.getHeight(Game.state, target.row, target.col)
+		anim = Animations.createLowerTile(target.row, target.col, fromHeight, fromHeight - 1, function()
+			Game.state = PowerEffects.activateLowerTile(Game.state, piece, target)
+			Game.refreshSelection()
+		end)
 	elseif powerId == "recruit" and target then
-		Game.state = PowerEffects.activateRecruit(Game.state, piece, target)
+		anim = Animations.createRecruit(target.row, target.col, target.player, piece.player, function()
+			Game.state = PowerEffects.activateRecruit(Game.state, piece, target)
+			Game.refreshSelection()
+		end)
 	elseif powerId == "multiply" and target then
-		Game.state = PowerEffects.activateMultiply(Game.state, piece, target)
+		anim = Animations.createMultiply(piece.row, piece.col, target.row, target.col, function()
+			Game.state = PowerEffects.activateMultiply(Game.state, piece, target)
+			Game.refreshSelection()
+		end)
 	elseif powerId == "bomb" then
-		Game.state = PowerEffects.activateBomb(Game.state, piece)
+		anim = Animations.createBomb(piece.row, piece.col, function()
+			Game.state = PowerEffects.activateBomb(Game.state, piece)
+			Game.refreshSelection()
+		end)
 	elseif powerId == "relocate" then
+		-- For relocate, we need to calculate destination first for animation
+		-- For now, apply immediately and animate at new position
+		local oldRow, oldCol = piece.row, piece.col
 		Game.state = PowerEffects.activateRelocate(Game.state, piece)
+		anim = Animations.createRelocate(oldRow, oldCol, piece.row, piece.col, function()
+			Game.refreshSelection()
+		end)
 	elseif powerId == "move_again" then
-		Game.state = PowerEffects.activateMoveAgain(Game.state, piece)
+		anim = Animations.createMoveAgain(piece.row, piece.col, function()
+			Game.state = PowerEffects.activateMoveAgain(Game.state, piece)
+			Game.refreshSelection()
+		end)
+	elseif powerId == "move_diagonal" then
+		anim = Animations.createMoveDiagonal(piece.row, piece.col, function()
+			Game.state = PowerEffects.activateMoveDiagonal(Game.state, piece)
+			Game.refreshSelection()
+		end)
+	elseif powerId == "jump_proof" then
+		anim = Animations.createJumpProof(piece.row, piece.col, function()
+			Game.state = PowerEffects.activateJumpProof(Game.state, piece)
+			Game.refreshSelection()
+		end)
+	elseif powerId == "invisible" then
+		anim = Animations.createInvisible(piece.row, piece.col, function()
+			Game.state = PowerEffects.activateInvisible(Game.state, piece)
+			Game.refreshSelection()
+		end)
 	end
 
-	-- Clear power mode and refresh selection
+	-- Queue animation if created
+	if anim and Game.animations then
+		Animations.AnimationQueue.add(Game.animations.queue, anim)
+	end
+
+	-- Clear power mode
 	Game.powerMode = nil
 	Game.powerTargets = {}
+end
 
+function Game.refreshSelection()
 	-- Refresh valid moves if piece still selected
 	if Game.state.selectedPiece then
 		Game.state = GameLogic.selectPiece(Game.state, Game.state.selectedPiece)

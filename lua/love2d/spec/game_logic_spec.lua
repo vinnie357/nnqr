@@ -295,4 +295,116 @@ describe("GameLogic", function()
 			assert.is_nil(state.selectedPiece)
 		end)
 	end)
+
+	-- Step 5: Power-aware move calculation tests
+	describe("power-aware moves", function()
+		describe("diagonal movement flag", function()
+			it("includes diagonal moves when piece has canMoveDiagonally flag", function()
+				local state = GameLogic.createInitialState()
+				local piece = GameLogic.getPieceAt(state, 2, 5)
+				piece.canMoveDiagonally = true
+
+				state = GameLogic.selectPiece(state, piece)
+
+				-- Should have diagonal move to row 3, col 6
+				local hasDiagonal = false
+				for _, move in ipairs(state.validMoves) do
+					if move.row == 3 and move.col == 6 then
+						hasDiagonal = true
+						break
+					end
+				end
+				assert.is_true(hasDiagonal)
+			end)
+
+			it("excludes diagonal moves when piece does not have flag", function()
+				local state = GameLogic.createInitialState()
+				local piece = GameLogic.getPieceAt(state, 2, 5)
+				-- No canMoveDiagonally flag
+
+				state = GameLogic.selectPiece(state, piece)
+
+				-- Should NOT have diagonal move to row 3, col 6
+				local hasDiagonal = false
+				for _, move in ipairs(state.validMoves) do
+					if move.row == 3 and move.col == 6 then
+						hasDiagonal = true
+						break
+					end
+				end
+				assert.is_false(hasDiagonal)
+			end)
+		end)
+
+		describe("jump proof flag", function()
+			it("excludes capture of piece with isJumpProof flag", function()
+				local state = GameLogic.createInitialState()
+				-- Move P1 piece adjacent to P2
+				local attacker = GameLogic.getPieceAt(state, 2, 5)
+				attacker.row = 6
+
+				-- Give P2 piece jump_proof flag
+				local defender = GameLogic.getPieceAt(state, 7, 5)
+				defender.isJumpProof = true
+
+				state = GameLogic.selectPiece(state, attacker)
+
+				-- Should NOT be able to capture the jump proof piece
+				local canCapture = false
+				for _, move in ipairs(state.validMoves) do
+					if move.row == 7 and move.col == 5 then
+						canCapture = true
+						break
+					end
+				end
+				assert.is_false(canCapture)
+			end)
+
+			it("allows capture of piece without isJumpProof flag", function()
+				local state = GameLogic.createInitialState()
+				-- Move P1 piece adjacent to P2
+				local attacker = GameLogic.getPieceAt(state, 2, 5)
+				attacker.row = 6
+
+				local defender = GameLogic.getPieceAt(state, 7, 5)
+				-- No isJumpProof flag
+
+				state = GameLogic.selectPiece(state, attacker)
+
+				-- Should be able to capture
+				local canCapture = false
+				for _, move in ipairs(state.validMoves) do
+					if move.row == 7 and move.col == 5 then
+						canCapture = true
+						break
+					end
+				end
+				assert.is_true(canCapture)
+			end)
+		end)
+
+		describe("invisible flag", function()
+			it("reveals invisible piece when it captures", function()
+				local state = GameLogic.createInitialState()
+				-- Move P1 piece adjacent to P2
+				local attacker = GameLogic.getPieceAt(state, 2, 5)
+				attacker.row = 6
+				attacker.isInvisible = true
+
+				state = GameLogic.movePiece(state, attacker, 7, 5)
+
+				assert.is_false(attacker.isInvisible)
+			end)
+
+			it("keeps invisible piece hidden when moving to empty tile", function()
+				local state = GameLogic.createInitialState()
+				local piece = GameLogic.getPieceAt(state, 2, 5)
+				piece.isInvisible = true
+
+				state = GameLogic.movePiece(state, piece, 3, 5)
+
+				assert.is_true(piece.isInvisible)
+			end)
+		end)
+	end)
 end)
