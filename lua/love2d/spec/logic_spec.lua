@@ -209,4 +209,82 @@ describe("Logic", function()
 			assert.are.equal(3, #moves)
 		end)
 	end)
+
+	describe("isValidMoveWithHeight", function()
+		it("allows climbing 1 level", function()
+			assert.is_true(Logic.isValidMoveWithHeight(5, 5, 5, 6, 1, nil, 0, 1))
+		end)
+
+		it("rejects climbing 2 levels", function()
+			assert.is_false(Logic.isValidMoveWithHeight(5, 5, 5, 6, 1, nil, 0, 2))
+		end)
+
+		it("allows dropping any number of levels", function()
+			assert.is_true(Logic.isValidMoveWithHeight(5, 5, 5, 6, 1, nil, 4, 0))
+			assert.is_true(Logic.isValidMoveWithHeight(5, 5, 5, 6, 1, nil, 3, 1))
+		end)
+
+		it("allows same level movement", function()
+			assert.is_true(Logic.isValidMoveWithHeight(5, 5, 5, 6, 1, nil, 2, 2))
+		end)
+
+		it("still rejects diagonal movement", function()
+			assert.is_false(Logic.isValidMoveWithHeight(5, 5, 6, 6, 1, nil, 0, 0))
+		end)
+
+		it("still rejects capturing own piece", function()
+			assert.is_false(Logic.isValidMoveWithHeight(5, 5, 5, 6, 1, 1, 0, 0))
+		end)
+
+		it("allows capturing enemy on higher ground (1 level)", function()
+			assert.is_true(Logic.isValidMoveWithHeight(5, 5, 5, 6, 1, 2, 0, 1))
+		end)
+
+		it("rejects capturing enemy on much higher ground (2+ levels)", function()
+			assert.is_false(Logic.isValidMoveWithHeight(5, 5, 5, 6, 1, 2, 0, 2))
+		end)
+	end)
+
+	describe("getValidMovesWithHeight", function()
+		it("excludes tiles that are too high to climb", function()
+			local function getPieceAt()
+				return nil
+			end
+			local function getHeight(row, col)
+				if col == 6 then
+					return 2 -- Too high to climb from height 0
+				end
+				return 0
+			end
+			local moves = Logic.getValidMovesWithHeight(4, 5, 1, getPieceAt, getHeight, 0)
+			-- Should have 3 moves (up, down, left) but not right (col 6 is too high)
+			assert.are.equal(3, #moves)
+		end)
+
+		it("includes tiles that are reachable by climbing 1 level", function()
+			local function getPieceAt()
+				return nil
+			end
+			local function getHeight(row, col)
+				if col == 6 then
+					return 1 -- Can climb to this
+				end
+				return 0
+			end
+			local moves = Logic.getValidMovesWithHeight(4, 5, 1, getPieceAt, getHeight, 0)
+			assert.are.equal(4, #moves)
+		end)
+
+		it("includes tiles that can be dropped to", function()
+			local function getPieceAt()
+				return nil
+			end
+			local function getHeight(row, col)
+				return 0 -- All tiles at height 0
+			end
+			-- Piece is at height 4, can drop to any tile
+			local moves = Logic.getValidMovesWithHeight(4, 5, 1, getPieceAt, getHeight, 4)
+			assert.are.equal(4, #moves)
+		end)
+	end)
 end)

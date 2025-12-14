@@ -175,4 +175,72 @@ function Logic.nextPlayer(currentPlayer)
 	return currentPlayer == 1 and 2 or 1
 end
 
+--- Check if a move is valid considering terrain height
+--- @param fromRow number Starting row
+--- @param fromCol number Starting column
+--- @param toRow number Target row
+--- @param toCol number Target column
+--- @param piecePlayer number Player who owns the piece (1 or 2)
+--- @param targetPiecePlayer number|nil Player who owns target piece, or nil if empty
+--- @param fromHeight number Height of starting tile
+--- @param toHeight number Height of target tile
+--- @return boolean True if move is valid
+function Logic.isValidMoveWithHeight(
+	fromRow,
+	fromCol,
+	toRow,
+	toCol,
+	piecePlayer,
+	targetPiecePlayer,
+	fromHeight,
+	toHeight
+)
+	-- First check basic move validity (orthogonal, not own piece, etc.)
+	if not Logic.isValidMove(fromRow, fromCol, toRow, toCol, piecePlayer, targetPiecePlayer) then
+		return false
+	end
+
+	-- Check height difference
+	local heightDiff = toHeight - fromHeight
+
+	-- Can climb max 1 level, can drop any amount
+	if heightDiff > 1 then
+		return false
+	end
+
+	return true
+end
+
+--- Get all valid moves for a piece considering terrain height
+--- @param row number Piece row
+--- @param col number Piece column
+--- @param player number Player who owns the piece
+--- @param getPieceAt function Function to check if piece exists at position
+--- @param getHeight function Function to get height at position (row, col) -> number
+--- @param pieceHeight number Height of the tile the piece is on
+--- @return table Array of {row, col} valid move positions
+function Logic.getValidMovesWithHeight(row, col, player, getPieceAt, getHeight, pieceHeight)
+	local moves = {}
+	local directions = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } }
+
+	for _, dir in ipairs(directions) do
+		local newRow = row + dir[1]
+		local newCol = col + dir[2]
+
+		if Logic.isValidPosition(newRow, newCol) then
+			local targetPiece = getPieceAt(newRow, newCol)
+			local targetPlayer = targetPiece and targetPiece.player or nil
+			local targetHeight = getHeight(newRow, newCol)
+
+			if
+				Logic.isValidMoveWithHeight(row, col, newRow, newCol, player, targetPlayer, pieceHeight, targetHeight)
+			then
+				table.insert(moves, { row = newRow, col = newCol })
+			end
+		end
+	end
+
+	return moves
+end
+
 return Logic
