@@ -2,11 +2,12 @@
 
 ## Project Overview
 
-NNQR (Not Not Quadradius) is a multi-implementation recreation of Quadradius, the classic 2007 Flash strategy game. The project features:
+NNQR (Not Not Quadradius) is a multi-implementation recreation of Quadradius, the classic 2007 Flash strategy game, built collaboratively with Claude AI. Each implementation demonstrates AI-assisted game development across different technologies.
 
+**Key Features:**
 - **10x8 Board**: Extended from original 8x8 for enhanced gameplay
 - **70+ Power-ups**: Dramatic gameplay-altering abilities
-- **Multiple Implementations**: Exploring different game engines and languages
+- **Claude-Built Implementations**: Multiple versions in different languages/engines
 
 ## Implementations
 
@@ -15,9 +16,9 @@ NNQR (Not Not Quadradius) is a multi-implementation recreation of Quadradius, th
 **Status**: v0.2.0 deployed with 38+ powers
 
 ```bash
-mise run start           # Development mode
-mise run start-release   # Optimized build
-mise run test            # Run tests
+mise run rust-start           # Development mode
+mise run rust-start-release   # Optimized build
+mise run rust-test            # Run tests
 ```
 
 ### Lua/Love2D (Development)
@@ -58,15 +59,15 @@ nnqr/
 
 ### Rust/Bevy Tasks
 ```bash
-mise run start           # Run in dev mode
-mise run start-release   # Optimized release
-mise run test            # All tests
-mise run test-powers     # Power system tests
-mise run check           # Cargo check
-mise run clippy          # Lint
-mise run fmt             # Format
-mise run quality         # Full quality check
-mise run stats           # Project statistics
+mise run rust-start           # Run in dev mode
+mise run rust-start-release   # Optimized release
+mise run rust-test            # All tests
+mise run rust-test-powers     # Power system tests
+mise run rust-check           # Cargo check
+mise run rust-clippy          # Lint
+mise run rust-fmt             # Format
+mise run quality              # Full quality check
+mise run stats                # Project statistics
 ```
 
 ### Lua/Love2D Tasks

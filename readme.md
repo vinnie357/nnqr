@@ -1,8 +1,12 @@
 # Not Not Quadradius (NNQR)
 
-A multi-implementation recreation of **Quadradius**, the beloved Flash strategy game described as "checkers on steroids". Originally created by Jimmi Heiserman and Brad Kayal in 2007, this turn-based masterpiece combined simple movement mechanics with ~70 different power-ups that dramatically altered gameplay.
+A multi-implementation recreation of **Quadradius** built with **Claude AI**.
 
-This project recreates Quadradius using multiple modern technologies, allowing exploration of different game engines and programming languages.
+The original Quadradius was a beloved Flash strategy game described as "checkers on steroids", created by Jimmi Heiserman and Brad Kayal in 2007. This turn-based masterpiece combined simple movement mechanics with ~70 different power-ups that dramatically altered gameplay.
+
+## About This Project
+
+This project explores how Claude AI can assist in recreating a classic game across multiple programming languages and game engines. Each implementation is developed collaboratively with Claude, demonstrating AI-assisted game development workflows.
 
 ## Implementations
 
@@ -27,7 +31,7 @@ love .
 
 ### Using mise tasks
 ```bash
-mise run start           # Run Bevy version
+mise run rust-start      # Run Bevy version
 mise run love-start      # Run Love2D version
 ```
 
@@ -85,10 +89,10 @@ nnqr/
 
 ```bash
 # Rust/Bevy
-mise run start              # Development mode
-mise run start-release      # Optimized release
-mise run test               # Run tests
-mise run clippy             # Lint code
+mise run rust-start         # Development mode
+mise run rust-start-release # Optimized release
+mise run rust-test          # Run tests
+mise run rust-clippy        # Lint code
 
 # Lua/Love2D
 mise run love-start         # Run game
