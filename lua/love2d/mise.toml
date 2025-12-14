@@ -93,6 +93,7 @@ run = "love . --test"
 
 [tasks.test-busted]
 description = "Run Lua unit tests with busted"
+depends = ["setup"]
 run = """
 export PATH="$HOME/.luarocks/bin:$PATH"
 export LUA_PATH="$HOME/.luarocks/share/lua/5.1/?.lua;$HOME/.luarocks/share/lua/5.1/?/init.lua;./?.lua;./src/?.lua;;"
@@ -102,7 +103,7 @@ busted spec/
 
 [tasks.ci]
 description = "CI/precommit: format check and unit tests (no GUI)"
-depends = ["setup", "check", "test-busted"]
+depends = ["check", "test-busted"]
 
 [tasks.precommit]
 description = "Alias for ci task"
