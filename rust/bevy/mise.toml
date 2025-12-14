@@ -1,0 +1,50 @@
+[tools]
+rust = '1.87.0'
+zig = 'latest'
+"ubi:nushell/nushell" = { version = "latest", exe = "nu" }
+
+[tasks.setup]
+description = "Install system dependencies (Linux: libasound2-dev, libudev-dev)"
+run = """
+#!/usr/bin/env nu
+if $nu.os-info.name == "linux" {
+    print "📦 Installing Linux system dependencies for Bevy..."
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq libasound2-dev libudev-dev
+    print "✅ System dependencies installed"
+} else {
+    print "✅ macOS/Windows - no apt dependencies needed"
+}
+"""
+
+[tasks.build]
+description = "Build the project"
+run = "cargo build"
+
+[tasks.test]
+description = "Run tests"
+run = "cargo test"
+
+[tasks.fmt]
+description = "Format code"
+run = "cargo fmt"
+
+[tasks.fmt-check]
+description = "Check code formatting"
+run = "cargo fmt -- --check"
+
+[tasks.clippy]
+description = "Run clippy linter"
+run = "cargo clippy -- -D warnings"
+
+[tasks.check]
+description = "Run cargo check"
+run = "cargo check"
+
+[tasks.ci]
+description = "CI/precommit: setup, format check, test"
+depends = ["setup", "fmt-check", "test"]
+
+[tasks.precommit]
+description = "Alias for ci task"
+depends = ["ci"]

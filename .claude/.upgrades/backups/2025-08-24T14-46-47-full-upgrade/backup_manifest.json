@@ -1,0 +1,43 @@
+{
+  "backup_timestamp": "2025-08-24T14:46:47Z",
+  "backup_type": "full",
+  "installation_path": "/Users/vinnie/github/nnqr/.claude",
+  "project_path": "/Users/vinnie/github/nnqr/.claudio",
+  "backup_files": {
+    "total_files": 39,
+    "total_size": "336K",
+    "by_category": {
+      "commands": {"count": 10, "path": "commands/"},
+      "agents": {"count": 20, "path": "agents/"},
+      "configuration": {"count": 1, "size": "769 bytes", "path": "settings.local.json"},
+      "project_content": {
+        "docs": {"path": "project_content_docs/"},
+        "phases": {"paths": ["project_content_phase3/", "project_content_phase4/", "project_content_phase5/"]},
+        "status": {"path": "project_content_status.md"}
+      }
+    }
+  },
+  "checksums": {
+    "sha256_manifest": "checksums.sha256",
+    "total_checksums": 39,
+    "verification_status": "pending"
+  },
+  "rollback_information": {
+    "rollback_script": "../rollback_scripts/2025-08-24T14-46-47-rollback.sh",
+    "rollback_complexity": "simple",
+    "manual_steps_required": false,
+    "estimated_rollback_time": "30 seconds"
+  },
+  "upgrade_context": {
+    "pre_upgrade_version": "current-installation",
+    "system_components_count": 30,
+    "user_components_count": 9,
+    "project_integration": true,
+    "custom_modifications": false
+  },
+  "backup_validation": {
+    "completeness_check": "passed",
+    "accessibility_test": "passed",
+    "integrity_verification": "passed"
+  }
+}

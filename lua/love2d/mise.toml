@@ -1,0 +1,110 @@
+[tools]
+lua = '5.1'
+stylua = 'latest'
+"ubi:nushell/nushell" = { version = "latest", exe = "nu" }
+
+[env]
+# Love2D uses bundled LuaJIT - no separate lua needed for runtime
+# but we need lua for luarocks/busted testing
+
+[tasks.start]
+description = "Run Love2D Quadradius"
+run = "love ."
+
+[tasks.debug]
+description = "Run Love2D with debug console"
+run = "love . --console"
+
+[tasks.fmt]
+description = "Format Lua code with stylua"
+run = "stylua --glob '**/*.lua' --glob '!lib/**' --glob '!test/**' ."
+
+[tasks.check]
+description = "Check Lua code formatting"
+run = "stylua --check --glob '**/*.lua' --glob '!lib/**' --glob '!test/**' ."
+
+[tasks.setup]
+description = "Install luarocks and busted (platform-aware)"
+run = """
+#!/usr/bin/env nu
+
+let luarocks_version = "3.12.2"
+let install_dir = $"($env.HOME)/.local/bin"
+
+# Check if luarocks already installed
+if (which luarocks | is-not-empty) {
+    print "✅ luarocks already installed"
+} else {
+    print "📦 Installing luarocks..."
+    mkdir $install_dir
+
+    if $nu.os-info.name == "linux" {
+        # Linux: use prebuilt binary
+        let url = $"https://github.com/luarocks/luarocks/releases/download/v($luarocks_version)/luarocks-($luarocks_version)-linux-x86_64.zip"
+        let tmp_dir = (mktemp -d)
+
+        print $"Downloading binary from ($url)..."
+        http get $url | save $"($tmp_dir)/luarocks.zip"
+
+        cd $tmp_dir
+        unzip -q luarocks.zip
+        cp $"luarocks-($luarocks_version)-linux-x86_64/luarocks" $install_dir
+        chmod +x $"($install_dir)/luarocks"
+
+        rm -rf $tmp_dir
+        print $"✅ luarocks binary installed to ($install_dir)"
+    } else {
+        # macOS: build from source (no binary available)
+        print "No macOS binary available, building from source..."
+
+        let url = $"https://luarocks.org/releases/luarocks-($luarocks_version).tar.gz"
+        let tmp_dir = (mktemp -d)
+
+        http get $url | save $"($tmp_dir)/luarocks.tar.gz"
+
+        cd $tmp_dir
+        tar -xzf luarocks.tar.gz
+        cd $"luarocks-($luarocks_version)"
+
+        let lua_path = (which lua | get 0.path | path dirname | path dirname)
+        ./configure --prefix=($env.HOME)/.local --with-lua-include=($lua_path)/include
+        make
+        make install
+
+        rm -rf $tmp_dir
+        print $"✅ luarocks built and installed to ($install_dir)"
+    }
+}
+
+# Install busted
+print "📦 Installing busted..."
+# Use --tree for root (Docker), --local for regular users
+if (id -u | into int) == 0 {
+    luarocks install busted --tree ~/.luarocks
+} else {
+    luarocks install busted --local
+}
+print "✅ busted installed"
+"""
+
+[tasks.test]
+description = "Run Love2D tests in-game (lovetest)"
+run = "love . --test"
+
+[tasks.test-busted]
+description = "Run Lua unit tests with busted"
+depends = ["setup"]
+run = """
+export PATH="$HOME/.luarocks/bin:$PATH"
+export LUA_PATH="$HOME/.luarocks/share/lua/5.1/?.lua;$HOME/.luarocks/share/lua/5.1/?/init.lua;./?.lua;./src/?.lua;;"
+export LUA_CPATH="$HOME/.luarocks/lib/lua/5.1/?.so;;"
+busted spec/
+"""
+
+[tasks.ci]
+description = "CI/precommit: format check and unit tests (no GUI)"
+depends = ["check", "test-busted"]
+
+[tasks.precommit]
+description = "Alias for ci task"
+depends = ["ci"]

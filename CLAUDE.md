@@ -1,94 +1,158 @@
-# CLAUDE.md - Quadradius Implementation Guide
+# CLAUDE.md - NNQR Multi-Implementation Development Guide
 
-## Project Context
-You are implementing Quadradius, a turn-based strategy game described as "checkers on steroids", using Rust and the Bevy game engine. This is a faithful recreation of the 2007 Flash game featuring a **10x8 board** (10 columns, 8 rows), terrain heights, and approximately 70 different power-ups that dramatically alter gameplay.
+## Project Overview
 
-**IMPORTANT**: This guide works alongside comprehensive research and planning documents:
+NNQR (Not Not Quadradius) is a multi-implementation recreation of Quadradius, the classic 2007 Flash strategy game, built collaboratively with Claude AI. Each implementation demonstrates AI-assisted game development across different technologies.
 
-### Core Documents
-1. **Project Requirements Document (PRD)** - Contains complete game mechanics, technical architecture, and project specifications
-2. **Implementation Plan** - Contains strict phase-by-phase execution steps with acceptance criteria
-3. **Detailed Task List** - Phase-by-phase implementation guide with research references
+**Key Features:**
+- **10x8 Board**: Extended from original 8x8 for enhanced gameplay
+- **70+ Power-ups**: Dramatic gameplay-altering abilities
+- **Claude-Built Implementations**: Multiple versions in different languages/engines
 
-### Research Documents  
-4. **@research/game.md** - Comprehensive analysis of original Flash game mechanics and specifications
-5. **@research/isometric_design_patterns_bevy.md** - Technical patterns for isometric rendering in Bevy
-6. **@implementation_status.md** - Current project status and gap analysis
+## Implementations
 
-**Your workflow should be**: Detailed Task List (current phase) → Research Documents (specifications) → CLAUDE.md (best practices) → PRD (technical details)
+### Rust/Bevy (Production)
+**Path**: `rust/bevy/`
+**Status**: v0.2.0 deployed with 38+ powers
 
-## Implementation Philosophy
+```bash
+mise run rust-start           # Development mode
+mise run rust-start-release   # Optimized build
+mise run rust-test            # Run tests
+```
 
-### MANDATORY: Follow the Implementation Plan
-**NEVER deviate from the Implementation Plan phases without explicit instruction**
-- Phase 1 MUST be 100% complete before any power-up work
-- Each step's acceptance criteria must be fully met before proceeding
-- The plan exists to prevent common game development failures
+### Lua/Love2D (Development)
+**Path**: `lua/love2d/`
+**Status**: Initial scaffold
 
-### Start Simple, Build Incrementally
-- Begin with the absolute minimum: board rendering and basic piece movement
-- Add one feature at a time and test thoroughly before moving on
-- Resist the urge to implement multiple systems simultaneously
-- Each commit should represent a working, testable increment
+```bash
+mise run love-start      # Run game
+mise run love-fmt        # Format code
+```
 
-### Bevy Best Practices
-- Embrace the Entity Component System (ECS) architecture
-- Keep systems focused and single-responsibility
-- Use Resources for global game state, Components for entity data
-- Leverage Bevy's query system for efficient data access
-- Prefer composition over inheritance for game entities
+## Project Structure
 
-### Reference Document Usage
-- **Implementation Plan**: Your step-by-step roadmap (FOLLOW THIS STRICTLY)
-- **PRD**: Detailed specifications when you need technical details
-- **Rust Testing Guide**: Comprehensive testing strategy and examples for each phase
-- **CLAUDE.md** (this doc): Best practices and implementation guidance
+```
+nnqr/
+├── rust/bevy/           # Rust/Bevy implementation
+│   ├── src/             # Source code
+│   │   ├── components/  # ECS components
+│   │   ├── systems/     # Game systems
+│   │   ├── resources/   # Global resources
+│   │   └── tests/       # Test suites
+│   ├── features/        # Feature specifications
+│   ├── instructions/    # Implementation guides
+│   ├── bug_reports/     # Issue tracking
+│   └── .claudio/        # Claudio configuration
+├── lua/love2d/          # Love2D implementation
+│   ├── src/             # Lua source
+│   ├── assets/          # Game assets
+│   ├── lib/             # External libraries
+│   ├── features/        # Feature specs
+│   └── instructions/    # Implementation guides
+├── research/            # Shared research
+├── mise.toml            # Task runner
+└── CLAUDE.md            # This file
+```
 
-## Research Gap Analysis
+## Development Commands
 
-### ✅ COMPREHENSIVE COVERAGE ACHIEVED
-Based on analysis of all task phases and current project status, the existing research documents provide complete coverage for all implementation phases:
+### Rust/Bevy Tasks
+```bash
+mise run rust-start           # Run in dev mode
+mise run rust-start-release   # Optimized release
+mise run rust-test            # All tests
+mise run rust-test-powers     # Power system tests
+mise run rust-check           # Cargo check
+mise run rust-clippy          # Lint
+mise run rust-fmt             # Format
+mise run quality              # Full quality check
+mise run stats                # Project statistics
+```
 
-**Phase 1 (Documentation)**: Fully covered by research documents and current project analysis
-**Phase 2 (Combat Powers)**: Complete power specifications and implementation examples available  
-**Phase 3 (Board Manipulation)**: Terrain system and isometric rendering patterns documented
-**Phase 4 (Meta Powers)**: Power interaction concepts and balance considerations covered
-**Phase 5 (Enhancement)**: Performance optimization and visual effect patterns documented
+### Lua/Love2D Tasks
+```bash
+mise run love-start      # Run game
+mise run love-debug      # With debug console
+mise run love-fmt        # Format with stylua
+mise run love-check      # Check formatting
+```
 
-### 📋 RESEARCH COMPLETENESS VALIDATION
+## Rust/Bevy Development
 
-#### Board and Core Mechanics ✅
-- **@research/game.md** provides complete board specifications (10x8), terrain rules, movement restrictions
-- **@nnqr_prd.md** has updated technical architecture reflecting research findings
-- No gaps identified in core game mechanics documentation
+### Architecture
+- **ECS Design**: Entity-Component-System using Bevy
+- **3D Isometric**: True 3D perspective with PBR materials
+- **Power Framework**: Targeting, effects, duration, visual feedback
 
-#### Isometric Rendering ✅  
-- **@research/isometric_design_patterns_bevy.md** provides comprehensive technical implementation guide
-- Camera setup, coordinate transformations, depth sorting all documented
-- Mouse interaction patterns for isometric view covered
-- No gaps identified in rendering implementation
+### Key Components
+- `components/board.rs`: Board state and tiles
+- `components/piece.rs`: Game pieces and ownership
+- `components/power.rs`: Power definitions and effects
+- `systems/`: Game logic systems
 
-#### Power System ✅
-- **@research/game.md** catalogs all major power categories with specific examples
-- **@quadradius/POWER_IMPLEMENTATION_STATUS.md** documents current implementation state
-- Power balance considerations and known overpowered combinations documented
-- No gaps identified in power system specifications
+### Testing
+```bash
+cargo test                    # All tests
+cargo test power_tests        # Power system
+cargo test board_10x8_tests   # Board mechanics
+```
 
-#### Performance and Polish ✅
-- Original game performance issues documented as lessons learned
-- Optimization strategies for complex effects covered
-- Visual feedback requirements specified
-- No gaps identified in enhancement requirements
+### Windows Deployment
+```bash
+cd rust/bevy
+./deploy_windows.sh ./windows
+```
 
-### 🎯 RECOMMENDATION: PROCEED WITH IMPLEMENTATION
-**All necessary research is complete.** The current documentation set provides sufficient detail for all planned implementation phases. Focus should be on executing the detailed task list rather than additional research.
+## Lua/Love2D Development
 
-## Memories
-- When planning it is okay to use ultrathink  
-- Remember the code quality steps, and the windows build process for the exe
-- Test driven development start with tests to prove the feature, then use the implementation to make the tests pass
-- **Board is 10x8, not 8x8** - Critical correction from research
-- Current project is far more advanced than basic implementation guide suggests
-- Focus on power completion rather than rebuilding basic functionality
-- Always write tests first, Test Driven Development is the focus.
-- complex topics are stored in the research/ folder
+### Architecture
+- **Module-based**: Lua modules for game systems
+- **Love2D Callbacks**: Standard load/update/draw cycle
+- **Isometric Rendering**: 2.5D perspective
+
+### Key Files
+- `conf.lua`: Love2D configuration
+- `main.lua`: Entry point and callbacks
+- `src/game.lua`: Core game logic
+
+### Future Libraries
+- **3DreamEngine**: For 3D rendering
+- **LuaPill**: For isometric maps
+- **HUMP**: Helper utilities
+
+## Development Philosophy
+
+### Test-Driven Development
+- Write tests before implementation
+- Validate with real execution
+- Maintain 60+ FPS for Bevy version
+
+### Quality-First
+- Code formatting enforced
+- Linting with clippy (Rust) / stylua (Lua)
+- Comprehensive documentation
+
+### Research-Driven
+- Document patterns in `research/`
+- Troubleshooting guides for common issues
+- Performance optimization strategies
+
+## Current Focus
+
+### Rust/Bevy
+- Complete remaining 12+ powers
+- Board manipulation powers
+- Meta powers (power-on-power)
+
+### Lua/Love2D
+- Basic board rendering
+- Piece movement
+- 3DreamEngine integration
+
+## Resources
+
+- **Rust/Bevy Docs**: `rust/bevy/README.md`
+- **Love2D Docs**: `lua/love2d/README.md`
+- **Research**: `research/`
+- **mise Tasks**: `mise tasks` to list all

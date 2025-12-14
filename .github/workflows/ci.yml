@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # rust-bevy:
+  #   name: Rust/Bevy
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: rust/bevy
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: ./.github/actions/setup-mise
+  #     - name: Cache Cargo build artifacts
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: rust/bevy/target/
+  #         key: cargo-target-${{ runner.os }}-${{ hashFiles('rust/bevy/Cargo.lock') }}
+  #         restore-keys: |
+  #           cargo-target-${{ runner.os }}-
+  #     - name: Install tools
+  #       run: mise trust && mise install
+  #     - name: Run CI
+  #       run: mise run rust-ci
+
+  lua-love2d:
+    name: Lua/Love2D
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lua/love2d
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-mise
+
+      - name: Cache Lua mise installs
+        id: lua-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/mise/installs/lua
+          key: mise-lua-${{ runner.os }}-${{ hashFiles('lua/love2d/mise.toml') }}
+          restore-keys: |
+            mise-lua-${{ runner.os }}-
+
+      - name: Install Lua build dependencies
+        if: steps.lua-cache.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y libreadline-dev
+
+      - name: Cache LuaRocks packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.luarocks
+          key: luarocks-${{ runner.os }}-busted
+          restore-keys: |
+            luarocks-${{ runner.os }}-
+
+      - name: Install tools
+        run: mise trust && mise install
+
+      - name: Run CI
+        run: mise run lua-ci

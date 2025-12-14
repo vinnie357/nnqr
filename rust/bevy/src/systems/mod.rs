@@ -1,0 +1,103 @@
+pub mod area_targeting;
+pub mod automated_power_tests;
+pub mod board;
+pub mod board_3d;
+pub mod camera_2d;
+pub mod chain_reaction_detection;
+pub mod chat_ui;
+pub mod combat_effects;
+pub mod debug_visibility;
+pub mod depth_sorting;
+pub mod drag_drop;
+pub mod drag_drop_3d;
+pub mod effect_processing;
+pub mod enhanced_board_visuals;
+pub mod enhanced_move_indicators_3d;
+pub mod enhanced_movement;
+pub mod enhanced_ui;
+pub mod enhanced_visual_feedback;
+pub mod feedback_animations;
+pub mod game_balance;
+pub mod game_menu;
+pub mod isometric_camera;
+pub mod movement_powers;
+pub mod performance;
+pub mod performance_optimization;
+pub mod piece_alignment;
+pub mod piece_debug;
+pub mod piece_visibility_fix;
+pub mod pieces;
+pub mod pieces_3d;
+pub mod power_activation_ui;
+pub mod power_balance;
+pub mod power_effects;
+pub mod power_interactions;
+pub mod power_orbs;
+pub mod power_orbs_3d;
+pub mod power_registry;
+pub mod power_test_report;
+pub mod power_testing;
+pub mod scoreboard;
+pub mod settings;
+pub mod terrain_height;
+pub mod turn_management;
+pub mod ui;
+pub mod visual_effects;
+pub mod win_condition;
+// pub mod networking;
+// pub mod client_server;
+// pub mod game_lobby;
+
+pub use board::*;
+pub use board_3d::*;
+// pub use chain_reaction_detection::*; // Currently unused but available for power chain systems
+pub use chat_ui::*;
+pub use combat_effects::*;
+pub use drag_drop::*;
+pub use drag_drop_3d::*;
+// pub use enhanced_board_visuals::*; // Temporarily disabled due to HeightIndicator conflict
+pub use area_targeting::*;
+pub use automated_power_tests::*;
+// pub use crash_debug::*; // Disabled for production builds
+pub use depth_sorting::*;
+pub use effect_processing::*;
+pub use enhanced_move_indicators_3d::*;
+pub use enhanced_movement::*;
+pub use enhanced_ui::{
+    animate_ui_elements, setup_enhanced_ui, show_power_tooltips, update_power_inventory_ui,
+    update_turn_indicator_enhanced,
+};
+pub use feedback_animations::*;
+pub use game_balance::*;
+pub use game_menu::*;
+pub use isometric_camera::*;
+pub use movement_powers::*;
+pub use performance::*;
+pub use piece_alignment::*;
+pub use piece_debug::*;
+pub use piece_visibility_fix::*;
+pub use pieces::*;
+pub use pieces_3d::*;
+pub use power_activation_ui::*;
+pub use power_balance::*;
+pub use power_effects::*;
+// pub use power_interactions::*; // Currently unused but available for power interaction systems
+pub use power_orbs::*;
+pub use power_orbs_3d::*;
+// pub use power_registry::*; // Currently unused but available for power registration
+// pub use power_test_report::*; // Currently unused but available for power testing
+pub use power_testing::*;
+pub use scoreboard::*;
+pub use settings::*;
+pub use terrain_height::*;
+// Import specific items from turn_management (excluding TurnIndicator to avoid conflict)
+pub use turn_management::{
+    handle_power_spawning_phase, initialize_turn_phase, power_spawning_phase_ui, PowerSpawningTimer,
+};
+// Import all from ui (includes TurnIndicator)
+pub use ui::*;
+pub use visual_effects::*;
+pub use win_condition::*;
+// pub use networking::*;
+// pub use client_server::*;
+// pub use game_lobby::*;

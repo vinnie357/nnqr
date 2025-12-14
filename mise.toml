@@ -1,4 +1,295 @@
 [tools]
 node = 'lts'
-rust = '1.87.0'
-zig = 'latest'
+"ubi:nushell/nushell" = { version = "latest", exe = "nu" }
+act = "latest"  # Local GitHub Actions testing
+
+[env]
+RUST_BACKTRACE = "1"
+
+# ============================================================================
+# RUST/BEVY TASKS
+# ============================================================================
+
+[tasks.rust-start]
+description = "Run Bevy Quadradius in development mode"
+dir = "rust/bevy"
+run = "cargo run"
+
+[tasks.rust-start-release]
+description = "Run Bevy Quadradius in optimized release mode"
+dir = "rust/bevy"
+run = "cargo run --release"
+
+[tasks.rust-start-debug]
+description = "Run Bevy Quadradius with debug logging"
+dir = "rust/bevy"
+env = { RUST_LOG = "debug" }
+run = "cargo run"
+
+[tasks.rust-start-info]
+description = "Run Bevy Quadradius with info logging"
+dir = "rust/bevy"
+env = { RUST_LOG = "info" }
+run = "cargo run --release"
+
+[tasks.rust-build]
+description = "Build Bevy Quadradius"
+dir = "rust/bevy"
+run = "cargo build"
+
+[tasks.rust-build-release]
+description = "Build Bevy Quadradius (optimized)"
+dir = "rust/bevy"
+run = "cargo build --release"
+
+[tasks.rust-test]
+description = "Run all Bevy tests"
+dir = "rust/bevy"
+run = "cargo test"
+
+[tasks.rust-test-verbose]
+description = "Run Bevy tests with verbose output"
+dir = "rust/bevy"
+run = "cargo test -- --nocapture"
+
+[tasks.rust-test-powers]
+description = "Run power system tests"
+dir = "rust/bevy"
+run = "cargo test powers"
+
+[tasks.rust-check]
+description = "Run cargo check"
+dir = "rust/bevy"
+run = "cargo check"
+
+[tasks.rust-clippy]
+description = "Run clippy linter"
+dir = "rust/bevy"
+run = "cargo clippy -- -D warnings"
+
+[tasks.rust-fmt]
+description = "Format Rust code with rustfmt"
+dir = "rust/bevy"
+run = "cargo fmt"
+
+[tasks.rust-fmt-check]
+description = "Check Rust code formatting"
+dir = "rust/bevy"
+run = "cargo fmt -- --check"
+
+[tasks.rust-clean]
+description = "Clean Bevy build artifacts"
+dir = "rust/bevy"
+run = "cargo clean"
+
+[tasks.rust-dev]
+description = "Quick Bevy development workflow: check, test, start"
+depends = ["rust-check", "rust-test", "rust-start"]
+
+# ============================================================================
+# LUA/LOVE2D TASKS (aliases to lua/love2d/mise.toml)
+# ============================================================================
+
+[tasks.love-start]
+description = "Run Love2D Quadradius"
+dir = "lua/love2d"
+run = "love ."
+
+[tasks.love-debug]
+description = "Run Love2D with debug console"
+dir = "lua/love2d"
+run = "love . --console"
+
+[tasks.love-fmt]
+description = "Format Lua code with stylua"
+dir = "lua/love2d"
+run = "stylua --glob '**/*.lua' --glob '!lib/**' --glob '!test/**' ."
+
+[tasks.love-check]
+description = "Check Lua code formatting"
+dir = "lua/love2d"
+run = "stylua --check --glob '**/*.lua' --glob '!lib/**' --glob '!test/**' ."
+
+[tasks.love-test]
+description = "Run Love2D tests in-game"
+dir = "lua/love2d"
+run = "love . --test"
+
+[tasks.love-test-busted]
+description = "Run Lua unit tests with busted"
+dir = "lua/love2d"
+run = """
+export PATH="$HOME/.luarocks/bin:$PATH"
+export LUA_PATH="$HOME/.luarocks/share/lua/5.1/?.lua;$HOME/.luarocks/share/lua/5.1/?/init.lua;./?.lua;./src/?.lua;;"
+export LUA_CPATH="$HOME/.luarocks/lib/lua/5.1/?.so;;"
+busted spec/
+"""
+
+# ============================================================================
+# CI/CD TASKS
+# ============================================================================
+
+[tasks.lua-ci]
+description = "Lua/Love2D CI workflow"
+run = "mise run -C lua/love2d ci"
+
+[tasks.rust-ci]
+description = "Rust/Bevy CI workflow"
+run = "mise run -C rust/bevy ci"
+
+[tasks.ci]
+description = "CI workflow: runs all implementation test suites"
+depends = ["lua-ci", "rust-ci"]
+
+[tasks.precommit]
+description = "Alias for ci task"
+depends = ["ci"]
+
+# Nushell-based tasks (Bevy)
+[tasks.test-powers-nu]
+description = "Run power system test (nushell version)"
+dir = "rust/bevy"
+run = "nu test_powers.nu"
+
+[tasks.fix-warnings]
+description = "Fix all unused variable warnings (nushell version)"
+dir = "rust/bevy"
+run = "nu fix_unused_warnings.nu"
+
+[tasks.fix-critical]
+description = "Fix critical warnings (nushell version)"
+dir = "rust/bevy"
+run = "nu fix_critical_warnings.nu"
+
+# Quadradius Development Utility (qdev)
+[tasks.qdev]
+description = "Quadradius development utility - run 'mise run qdev' for help"
+dir = "rust/bevy"
+run = "nu qdev.nu"
+
+[tasks.quality]
+description = "Run full quality check workflow"
+dir = "rust/bevy"
+run = "nu qdev.nu quality"
+
+[tasks.stats]
+description = "Show project statistics"
+dir = "rust/bevy"
+run = "nu qdev.nu stats"
+
+# Git helpers (qgit)
+[tasks.qgit]
+description = "Git helper utility - run 'mise run qgit' for help"
+dir = "rust/bevy"
+run = "nu qgit.nu"
+
+[tasks.git-status]
+description = "Enhanced git status"
+dir = "rust/bevy"
+run = "nu qgit.nu status"
+
+[tasks.git-log]
+description = "Pretty git log"
+dir = "rust/bevy"
+run = "nu qgit.nu log"
+
+# ============================================================================
+# CI/CD TESTING TASKS
+# ============================================================================
+
+[tasks."colima:start"]
+description = "Start colima with Docker runtime (macOS only)"
+run = """
+#!/usr/bin/env nu
+
+# Only run on macOS
+if $nu.os-info.name != "macos" {
+    print "⚠️  Colima is only available on macOS. Ubuntu/Linux has native Docker."
+    exit 0
+}
+
+# Use mise exec to run colima with temporary tool activation
+print "📦 Checking colima status..."
+let status = (mise exec lima@latest colima@latest -- colima status --profile default | complete)
+if $status.exit_code != 0 {
+    print "🚀 Starting colima..."
+    mise exec lima@latest colima@latest -- colima start --vm-type vz --vz-rosetta --runtime docker
+} else {
+    print "✅ Colima is already running"
+}
+"""
+
+[tasks."colima:stop"]
+description = "Stop colima"
+run = """
+#!/usr/bin/env nu
+
+# Only run on macOS
+if $nu.os-info.name != "macos" {
+    print "⚠️  Colima is only available on macOS."
+    exit 0
+}
+
+mise exec lima@latest colima@latest -- colima stop
+"""
+
+[tasks."test:action"]
+description = "Test GitHub action locally using act (tests pull_request workflow)"
+run = """
+#!/usr/bin/env nu
+
+# Detect OS and set flags for Mac
+let act_flags = if $nu.os-info.name == "macos" {
+    [
+        "--container-architecture" "linux/amd64"
+        "--container-daemon-socket" "-"
+        "-P" "ubuntu-latest=catthehacker/ubuntu:act-latest"
+    ]
+} else {
+    [
+        "-P" "ubuntu-latest=catthehacker/ubuntu:act-latest"
+    ]
+}
+
+act pull_request ...$act_flags
+"""
+
+[tasks."test:action:pr"]
+description = "Test GitHub action for pull_request workflow"
+run = """
+#!/usr/bin/env nu
+
+let act_flags = if $nu.os-info.name == "macos" {
+    [
+        "--container-architecture" "linux/amd64"
+        "--container-daemon-socket" "-"
+        "-P" "ubuntu-latest=catthehacker/ubuntu:act-latest"
+    ]
+} else {
+    [
+        "-P" "ubuntu-latest=catthehacker/ubuntu:act-latest"
+    ]
+}
+
+act pull_request ...$act_flags
+"""
+
+[tasks."test:action:push"]
+description = "Test GitHub action for push to main workflow"
+run = """
+#!/usr/bin/env nu
+
+let act_flags = if $nu.os-info.name == "macos" {
+    [
+        "--container-architecture" "linux/amd64"
+        "--container-daemon-socket" "-"
+        "-P" "ubuntu-latest=catthehacker/ubuntu:act-latest"
+    ]
+} else {
+    [
+        "-P" "ubuntu-latest=catthehacker/ubuntu:act-latest"
+    ]
+}
+
+act push ...$act_flags
+"""
