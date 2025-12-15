@@ -406,6 +406,64 @@ describe("PowerEffects", function()
 			assert.are.equal(1, state.heightMap[4][5])
 			assert.are.equal(1, state.heightMap[3][4])
 		end)
+
+		it("destroys tiles at minimum height (0)", function()
+			local state = GameLogic.createInitialState()
+			-- All tiles start at height 0
+
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.row = 4
+			piece.col = 5
+			piece.powers = { "bomb" }
+
+			state = PowerEffects.activateBomb(state, piece)
+
+			-- Center tile at height 0 should be destroyed after lowering
+			assert.is_true(GameLogic.isTileDestroyed(state, 4, 5))
+		end)
+
+		it("destroys adjacent tiles at height 0 in blast radius", function()
+			local state = GameLogic.createInitialState()
+			-- All tiles at height 0
+
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.row = 4
+			piece.col = 5
+			piece.powers = { "bomb" }
+
+			state = PowerEffects.activateBomb(state, piece)
+
+			-- Adjacent tiles should also be destroyed
+			assert.is_true(GameLogic.isTileDestroyed(state, 3, 5))
+			assert.is_true(GameLogic.isTileDestroyed(state, 5, 5))
+			assert.is_true(GameLogic.isTileDestroyed(state, 4, 4))
+			assert.is_true(GameLogic.isTileDestroyed(state, 4, 6))
+		end)
+
+		it("only destroys tiles that reach min height after lowering", function()
+			local state = GameLogic.createInitialState()
+			-- Set center to height 2, edges to height 1
+			state.heightMap[4][5] = 2
+			for dr = -1, 1 do
+				for dc = -1, 1 do
+					if dr ~= 0 or dc ~= 0 then
+						state.heightMap[4 + dr][5 + dc] = 1
+					end
+				end
+			end
+
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.row = 4
+			piece.col = 5
+			piece.powers = { "bomb" }
+
+			state = PowerEffects.activateBomb(state, piece)
+
+			-- Center was height 2, now height 1 - NOT destroyed
+			assert.is_false(GameLogic.isTileDestroyed(state, 4, 5))
+			-- Edges were height 1, now height 0 - destroyed
+			assert.is_true(GameLogic.isTileDestroyed(state, 3, 5))
+		end)
 	end)
 
 	describe("relocate", function()
@@ -552,6 +610,76 @@ describe("PowerEffects", function()
 			local piece = { isInvisible = false }
 			PowerEffects.revealInvisible(piece)
 			assert.is_false(piece.isInvisible)
+		end)
+	end)
+
+	describe("refurb", function()
+		it("getRefurbTargets returns adjacent destroyed tiles", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.row = 4
+			piece.col = 5
+
+			-- Destroy adjacent tile
+			state = GameLogic.destroyTile(state, 4, 6)
+
+			local targets = PowerEffects.getRefurbTargets(state, piece)
+			assert.are.equal(1, #targets)
+			assert.are.equal(4, targets[1].row)
+			assert.are.equal(6, targets[1].col)
+		end)
+
+		it("getRefurbTargets returns empty if no adjacent destroyed tiles", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.row = 4
+			piece.col = 5
+
+			local targets = PowerEffects.getRefurbTargets(state, piece)
+			assert.are.equal(0, #targets)
+		end)
+
+		it("activateRefurb repairs target tile", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.row = 4
+			piece.col = 5
+			piece.powers = { "refurb" }
+
+			-- Destroy adjacent tile
+			state = GameLogic.destroyTile(state, 4, 6)
+			assert.is_true(GameLogic.isTileDestroyed(state, 4, 6))
+
+			-- Repair it
+			state = PowerEffects.activateRefurb(state, piece, { row = 4, col = 6 })
+			assert.is_false(GameLogic.isTileDestroyed(state, 4, 6))
+		end)
+
+		it("repaired tile has height 0", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.row = 4
+			piece.col = 5
+			piece.powers = { "refurb" }
+
+			-- Destroy adjacent tile (which may have lowered height)
+			state = GameLogic.destroyTile(state, 4, 6)
+
+			-- Repair it
+			state = PowerEffects.activateRefurb(state, piece, { row = 4, col = 6 })
+			assert.are.equal(0, state.heightMap[4][6])
+		end)
+
+		it("removes power from inventory after activation", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.row = 4
+			piece.col = 5
+			piece.powers = { "refurb" }
+
+			state = GameLogic.destroyTile(state, 4, 6)
+			state = PowerEffects.activateRefurb(state, piece, { row = 4, col = 6 })
+			assert.are.equal(0, #piece.powers)
 		end)
 	end)
 

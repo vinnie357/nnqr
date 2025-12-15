@@ -26,6 +26,7 @@ function GameLogic.createInitialState()
 		gameState = "playing",
 		winner = nil,
 		turn = 0,
+		destroyedTiles = {}, -- Map of "row,col" -> true for destroyed tiles
 	}
 
 	-- Create pieces for both players
@@ -76,6 +77,46 @@ function GameLogic.setHeight(state, row, col, height)
 	return state
 end
 
+--- Destroy a tile permanently
+---@param state table Game state
+---@param row number Row position
+---@param col number Column position
+---@return table Updated game state
+function GameLogic.destroyTile(state, row, col)
+	-- Validate bounds
+	if row < 1 or row > state.rows or col < 1 or col > state.cols then
+		return state
+	end
+
+	-- Initialize destroyedTiles if not present (for backwards compatibility)
+	if not state.destroyedTiles then
+		state.destroyedTiles = {}
+	end
+
+	local key = row .. "," .. col
+	state.destroyedTiles[key] = true
+	return state
+end
+
+--- Check if a tile is destroyed
+---@param state table Game state
+---@param row number Row position
+---@param col number Column position
+---@return boolean True if tile is destroyed
+function GameLogic.isTileDestroyed(state, row, col)
+	-- Out of bounds tiles are not considered destroyed
+	if row < 1 or row > state.rows or col < 1 or col > state.cols then
+		return false
+	end
+
+	if not state.destroyedTiles then
+		return false
+	end
+
+	local key = row .. "," .. col
+	return state.destroyedTiles[key] == true
+end
+
 --- Check if a move is valid
 ---@param state table Game state
 ---@param piece table Piece to move
@@ -111,11 +152,25 @@ end
 function GameLogic.getValidMoves(state, piece)
 	local pieceHeight = GameLogic.getHeight(state, piece.row, piece.col)
 
-	return Logic.getValidMovesWithHeight(piece.row, piece.col, piece.player, function(r, c)
+	local moves = Logic.getValidMovesWithHeight(piece.row, piece.col, piece.player, function(r, c)
 		return GameLogic.getPieceAt(state, r, c)
 	end, function(r, c)
 		return GameLogic.getHeight(state, r, c)
 	end, pieceHeight)
+
+	-- Filter out destroyed tiles
+	if state.destroyedTiles then
+		local filteredMoves = {}
+		for _, move in ipairs(moves) do
+			local key = move.row .. "," .. move.col
+			if not state.destroyedTiles[key] then
+				table.insert(filteredMoves, move)
+			end
+		end
+		return filteredMoves
+	end
+
+	return moves
 end
 
 --- Select a piece and calculate its valid moves

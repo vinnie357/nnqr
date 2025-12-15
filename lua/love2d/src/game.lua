@@ -377,36 +377,43 @@ end
 function Game.drawBoard()
 	for row = 1, Game.state.rows do
 		for col = 1, Game.state.cols do
-			local height = GameLogic.getHeight(Game.state, row, col)
 			local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
-			y = y + Rendering.getHeightOffset(height)
 
-			-- Get height-based color with slight variation
-			local r, g, b = Rendering.getHeightColor(height)
-			local variation = ((row + col) % 2 == 0) and 0.05 or 0
-			r = math.min(1, r + variation)
-			g = math.min(1, g + variation)
-			b = math.min(1, b + variation)
+			-- Check if tile is destroyed
+			if GameLogic.isTileDestroyed(Game.state, row, col) then
+				-- Draw destroyed tile as a black pit
+				Game.drawDestroyedTile(x, y)
+			else
+				local height = GameLogic.getHeight(Game.state, row, col)
+				y = y + Rendering.getHeightOffset(height)
 
-			-- Draw tile sides for raised tiles
-			if height > 0 then
-				Game.drawTileSides(x, y, height, r, g, b)
-			end
+				-- Get height-based color with slight variation
+				local r, g, b = Rendering.getHeightColor(height)
+				local variation = ((row + col) % 2 == 0) and 0.05 or 0
+				r = math.min(1, r + variation)
+				g = math.min(1, g + variation)
+				b = math.min(1, b + variation)
 
-			-- Draw tile top
-			love.graphics.setColor(r, g, b)
-			local verts = Rendering.getTileVertices(x, y)
-			love.graphics.polygon("fill", verts)
+				-- Draw tile sides for raised tiles
+				if height > 0 then
+					Game.drawTileSides(x, y, height, r, g, b)
+				end
 
-			-- Draw tile border
-			love.graphics.setColor(r * 0.6, g * 0.6, b * 0.6)
-			love.graphics.setLineWidth(1)
-			love.graphics.polygon("line", verts)
-
-			-- Hover highlight
-			if Game.hoveredTile and Game.hoveredTile.row == row and Game.hoveredTile.col == col then
-				love.graphics.setColor(1, 1, 1, 0.15)
+				-- Draw tile top
+				love.graphics.setColor(r, g, b)
+				local verts = Rendering.getTileVertices(x, y)
 				love.graphics.polygon("fill", verts)
+
+				-- Draw tile border
+				love.graphics.setColor(r * 0.6, g * 0.6, b * 0.6)
+				love.graphics.setLineWidth(1)
+				love.graphics.polygon("line", verts)
+
+				-- Hover highlight
+				if Game.hoveredTile and Game.hoveredTile.row == row and Game.hoveredTile.col == col then
+					love.graphics.setColor(1, 1, 1, 0.15)
+					love.graphics.polygon("fill", verts)
+				end
 			end
 		end
 	end
@@ -422,6 +429,35 @@ function Game.drawTileSides(x, y, height, r, g, b)
 	love.graphics.setColor(r * 0.65, g * 0.65, b * 0.65)
 	local rightVerts = Rendering.getTileSideVertices(x, y, height, "right")
 	love.graphics.polygon("fill", rightVerts)
+end
+
+--- Draw a destroyed tile as a black hexagonal pit
+---@param x number Screen X position
+---@param y number Screen Y position
+function Game.drawDestroyedTile(x, y)
+	local verts = Rendering.getTileVertices(x, y)
+
+	-- Draw outer dark edge (pit rim)
+	love.graphics.setColor(0.15, 0.1, 0.1)
+	love.graphics.polygon("fill", verts)
+
+	-- Draw inner pit (darker center)
+	local innerScale = 0.7
+	local innerVerts = {}
+	for i = 1, #verts, 2 do
+		local vx, vy = verts[i], verts[i + 1]
+		-- Scale towards center
+		table.insert(innerVerts, x + (vx - x) * innerScale)
+		table.insert(innerVerts, y + (vy - y) * innerScale)
+	end
+	love.graphics.setColor(0.05, 0.02, 0.02)
+	love.graphics.polygon("fill", innerVerts)
+
+	-- Draw pit border
+	love.graphics.setColor(0.08, 0.05, 0.05)
+	love.graphics.setLineWidth(2)
+	love.graphics.polygon("line", verts)
+	love.graphics.setLineWidth(1)
 end
 
 function Game.drawOrbs()

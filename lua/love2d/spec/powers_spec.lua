@@ -47,6 +47,12 @@ describe("Powers", function()
 			assert.are.equal("Strategic", Powers.definitions.recruit.category)
 		end)
 
+		it("has REFURB power", function()
+			assert.is_table(Powers.definitions.refurb)
+			assert.are.equal("Restoration", Powers.definitions.refurb.category)
+			assert.are.equal("adjacent_destroyed", Powers.definitions.refurb.targeting)
+		end)
+
 		it("has at least 10 powers defined", function()
 			local count = 0
 			for _ in pairs(Powers.definitions) do

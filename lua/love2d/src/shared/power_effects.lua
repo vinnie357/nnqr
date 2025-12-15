@@ -73,24 +73,28 @@ function PowerEffects.getValidMovesWithPowers(state, piece)
 		local newCol = piece.col + dir[2]
 
 		if Logic.isValidPosition(newRow, newCol) then
-			local targetHeight = Height.getHeight(state.heightMap, newRow, newCol)
+			-- Check if tile is destroyed (cannot move to destroyed tiles)
+			local isDestroyed = state.destroyedTiles and state.destroyedTiles[newRow .. "," .. newCol] == true
+			if not isDestroyed then
+				local targetHeight = Height.getHeight(state.heightMap, newRow, newCol)
 
-			-- Check height restriction
-			if Height.canMove(pieceHeight, targetHeight) then
-				-- Check for pieces
-				local targetPiece = nil
-				for _, p in ipairs(state.pieces) do
-					if p.row == newRow and p.col == newCol then
-						targetPiece = p
-						break
+				-- Check height restriction
+				if Height.canMove(pieceHeight, targetHeight) then
+					-- Check for pieces
+					local targetPiece = nil
+					for _, p in ipairs(state.pieces) do
+						if p.row == newRow and p.col == newCol then
+							targetPiece = p
+							break
+						end
 					end
-				end
 
-				-- Can't capture own piece
-				if not targetPiece or targetPiece.player ~= piece.player then
-					-- Check jump_proof for capture - uses FLAG not power inventory
-					if not targetPiece or PowerEffects.canCapture(state, piece, targetPiece) then
-						table.insert(moves, { row = newRow, col = newCol })
+					-- Can't capture own piece
+					if not targetPiece or targetPiece.player ~= piece.player then
+						-- Check jump_proof for capture - uses FLAG not power inventory
+						if not targetPiece or PowerEffects.canCapture(state, piece, targetPiece) then
+							table.insert(moves, { row = newRow, col = newCol })
+						end
 					end
 				end
 			end
@@ -359,14 +363,25 @@ function PowerEffects.activateBomb(state, piece)
 		end
 	end
 
-	-- Lower terrain in 3x3 area
+	-- Lower terrain in 3x3 area and destroy tiles at min height
 	for dr = -1, 1 do
 		for dc = -1, 1 do
 			local row = piece.row + dr
 			local col = piece.col + dc
 			if Logic.isValidPosition(row, col) then
 				local h = Height.getHeight(state.heightMap, row, col)
-				Height.setHeight(state.heightMap, row, col, h - 1)
+				local newHeight = h - 1
+				Height.setHeight(state.heightMap, row, col, newHeight)
+
+				-- Destroy tile if it reaches minimum height (0 or below)
+				if newHeight <= 0 then
+					-- Initialize destroyedTiles if not present
+					if not state.destroyedTiles then
+						state.destroyedTiles = {}
+					end
+					local key = row .. "," .. col
+					state.destroyedTiles[key] = true
+				end
 			end
 		end
 	end
@@ -446,6 +461,65 @@ end
 ---@param piece table Piece to reveal
 function PowerEffects.revealInvisible(piece)
 	piece.isInvisible = false
+end
+
+--- Get targets for refurb power (adjacent destroyed tiles)
+---@param state table Game state
+---@param piece table Piece with refurb power
+---@return table Array of {row, col} positions of adjacent destroyed tiles
+function PowerEffects.getRefurbTargets(state, piece)
+	local targets = {}
+
+	-- Check all adjacent tiles (including diagonals)
+	local directions = {
+		{ -1, 0 },
+		{ 1, 0 },
+		{ 0, -1 },
+		{ 0, 1 },
+		{ -1, -1 },
+		{ -1, 1 },
+		{ 1, -1 },
+		{ 1, 1 },
+	}
+
+	for _, dir in ipairs(directions) do
+		local row = piece.row + dir[1]
+		local col = piece.col + dir[2]
+
+		if Logic.isValidPosition(row, col) then
+			-- Check if tile is destroyed
+			if state.destroyedTiles and state.destroyedTiles[row .. "," .. col] then
+				table.insert(targets, { row = row, col = col })
+			end
+		end
+	end
+
+	return targets
+end
+
+--- Activate refurb power to repair a destroyed tile
+---@param state table Game state
+---@param piece table Piece activating power
+---@param target table Target position {row, col} to repair
+---@return table Updated game state
+function PowerEffects.activateRefurb(state, piece, target)
+	if not target then
+		return state
+	end
+
+	local key = target.row .. "," .. target.col
+
+	-- Remove tile from destroyed list
+	if state.destroyedTiles then
+		state.destroyedTiles[key] = nil
+	end
+
+	-- Reset tile height to 0
+	Height.setHeight(state.heightMap, target.row, target.col, 0)
+
+	removePower(piece, "refurb")
+
+	return state
 end
 
 return PowerEffects

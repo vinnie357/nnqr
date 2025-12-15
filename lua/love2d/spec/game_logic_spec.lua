@@ -456,4 +456,87 @@ describe("GameLogic", function()
 			assert.are.equal(10, Powers.OVERHEAT_THRESHOLD)
 		end)
 	end)
+
+	describe("destroyed tiles", function()
+		describe("state management", function()
+			it("createInitialState includes empty destroyedTiles", function()
+				local state = GameLogic.createInitialState()
+				assert.is_table(state.destroyedTiles)
+				assert.are.equal(0, #state.destroyedTiles)
+			end)
+
+			it("destroyTile marks tile as destroyed", function()
+				local state = GameLogic.createInitialState()
+				state = GameLogic.destroyTile(state, 4, 5)
+				assert.is_true(GameLogic.isTileDestroyed(state, 4, 5))
+			end)
+
+			it("isTileDestroyed returns false for intact tile", function()
+				local state = GameLogic.createInitialState()
+				assert.is_false(GameLogic.isTileDestroyed(state, 4, 5))
+			end)
+
+			it("isTileDestroyed returns true for destroyed tile", function()
+				local state = GameLogic.createInitialState()
+				state = GameLogic.destroyTile(state, 4, 5)
+				assert.is_true(GameLogic.isTileDestroyed(state, 4, 5))
+			end)
+
+			it("cannot destroy out-of-bounds tiles", function()
+				local state = GameLogic.createInitialState()
+				state = GameLogic.destroyTile(state, 0, 0)
+				assert.is_false(GameLogic.isTileDestroyed(state, 0, 0))
+				state = GameLogic.destroyTile(state, 100, 100)
+				assert.is_false(GameLogic.isTileDestroyed(state, 100, 100))
+			end)
+
+			it("destroying already-destroyed tile is no-op", function()
+				local state = GameLogic.createInitialState()
+				state = GameLogic.destroyTile(state, 4, 5)
+				state = GameLogic.destroyTile(state, 4, 5) -- Should not error
+				assert.is_true(GameLogic.isTileDestroyed(state, 4, 5))
+			end)
+		end)
+
+		describe("movement validation", function()
+			it("cannot move onto destroyed tile", function()
+				local state = GameLogic.createInitialState()
+				-- Destroy tile at row 3, col 5
+				state = GameLogic.destroyTile(state, 3, 5)
+				-- Piece at row 2, col 5 should not be able to move to row 3, col 5
+				local piece = GameLogic.getPieceAt(state, 2, 5)
+				local moves = GameLogic.getValidMoves(state, piece)
+				local canMoveToDestroyed = false
+				for _, move in ipairs(moves) do
+					if move.row == 3 and move.col == 5 then
+						canMoveToDestroyed = true
+						break
+					end
+				end
+				assert.is_false(canMoveToDestroyed)
+			end)
+
+			it("destroyed tiles excluded from valid moves", function()
+				local state = GameLogic.createInitialState()
+				local piece = GameLogic.getPieceAt(state, 2, 5)
+				-- Get moves before destroying
+				local movesBefore = GameLogic.getValidMoves(state, piece)
+				local countBefore = #movesBefore
+
+				-- Destroy a tile that would be a valid move
+				state = GameLogic.destroyTile(state, 3, 5)
+				local movesAfter = GameLogic.getValidMoves(state, piece)
+				local countAfter = #movesAfter
+
+				-- Should have one fewer valid move
+				assert.is_true(countAfter < countBefore)
+			end)
+
+			it("isTileDestroyed returns false for out-of-bounds", function()
+				local state = GameLogic.createInitialState()
+				assert.is_false(GameLogic.isTileDestroyed(state, -1, -1))
+				assert.is_false(GameLogic.isTileDestroyed(state, 99, 99))
+			end)
+		end)
+	end)
 end)

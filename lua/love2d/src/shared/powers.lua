@@ -115,6 +115,16 @@ Powers.definitions = {
 		description = "Piece is hidden from opponent until it attacks",
 		targeting = "self",
 	},
+
+	-- Restoration Powers
+	refurb = {
+		id = "refurb",
+		name = "Refurb",
+		category = "Restoration",
+		duration = "single_use",
+		description = "Repair an adjacent destroyed tile",
+		targeting = "adjacent_destroyed",
+	},
 }
 
 -- List of power IDs for random selection
