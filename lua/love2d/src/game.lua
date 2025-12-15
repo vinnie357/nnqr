@@ -9,11 +9,17 @@ local PowerEffects = require("src.shared.power_effects")
 local GameAnimations = require("src.shared.game_animations")
 local Animations = require("src.shared.animations")
 local Indicators = require("src.shared.indicators")
+local UI = require("src.shared.ui")
+local Tooltip = require("src.shared.tooltip")
+local SoundManager = require("src.shared.sound_manager")
 
 local Game = {}
 
 -- Game state (managed by GameLogic)
 Game.state = nil
+
+-- UI state (managed by UI module)
+Game.uiState = nil
 
 -- Visual settings
 Game.boardOffsetX = 0
@@ -23,12 +29,29 @@ Game.boardOffsetY = 0
 Game.hoveredTile = nil
 Game.orbs = {}
 
+-- Mouse position for tooltips
+Game.mouseX = 0
+Game.mouseY = 0
+Game.hoveredPowerIndex = nil -- Index of power being hovered in menu
+
 -- Power activation mode
 Game.powerMode = nil -- nil or {powerId, piece, targets}
 Game.powerTargets = {}
 
 -- Animation state
 Game.animations = nil
+
+-- Sound state
+Game.soundManager = nil
+Game.loadedSounds = {} -- Cache for Love2D sound sources
+
+-- Turn banner state
+Game.turnBanner = {
+	active = false,
+	timer = 0,
+	duration = 2.0,
+	player = 1,
+}
 
 -- Colors - Clean Modern Style
 Game.colors = {
@@ -50,6 +73,9 @@ function Game.init()
 	Game.boardOffsetX = love.graphics.getWidth() / 2
 	Game.boardOffsetY = 120
 
+	-- Initialize UI state
+	Game.uiState = UI.createState()
+
 	-- Create initial game state
 	Game.state = GameLogic.createInitialState()
 
@@ -61,6 +87,19 @@ function Game.init()
 
 	-- Initialize animation system
 	Game.animations = GameAnimations.create()
+
+	-- Initialize sound system
+	Game.soundManager = SoundManager.create()
+	Game.loadedSounds = {}
+	Game.preloadSounds()
+
+	-- Reset turn banner
+	Game.turnBanner = {
+		active = false,
+		timer = 0,
+		duration = 2.0,
+		player = 1,
+	}
 end
 
 function Game.generateTerrain()
@@ -75,7 +114,94 @@ function Game.generateTerrain()
 	GameLogic.setHeight(Game.state, 4, 6, 3)
 end
 
+-- Sound system functions
+function Game.preloadSounds()
+	-- Collect all unique sound files from mappings
+	local soundFiles = {}
+	for _, file in pairs(SoundManager.EVENT_SOUNDS) do
+		soundFiles[file] = true
+	end
+	for _, file in pairs(SoundManager.POWER_SOUNDS) do
+		soundFiles[file] = true
+	end
+	soundFiles[SoundManager.DEFAULT_POWER_SOUND] = true
+
+	-- Try to load each sound file
+	for file, _ in pairs(soundFiles) do
+		Game.loadSound(file)
+	end
+end
+
+function Game.loadSound(filename)
+	if Game.loadedSounds[filename] then
+		return Game.loadedSounds[filename]
+	end
+
+	local path = "assets/sounds/" .. filename
+	local success, source = pcall(function()
+		return love.audio.newSource(path, "static")
+	end)
+
+	if success and source then
+		Game.loadedSounds[filename] = source
+		return source
+	end
+	-- Sound file not found - gracefully continue without it
+	return nil
+end
+
+function Game.playSound(filename)
+	if not Game.soundManager or SoundManager.isMuted(Game.soundManager) then
+		return
+	end
+
+	local source = Game.loadedSounds[filename]
+	if source then
+		local volume = SoundManager.getEffectiveVolume(Game.soundManager, "sfx")
+		source:setVolume(volume)
+		source:stop() -- Stop if already playing
+		source:play()
+	end
+end
+
+function Game.playSoundForEvent(event)
+	local filename = SoundManager.getSoundForEvent(event)
+	if filename then
+		Game.playSound(filename)
+	end
+end
+
+function Game.playSoundForPower(powerId)
+	local filename = SoundManager.getSoundForPower(powerId)
+	Game.playSound(filename)
+end
+
+function Game.syncSoundSettings()
+	-- Sync UI volume settings to sound manager
+	if Game.soundManager and Game.uiState then
+		SoundManager.setMasterVolume(Game.soundManager, UI.getMasterVolume(Game.uiState))
+		SoundManager.setSFXVolume(Game.soundManager, UI.getSFXVolume(Game.uiState))
+		SoundManager.setMusicVolume(Game.soundManager, UI.getMusicVolume(Game.uiState))
+		SoundManager.setMuted(Game.soundManager, UI.isMuted(Game.uiState))
+	end
+end
+
 function Game.update(dt)
+	local screen = UI.getScreen(Game.uiState)
+
+	-- Update turn banner
+	if Game.turnBanner.active then
+		Game.turnBanner.timer = Game.turnBanner.timer + dt
+		if Game.turnBanner.timer >= Game.turnBanner.duration then
+			Game.turnBanner.active = false
+		end
+	end
+
+	-- Only update game state when playing
+	if screen ~= "playing" then
+		return
+	end
+
 	-- Update animations
 	if Game.animations then
 		GameAnimations.update(Game.animations, dt)
@@ -92,6 +218,21 @@ function Game.update(dt)
 end
 
 function Game.draw()
+	local screen = UI.getScreen(Game.uiState)
+
+	if screen == "menu" then
+		Game.drawMenuScreen()
+	elseif screen == "settings" then
+		Game.drawSettingsScreen()
+	elseif screen == "playing" then
+		Game.drawPlayingScreen()
+	elseif screen == "gameover" then
+		Game.drawPlayingScreen() -- Draw board in background
+		Game.drawGameOverScreen()
+	end
+end
+
+function Game.drawPlayingScreen()
 	Game.drawBoard()
 	Game.drawOrbs()
 	Game.drawValidMoves()
@@ -100,6 +241,7 @@ function Game.draw()
 	Game.drawAnimations()
 	Game.drawUI()
 	Game.drawPowerMenu()
+	Game.drawTurnBanner()
 end
 
 function Game.drawPowerTargets()
@@ -160,6 +302,61 @@ function Game.drawPowerMenu()
 	if Game.powerMode then
 		love.graphics.setColor(0.9, 0.4, 1.0)
 		love.graphics.print("Click target or ESC to cancel", menuX + 10, menuY + 30 + #piece.powers * itemHeight + 5)
+	end
+
+	-- Draw tooltip if hovering over a power
+	if Game.hoveredPowerIndex and piece.powers[Game.hoveredPowerIndex] then
+		Game.drawPowerTooltip(piece.powers[Game.hoveredPowerIndex])
+	end
+end
+
+function Game.drawPowerTooltip(powerId)
+	local lines = Tooltip.formatPowerTooltip(powerId)
+	if not lines then
+		return
+	end
+
+	local font = love.graphics.getFont()
+	local charWidth = font:getWidth("M")
+	local lineHeight = font:getHeight() * 1.2
+
+	-- Calculate dimensions
+	local maxWidth = 0
+	for _, line in ipairs(lines) do
+		maxWidth = math.max(maxWidth, font:getWidth(line))
+	end
+	local padding = 10
+	local tooltipWidth = maxWidth + padding * 2
+	local tooltipHeight = #lines * lineHeight + padding * 2
+
+	-- Calculate position
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+	local x, y = Tooltip.calculatePosition(Game.mouseX, Game.mouseY, tooltipWidth, tooltipHeight, screenW, screenH)
+
+	-- Draw background
+	love.graphics.setColor(0.1, 0.1, 0.15, 0.95)
+	love.graphics.rectangle("fill", x, y, tooltipWidth, tooltipHeight, 6, 6)
+
+	-- Draw border
+	love.graphics.setColor(0.5, 0.5, 0.6)
+	love.graphics.setLineWidth(1)
+	love.graphics.rectangle("line", x, y, tooltipWidth, tooltipHeight, 6, 6)
+
+	-- Draw text
+	for i, line in ipairs(lines) do
+		local lineY = y + padding + (i - 1) * lineHeight
+		if i == 1 then
+			-- Title line - yellow/gold
+			love.graphics.setColor(1, 0.9, 0.3)
+		elseif line:match("^Category:") or line:match("^Duration:") then
+			-- Label lines - gray
+			love.graphics.setColor(0.7, 0.7, 0.7)
+		else
+			-- Description - white
+			love.graphics.setColor(1, 1, 1)
+		end
+		love.graphics.print(line, x + padding, lineY)
 	end
 end
 
@@ -429,6 +626,281 @@ function Game.drawUI()
 			love.graphics.getHeight() / 2 + 20
 		)
 	end
+end
+
+function Game.drawMenuScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+
+	-- Draw animated board in background (dimmed)
+	Game.drawBoard()
+	Game.drawPieces()
+
+	-- Dark overlay
+	love.graphics.setColor(0, 0, 0, 0.7)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Title
+	local titleY = screenH * 0.2
+	love.graphics.setColor(1, 1, 1)
+	local title = "QUADRADIUS"
+	local subtitle = "NNQR Edition"
+	local font = love.graphics.getFont()
+	love.graphics.print(title, (screenW - font:getWidth(title)) / 2, titleY)
+	love.graphics.setColor(0.7, 0.7, 0.7)
+	love.graphics.print(subtitle, (screenW - font:getWidth(subtitle)) / 2, titleY + 25)
+
+	-- Menu items
+	local menuItems = UI.getMenuItems(Game.uiState)
+	local menuY = screenH * 0.45
+	local itemSpacing = 35
+
+	for i, item in ipairs(menuItems) do
+		local itemY = menuY + (i - 1) * itemSpacing
+		local isSelected = i == Game.uiState.selectedIndex
+
+		if isSelected then
+			-- Highlight background
+			love.graphics.setColor(0.3, 0.5, 0.8, 0.5)
+			love.graphics.rectangle("fill", screenW / 2 - 100, itemY - 5, 200, 30, 5, 5)
+			love.graphics.setColor(1, 1, 1)
+			love.graphics.print("> " .. item, (screenW - font:getWidth("> " .. item)) / 2, itemY)
+		else
+			love.graphics.setColor(0.7, 0.7, 0.7)
+			love.graphics.print(item, (screenW - font:getWidth(item)) / 2, itemY)
+		end
+	end
+
+	-- Controls hint
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	local hint = "Arrow Keys to navigate, Enter to select"
+	love.graphics.print(hint, (screenW - font:getWidth(hint)) / 2, screenH - 50)
+end
+
+function Game.drawSettingsScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+
+	-- Dark background
+	love.graphics.setColor(0.1, 0.12, 0.15)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Title
+	local titleY = screenH * 0.15
+	love.graphics.setColor(1, 1, 1)
+	local title = "SETTINGS"
+	local font = love.graphics.getFont()
+	love.graphics.print(title, (screenW - font:getWidth(title)) / 2, titleY)
+
+	-- Menu items with volume bars
+	local menuItems = UI.getMenuItems(Game.uiState)
+	local menuY = screenH * 0.3
+	local itemSpacing = 50
+
+	for i, item in ipairs(menuItems) do
+		local itemY = menuY + (i - 1) * itemSpacing
+		local isSelected = i == Game.uiState.selectedIndex
+
+		-- Item label
+		if isSelected then
+			love.graphics.setColor(1, 1, 1)
+			love.graphics.print("> " .. item, screenW * 0.2, itemY)
+		else
+			love.graphics.setColor(0.7, 0.7, 0.7)
+			love.graphics.print(item, screenW * 0.2 + 10, itemY)
+		end
+
+		-- Volume bar for volume settings
+		if item == "Master Volume" then
+			Game.drawVolumeBar(screenW * 0.55, itemY, UI.getMasterVolume(Game.uiState), isSelected)
+		elseif item == "SFX Volume" then
+			Game.drawVolumeBar(screenW * 0.55, itemY, UI.getSFXVolume(Game.uiState), isSelected)
+		elseif item == "Music Volume" then
+			Game.drawVolumeBar(screenW * 0.55, itemY, UI.getMusicVolume(Game.uiState), isSelected)
+		elseif item == "Sound Enabled" then
+			Game.drawCheckbox(screenW * 0.55, itemY, not UI.isMuted(Game.uiState), isSelected)
+		end
+	end
+
+	-- Controls hint
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	local hint = "Left/Right to adjust, Enter to toggle, Escape to go back"
+	love.graphics.print(hint, (screenW - font:getWidth(hint)) / 2, screenH - 50)
+end
+
+function Game.drawVolumeBar(x, y, value, isSelected)
+	local barWidth = 150
+	local barHeight = 16
+	local fillWidth = barWidth * value
+
+	-- Background
+	love.graphics.setColor(0.2, 0.2, 0.2)
+	love.graphics.rectangle("fill", x, y, barWidth, barHeight, 3, 3)
+
+	-- Fill
+	if isSelected then
+		love.graphics.setColor(0.3, 0.6, 0.9)
+	else
+		love.graphics.setColor(0.4, 0.5, 0.6)
+	end
+	love.graphics.rectangle("fill", x, y, fillWidth, barHeight, 3, 3)
+
+	-- Border
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	love.graphics.rectangle("line", x, y, barWidth, barHeight, 3, 3)
+
+	-- Percentage text
+	love.graphics.setColor(1, 1, 1)
+	local pct = string.format("%d%%", math.floor(value * 100))
+	love.graphics.print(pct, x + barWidth + 10, y)
+end
+
+function Game.drawCheckbox(x, y, checked, isSelected)
+	local size = 16
+
+	-- Background
+	love.graphics.setColor(0.2, 0.2, 0.2)
+	love.graphics.rectangle("fill", x, y, size, size, 2, 2)
+
+	-- Check mark
+	if checked then
+		if isSelected then
+			love.graphics.setColor(0.3, 0.9, 0.4)
+		else
+			love.graphics.setColor(0.4, 0.7, 0.5)
+		end
+		love.graphics.setLineWidth(2)
+		love.graphics.line(x + 3, y + 8, x + 6, y + 12, x + 13, y + 4)
+		love.graphics.setLineWidth(1)
+	end
+
+	-- Border
+	if isSelected then
+		love.graphics.setColor(0.5, 0.8, 1)
+	else
+		love.graphics.setColor(0.5, 0.5, 0.5)
+	end
+	love.graphics.rectangle("line", x, y, size, size, 2, 2)
+end
+
+function Game.drawGameOverScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+
+	-- Dark overlay
+	love.graphics.setColor(0, 0, 0, 0.8)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Winner announcement
+	local winnerName = Game.state.winner == 1 and "BLUE" or "RED"
+	local winColor = Game.state.winner == 1 and Game.colors.player1 or Game.colors.player2
+
+	-- Pulsing glow effect
+	local pulse = (math.sin(love.timer.getTime() * 3) + 1) / 2
+	love.graphics.setColor(winColor[1], winColor[2], winColor[3], 0.3 + 0.2 * pulse)
+	love.graphics.rectangle("fill", screenW / 2 - 150, screenH * 0.3 - 20, 300, 80, 10, 10)
+
+	-- Winner text
+	love.graphics.setColor(winColor)
+	local font = love.graphics.getFont()
+	local text = winnerName .. " WINS!"
+	love.graphics.print(text, (screenW - font:getWidth(text)) / 2, screenH * 0.3)
+
+	-- Final score
+	local p1, p2 = 0, 0
+	for _, p in ipairs(Game.state.pieces) do
+		if p.player == 1 then
+			p1 = p1 + 1
+		else
+			p2 = p2 + 1
+		end
+	end
+	love.graphics.setColor(0.7, 0.7, 0.7)
+	local scoreText = string.format("Final Score: %d - %d  |  Turns: %d", p1, p2, Game.state.turn)
+	love.graphics.print(scoreText, (screenW - font:getWidth(scoreText)) / 2, screenH * 0.45)
+
+	-- Menu items
+	local menuItems = UI.getMenuItems(Game.uiState)
+	local menuY = screenH * 0.55
+	local itemSpacing = 35
+
+	for i, item in ipairs(menuItems) do
+		local itemY = menuY + (i - 1) * itemSpacing
+		local isSelected = i == Game.uiState.selectedIndex
+
+		if isSelected then
+			love.graphics.setColor(0.3, 0.5, 0.8, 0.5)
+			love.graphics.rectangle("fill", screenW / 2 - 100, itemY - 5, 200, 30, 5, 5)
+			love.graphics.setColor(1, 1, 1)
+			love.graphics.print("> " .. item, (screenW - font:getWidth("> " .. item)) / 2, itemY)
+		else
+			love.graphics.setColor(0.7, 0.7, 0.7)
+			love.graphics.print(item, (screenW - font:getWidth(item)) / 2, itemY)
+		end
+	end
+end
+
+function Game.drawTurnBanner()
+	if not Game.turnBanner.active then
+		return
+	end
+
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+	local progress = Game.turnBanner.timer / Game.turnBanner.duration
+	local player = Game.turnBanner.player
+
+	-- Animation phases
+	local sweepIn = math.min(1, progress * 5) -- 0-0.2s
+	local scaleUp = math.max(0, math.min(1, (progress - 0.1) * 5)) -- 0.1-0.3s
+	local fadeOut = math.max(0, (progress - 0.75) * 4) -- 0.75-1.0s
+
+	-- Dark overlay sweep
+	if sweepIn < 1 then
+		love.graphics.setColor(0, 0, 0, 0.7 * sweepIn)
+		love.graphics.rectangle("fill", 0, 0, screenW * sweepIn, screenH)
+	else
+		love.graphics.setColor(0, 0, 0, 0.7 * (1 - fadeOut))
+		love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+	end
+
+	-- Text
+	if scaleUp > 0 then
+		local playerName = player == 1 and "BLUE" or "RED"
+		local text = playerName .. "'S TURN"
+		local playerColor = player == 1 and Game.colors.player1 or Game.colors.player2
+
+		-- Scale and alpha
+		local scale = 0.5 + scaleUp * 0.7
+		if scaleUp > 0.8 then
+			scale = 1.2 - (scaleUp - 0.8) * 1.0 -- Settle from 1.2 to 1.0
+		end
+		local alpha = 1 - fadeOut
+
+		-- Glow
+		love.graphics.setColor(playerColor[1], playerColor[2], playerColor[3], 0.4 * alpha)
+		local font = love.graphics.getFont()
+		local textW = font:getWidth(text) * scale
+		love.graphics.rectangle(
+			"fill",
+			(screenW - textW) / 2 - 20,
+			screenH / 2 - 30 * scale,
+			textW + 40,
+			60 * scale,
+			10,
+			10
+		)
+
+		-- Text
+		love.graphics.setColor(playerColor[1], playerColor[2], playerColor[3], alpha)
+		love.graphics.print(text, (screenW - font:getWidth(text)) / 2, screenH / 2 - 10)
+	end
+end
+
+function Game.showTurnBanner(player)
+	Game.turnBanner.active = true
+	Game.turnBanner.timer = 0
+	Game.turnBanner.player = player
 end
 
 function Game.drawAnimations()
@@ -896,7 +1368,16 @@ function Game.mousepressed(x, y, button)
 
 				if isValid then
 					local movingPiece = Game.state.selectedPiece
+					local targetPiece = GameLogic.getPieceAt(Game.state, row, col)
 					Game.state = GameLogic.movePiece(Game.state, movingPiece, row, col)
+
+					-- Play move or capture sound
+					if targetPiece then
+						Game.playSoundForEvent("capture")
+					else
+						Game.playSoundForEvent("move")
+					end
+
 					-- Collect orb if present
 					Powers.collectOrb(movingPiece, Game.orbs)
 
@@ -906,27 +1387,38 @@ function Game.mousepressed(x, y, button)
 						Game.state = GameLogic.selectPiece(Game.state, movingPiece)
 					else
 						Game.state = GameLogic.endTurn(Game.state)
-						-- Check for orb spawn
-						if Powers.shouldSpawnOrbs(Game.state.turn) then
-							local newOrbs = Powers.spawnOrbs(
-								Game.state.cols,
-								Game.state.rows,
-								Game.state.pieces,
-								Game.orbs,
-								Powers.getOrbSpawnCount()
-							)
-							for _, orb in ipairs(newOrbs) do
-								table.insert(Game.orbs, orb)
+
+						-- Check for game over
+						if Game.state.gameState == "gameover" then
+							UI.setScreen(Game.uiState, "gameover")
+						else
+							-- Show turn banner for new player
+							Game.showTurnBanner(Game.state.currentPlayer)
+
+							-- Check for orb spawn
+							if Powers.shouldSpawnOrbs(Game.state.turn) then
+								local newOrbs = Powers.spawnOrbs(
+									Game.state.cols,
+									Game.state.rows,
+									Game.state.pieces,
+									Game.orbs,
+									Powers.getOrbSpawnCount()
+								)
+								for _, orb in ipairs(newOrbs) do
+									table.insert(Game.orbs, orb)
+								end
 							end
 						end
 					end
 				elseif clickedPiece and clickedPiece.player == Game.state.currentPlayer then
 					Game.state = GameLogic.selectPiece(Game.state, clickedPiece)
+					Game.playSoundForEvent("select")
 				else
 					Game.state = GameLogic.selectPiece(Game.state, nil)
 				end
 			elseif clickedPiece and clickedPiece.player == Game.state.currentPlayer then
 				Game.state = GameLogic.selectPiece(Game.state, clickedPiece)
+				Game.playSoundForEvent("select")
 			end
 		end
 	end
@@ -934,18 +1426,67 @@ end
 
 function Game.mousereleased(x, y, button) end
 
-function Game.mousemoved(x, y, dx, dy) end
+function Game.mousemoved(x, y, dx, dy)
+	Game.mouseX = x
+	Game.mouseY = y
+
+	-- Check for power menu hover (only on playing screen with selected piece)
+	local screen = UI.getScreen(Game.uiState)
+	if screen == "playing" then
+		local piece = Game.state.selectedPiece
+		if piece and piece.powers and #piece.powers > 0 then
+			-- Power menu bounds
+			local menuX = love.graphics.getWidth() - 200
+			local menuY = 100
+			local menuWidth = 190
+			local itemHeight = 30
+			local headerHeight = 25
+
+			-- Check if mouse is over a power item
+			Game.hoveredPowerIndex = nil
+			for i = 1, #piece.powers do
+				local itemY = menuY + headerHeight + (i - 1) * itemHeight
+				if x >= menuX and x <= menuX + menuWidth and y >= itemY and y <= itemY + itemHeight then
+					Game.hoveredPowerIndex = i
+					break
+				end
+			end
+		else
+			Game.hoveredPowerIndex = nil
+		end
+	else
+		Game.hoveredPowerIndex = nil
+	end
+end
 
 function Game.keypressed(key)
+	local screen = UI.getScreen(Game.uiState)
+
+	-- Handle menu screens
+	if screen == "menu" then
+		Game.handleMenuInput(key)
+		return
+	elseif screen == "settings" then
+		Game.handleSettingsInput(key)
+		return
+	elseif screen == "gameover" then
+		Game.handleGameOverInput(key)
+		return
+	end
+
+	-- Playing screen input
 	-- Allow escape and reset even during animations
 	if key == "escape" then
 		if Game.powerMode then
 			Game.powerMode = nil
 			Game.powerTargets = {}
+		else
+			-- Return to menu
+			UI.setScreen(Game.uiState, "menu")
 		end
 		return
 	elseif key == "r" then
-		Game.init()
+		Game.startNewGame()
 		return
 	end
 
@@ -982,6 +1523,105 @@ function Game.keypressed(key)
 	end
 end
 
+function Game.handleMenuInput(key)
+	if key == "up" then
+		UI.selectPrev(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "down" then
+		UI.selectNext(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "return" or key == "space" then
+		Game.playSoundForEvent("menu_confirm")
+		local selected = UI.getSelectedMenuItem(Game.uiState)
+		if selected == "New Game" then
+			Game.startNewGame()
+			UI.setScreen(Game.uiState, "playing")
+			Game.showTurnBanner(1)
+		elseif selected == "Settings" then
+			UI.setScreen(Game.uiState, "settings")
+		elseif selected == "Quit" then
+			love.event.quit()
+		end
+	end
+end
+
+function Game.handleSettingsInput(key)
+	if key == "up" then
+		UI.selectPrev(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "down" then
+		UI.selectNext(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "left" then
+		local selected = UI.getSelectedMenuItem(Game.uiState)
+		if selected == "Master Volume" then
+			UI.adjustVolume(Game.uiState, "master", -0.1)
+			Game.syncSoundSettings()
+		elseif selected == "SFX Volume" then
+			UI.adjustVolume(Game.uiState, "sfx", -0.1)
+			Game.syncSoundSettings()
+		elseif selected == "Music Volume" then
+			UI.adjustVolume(Game.uiState, "music", -0.1)
+			Game.syncSoundSettings()
+		end
+	elseif key == "right" then
+		local selected = UI.getSelectedMenuItem(Game.uiState)
+		if selected == "Master Volume" then
+			UI.adjustVolume(Game.uiState, "master", 0.1)
+			Game.syncSoundSettings()
+		elseif selected == "SFX Volume" then
+			UI.adjustVolume(Game.uiState, "sfx", 0.1)
+			Game.syncSoundSettings()
+		elseif selected == "Music Volume" then
+			UI.adjustVolume(Game.uiState, "music", 0.1)
+			Game.syncSoundSettings()
+		end
+	elseif key == "return" or key == "space" then
+		local selected = UI.getSelectedMenuItem(Game.uiState)
+		if selected == "Sound Enabled" then
+			UI.toggleMuted(Game.uiState)
+			Game.syncSoundSettings()
+		elseif selected == "Back" then
+			UI.setScreen(Game.uiState, "menu")
+		end
+	elseif key == "escape" then
+		UI.setScreen(Game.uiState, "menu")
+	end
+end
+
+function Game.handleGameOverInput(key)
+	if key == "up" then
+		UI.selectPrev(Game.uiState)
+	elseif key == "down" then
+		UI.selectNext(Game.uiState)
+	elseif key == "return" or key == "space" then
+		local selected = UI.getSelectedMenuItem(Game.uiState)
+		if selected == "Play Again" then
+			Game.startNewGame()
+			UI.setScreen(Game.uiState, "playing")
+			Game.showTurnBanner(1)
+		elseif selected == "Main Menu" then
+			UI.setScreen(Game.uiState, "menu")
+		end
+	end
+end
+
+function Game.startNewGame()
+	-- Reset game state
+	Game.state = GameLogic.createInitialState()
+	Game.generateTerrain()
+	Game.orbs = {}
+	Game.animations = GameAnimations.create()
+	Game.powerMode = nil
+	Game.powerTargets = {}
+	Game.turnBanner = {
+		active = false,
+		timer = 0,
+		duration = 2.0,
+		player = 1,
+	}
+end
+
 function Game.activatePower(piece, powerId)
 	local def = Powers.definitions[powerId]
 	if not def then
@@ -1015,6 +1655,9 @@ function Game.getPowerTargets(piece, powerId)
 end
 
 function Game.executepower(piece, powerId, target)
+	-- Play power sound
+	Game.playSoundForPower(powerId)
+
 	local anim = nil
 
 	-- Create animation with onComplete callback to apply effect

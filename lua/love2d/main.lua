@@ -36,9 +36,7 @@ function love.mousemoved(x, y, dx, dy)
 end
 
 function love.keypressed(key)
-	if key == "escape" then
-		love.event.quit()
-	end
+	-- Let the game handle escape for screen transitions
 	Game.keypressed(key)
 end
 
