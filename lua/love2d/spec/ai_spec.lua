@@ -3,9 +3,11 @@
 
 describe("AI", function()
 	local AI
+	local PowerEffects
 
 	setup(function()
 		AI = require("src.shared.ai.ai")
+		PowerEffects = require("src.shared.power_effects")
 	end)
 
 	-- 8A.1 AI Module Structure
@@ -107,8 +109,8 @@ describe("AI", function()
 			local piece = state.pieces[move.piece]
 			assert.are.equal(2, piece.player)
 
-			-- Target should be valid for that piece
-			local validMoves = GameLogic.getValidMoves(state, piece)
+			-- Target should be valid for that piece (using power-aware move calculation)
+			local validMoves = PowerEffects.getValidMovesWithPowers(state, piece)
 			local found = false
 			for _, vm in ipairs(validMoves) do
 				if vm.row == move.target.row and vm.col == move.target.col then
@@ -131,7 +133,7 @@ describe("AI", function()
 					local piece = state.pieces[move.piece]
 					assert.are.equal(2, piece.player, "AI moved opponent's piece")
 
-					local validMoves = GameLogic.getValidMoves(state, piece)
+					local validMoves = PowerEffects.getValidMovesWithPowers(state, piece)
 					local found = false
 					for _, vm in ipairs(validMoves) do
 						if vm.row == move.target.row and vm.col == move.target.col then
@@ -186,6 +188,27 @@ describe("AI", function()
 			-- Should find the piece that can move (piece index 5)
 			assert.is_not_nil(move)
 		end)
+
+		it("respects jump_proof flag and cannot capture protected pieces", function()
+			local ai = AI.create("easy")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+			-- Set up: Player 1 piece with jump_proof, AI piece adjacent
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {}, isJumpProof = true }, -- Protected piece
+				{ row = 5, col = 5, player = 2, powers = {} }, -- AI piece adjacent
+			}
+
+			-- Run multiple times - AI should NEVER capture the jump_proof piece
+			for _ = 1, 50 do
+				local move = AI.chooseMove(ai, state)
+				if move then
+					-- AI should not target the protected piece's position
+					local isCapturingProtected = move.target.row == 4 and move.target.col == 5
+					assert.is_false(isCapturingProtected, "AI captured a jump_proof piece!")
+				end
+			end
+		end)
 	end)
 
 	-- 8A.3 Game Integration helpers
@@ -234,6 +257,28 @@ describe("AI", function()
 			local config = AI.getDifficultyConfig("expert")
 			assert.are.equal(4, config.searchDepth)
 			assert.are.equal("minimax", config.strategy)
+		end)
+	end)
+
+	describe("getDifficultyDisplayName", function()
+		it("returns Easy for easy", function()
+			assert.are.equal("Easy", AI.getDifficultyDisplayName("easy"))
+		end)
+
+		it("returns Medium for medium", function()
+			assert.are.equal("Medium", AI.getDifficultyDisplayName("medium"))
+		end)
+
+		it("returns Hard for hard", function()
+			assert.are.equal("Hard", AI.getDifficultyDisplayName("hard"))
+		end)
+
+		it("returns Expert for expert", function()
+			assert.are.equal("Expert", AI.getDifficultyDisplayName("expert"))
+		end)
+
+		it("returns Unknown for invalid difficulty", function()
+			assert.are.equal("Unknown", AI.getDifficultyDisplayName("invalid"))
 		end)
 	end)
 end)

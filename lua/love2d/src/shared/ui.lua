@@ -7,6 +7,8 @@ local UI = {}
 -- Valid screens
 UI.SCREENS = {
 	menu = true,
+	gamemode = true,
+	aiselect = true,
 	playing = true,
 	settings = true,
 	gameover = true,
@@ -15,6 +17,8 @@ UI.SCREENS = {
 -- Menu items for each screen
 UI.MENU_ITEMS = {
 	menu = { "New Game", "Settings", "Quit" },
+	gamemode = { "Local 2-Player", "VS AI", "Back" },
+	aiselect = { "Easy", "Medium", "Hard", "Expert", "Back" },
 	settings = { "Master Volume", "SFX Volume", "Music Volume", "Sound Enabled", "Back" },
 	gameover = { "Play Again", "Main Menu" },
 	playing = {},

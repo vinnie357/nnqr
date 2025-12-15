@@ -348,6 +348,10 @@ function Game.draw()
 
 	if screen == "menu" then
 		Game.drawMenuScreen()
+	elseif screen == "gamemode" then
+		Game.drawGameModeScreen()
+	elseif screen == "aiselect" then
+		Game.drawAISelectScreen()
 	elseif screen == "settings" then
 		Game.drawSettingsScreen()
 	elseif screen == "playing" then
@@ -369,6 +373,7 @@ function Game.drawPlayingScreen()
 	Game.drawUI()
 	Game.drawPowerMenu()
 	Game.drawTurnBanner()
+	Game.drawAIIndicator()
 end
 
 function Game.drawPowerTargets()
@@ -1028,6 +1033,122 @@ function Game.drawGameOverScreen()
 			love.graphics.print(item, (screenW - font:getWidth(item)) / 2, itemY)
 		end
 	end
+end
+
+function Game.drawGameModeScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+
+	-- Draw animated board in background (dimmed)
+	Game.drawBoard()
+	Game.drawPieces()
+
+	-- Dark overlay
+	love.graphics.setColor(0, 0, 0, 0.7)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Title
+	local titleY = screenH * 0.2
+	love.graphics.setColor(1, 1, 1)
+	local title = "SELECT GAME MODE"
+	local font = love.graphics.getFont()
+	love.graphics.print(title, (screenW - font:getWidth(title)) / 2, titleY)
+
+	-- Menu items
+	local menuItems = UI.getMenuItems(Game.uiState)
+	local menuY = screenH * 0.4
+	local itemSpacing = 35
+
+	for i, item in ipairs(menuItems) do
+		local itemY = menuY + (i - 1) * itemSpacing
+		local isSelected = i == Game.uiState.selectedIndex
+
+		if isSelected then
+			-- Highlight background
+			love.graphics.setColor(0.3, 0.5, 0.8, 0.5)
+			love.graphics.rectangle("fill", screenW / 2 - 100, itemY - 5, 200, 30, 5, 5)
+			love.graphics.setColor(1, 1, 1)
+			love.graphics.print("> " .. item, (screenW - font:getWidth("> " .. item)) / 2, itemY)
+		else
+			love.graphics.setColor(0.7, 0.7, 0.7)
+			love.graphics.print(item, (screenW - font:getWidth(item)) / 2, itemY)
+		end
+	end
+
+	-- Controls hint
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	local hint = "Arrow Keys to navigate, Enter to select, Escape to go back"
+	love.graphics.print(hint, (screenW - font:getWidth(hint)) / 2, screenH - 50)
+end
+
+function Game.drawAISelectScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+
+	-- Draw animated board in background (dimmed)
+	Game.drawBoard()
+	Game.drawPieces()
+
+	-- Dark overlay
+	love.graphics.setColor(0, 0, 0, 0.7)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Title
+	local titleY = screenH * 0.2
+	love.graphics.setColor(1, 1, 1)
+	local title = "SELECT DIFFICULTY"
+	local font = love.graphics.getFont()
+	love.graphics.print(title, (screenW - font:getWidth(title)) / 2, titleY)
+
+	-- Menu items
+	local menuItems = UI.getMenuItems(Game.uiState)
+	local menuY = screenH * 0.35
+	local itemSpacing = 35
+
+	for i, item in ipairs(menuItems) do
+		local itemY = menuY + (i - 1) * itemSpacing
+		local isSelected = i == Game.uiState.selectedIndex
+
+		if isSelected then
+			-- Highlight background
+			love.graphics.setColor(0.3, 0.5, 0.8, 0.5)
+			love.graphics.rectangle("fill", screenW / 2 - 100, itemY - 5, 200, 30, 5, 5)
+			love.graphics.setColor(1, 1, 1)
+			love.graphics.print("> " .. item, (screenW - font:getWidth("> " .. item)) / 2, itemY)
+		else
+			love.graphics.setColor(0.7, 0.7, 0.7)
+			love.graphics.print(item, (screenW - font:getWidth(item)) / 2, itemY)
+		end
+	end
+
+	-- Controls hint
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	local hint = "Arrow Keys to navigate, Enter to select, Escape to go back"
+	love.graphics.print(hint, (screenW - font:getWidth(hint)) / 2, screenH - 50)
+end
+
+function Game.drawAIIndicator()
+	if not Game.ai then
+		return
+	end
+
+	local screenW = love.graphics.getWidth()
+	local font = love.graphics.getFont()
+	local difficultyName = AI.getDifficultyDisplayName(Game.ai.difficulty)
+	local text = "VS AI (" .. difficultyName .. ")"
+
+	-- Background
+	local textW = font:getWidth(text)
+	local padding = 8
+	local x = screenW - textW - padding * 2 - 10
+	local y = 10
+
+	love.graphics.setColor(0, 0, 0, 0.6)
+	love.graphics.rectangle("fill", x, y, textW + padding * 2, 24, 4, 4)
+
+	-- Text
+	love.graphics.setColor(0.9, 0.9, 0.9)
+	love.graphics.print(text, x + padding, y + 4)
 end
 
 function Game.drawTurnBanner()
@@ -1714,6 +1835,12 @@ function Game.keypressed(key)
 	if screen == "menu" then
 		Game.handleMenuInput(key)
 		return
+	elseif screen == "gamemode" then
+		Game.handleGameModeInput(key)
+		return
+	elseif screen == "aiselect" then
+		Game.handleAISelectInput(key)
+		return
 	elseif screen == "settings" then
 		Game.handleSettingsInput(key)
 		return
@@ -1782,13 +1909,61 @@ function Game.handleMenuInput(key)
 		Game.playSoundForEvent("menu_confirm")
 		local selected = UI.getSelectedMenuItem(Game.uiState)
 		if selected == "New Game" then
-			Game.startNewGame()
-			UI.setScreen(Game.uiState, "playing")
-			Game.showTurnBanner(1)
+			UI.setScreen(Game.uiState, "gamemode")
 		elseif selected == "Settings" then
 			UI.setScreen(Game.uiState, "settings")
 		elseif selected == "Quit" then
 			love.event.quit()
+		end
+	end
+end
+
+function Game.handleGameModeInput(key)
+	if key == "up" then
+		UI.selectPrev(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "down" then
+		UI.selectNext(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "escape" then
+		Game.playSoundForEvent("menu_back")
+		UI.setScreen(Game.uiState, "menu")
+	elseif key == "return" or key == "space" then
+		Game.playSoundForEvent("menu_confirm")
+		local selected = UI.getSelectedMenuItem(Game.uiState)
+		if selected == "Local 2-Player" then
+			Game.startTwoPlayer()
+			UI.setScreen(Game.uiState, "playing")
+			Game.showTurnBanner(1)
+		elseif selected == "VS AI" then
+			UI.setScreen(Game.uiState, "aiselect")
+		elseif selected == "Back" then
+			UI.setScreen(Game.uiState, "menu")
+		end
+	end
+end
+
+function Game.handleAISelectInput(key)
+	if key == "up" then
+		UI.selectPrev(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "down" then
+		UI.selectNext(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "escape" then
+		Game.playSoundForEvent("menu_back")
+		UI.setScreen(Game.uiState, "gamemode")
+	elseif key == "return" or key == "space" then
+		Game.playSoundForEvent("menu_confirm")
+		local selected = UI.getSelectedMenuItem(Game.uiState)
+		if selected == "Back" then
+			UI.setScreen(Game.uiState, "gamemode")
+		else
+			-- Easy, Medium, Hard, Expert - convert to lowercase for AI.create
+			local difficulty = string.lower(selected)
+			Game.startVsAI(difficulty)
+			UI.setScreen(Game.uiState, "playing")
+			Game.showTurnBanner(1)
 		end
 	end
 end

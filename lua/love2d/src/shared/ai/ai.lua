@@ -1,7 +1,7 @@
 -- AI Module
 -- Phase 8A: AI Framework
 
-local GameLogic = require("src.shared.game_logic")
+local PowerEffects = require("src.shared.power_effects")
 
 local AI = {}
 
@@ -39,6 +39,21 @@ function AI.getDifficultyConfig(difficulty)
 	return DIFFICULTY_CONFIG[difficulty] or DIFFICULTY_CONFIG.easy
 end
 
+-- Display names for difficulties (for UI)
+local DIFFICULTY_DISPLAY_NAMES = {
+	easy = "Easy",
+	medium = "Medium",
+	hard = "Hard",
+	expert = "Expert",
+}
+
+--- Get display name for difficulty (for UI indicator)
+---@param difficulty string Internal difficulty name
+---@return string Human-readable display name
+function AI.getDifficultyDisplayName(difficulty)
+	return DIFFICULTY_DISPLAY_NAMES[difficulty] or "Unknown"
+end
+
 --- Check if it's the AI's turn
 ---@param aiState table AI state
 ---@param gameState table Current game state
@@ -48,6 +63,7 @@ function AI.isAITurn(aiState, gameState)
 end
 
 --- Get all valid moves for a player
+--- Uses PowerEffects.getValidMovesWithPowers to respect flags like isJumpProof
 ---@param state table Game state
 ---@param player number Player to get moves for
 ---@return table List of {piece=idx, target={row,col}} moves
@@ -56,7 +72,8 @@ local function getAllValidMoves(state, player)
 
 	for idx, piece in ipairs(state.pieces) do
 		if piece.player == player then
-			local validTargets = GameLogic.getValidMoves(state, piece)
+			-- Use power-aware move calculation that respects flags like isJumpProof
+			local validTargets = PowerEffects.getValidMovesWithPowers(state, piece)
 			for _, target in ipairs(validTargets) do
 				table.insert(moves, {
 					piece = idx,
