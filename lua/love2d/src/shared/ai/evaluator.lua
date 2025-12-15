@@ -16,6 +16,12 @@ Evaluator.WEIGHTS = {
 	JUMP_PROOF_BONUS = 15, -- Bonus for being jump proof
 	DIAGONAL_BONUS = 10, -- Bonus for diagonal movement
 	ORB_BASE_VALUE = 15, -- Base value for collecting any orb
+	-- Move scoring weights
+	CAPTURE_BONUS = 50, -- Base bonus for capturing enemy piece
+	CAPTURE_VALUE_MULT = 2, -- Multiplier for captured piece's value
+	THREAT_PENALTY = 30, -- Penalty for moving into threatened position
+	POSITION_WEIGHT = 1, -- Weight for position improvement
+	RISKY_ORB_PENALTY = 20, -- Penalty for risky orb collection
 }
 
 -- Power value scores for orb collection priority
@@ -391,6 +397,119 @@ function Evaluator.isOrbCollectionRisky(state, player, target)
 	end
 
 	return false
+end
+
+--- Get all valid moves for a player
+---@param state table Game state
+---@param player number Player to get moves for
+---@return table Array of {piece, target} move objects
+function Evaluator.getAllMoves(state, player)
+	local moves = {}
+
+	for _, piece in ipairs(state.pieces) do
+		if piece.player == player then
+			local validMoves = PowerEffects.getValidMovesWithPowers(state, piece)
+			for _, target in ipairs(validMoves) do
+				table.insert(moves, {
+					piece = piece,
+					target = { row = target.row, col = target.col },
+				})
+			end
+		end
+	end
+
+	return moves
+end
+
+--- Score a single move considering all factors
+---@param state table Game state
+---@param move table Move object {piece, target}
+---@param orbs table Array of orbs on the board
+---@return number Score for this move (higher = better)
+function Evaluator.scoreMove(state, move, orbs)
+	local score = 0
+	local piece = move.piece
+	local target = move.target
+	local player = piece.player
+
+	-- 1. Position improvement score
+	local currentPosScore = Evaluator.scorePosition(state, piece.row, piece.col)
+	local newPosScore = Evaluator.scorePosition(state, target.row, target.col)
+	score = score + (newPosScore - currentPosScore) * Evaluator.WEIGHTS.POSITION_WEIGHT
+	-- Add base position score to ensure all moves have positive base
+	score = score + newPosScore * 0.5
+
+	-- 2. Capture bonus
+	local targetPiece = nil
+	for _, p in ipairs(state.pieces) do
+		if p.row == target.row and p.col == target.col and p.player ~= player then
+			targetPiece = p
+			break
+		end
+	end
+
+	if targetPiece then
+		-- Base capture bonus
+		score = score + Evaluator.WEIGHTS.CAPTURE_BONUS
+		-- Extra value for capturing pieces with powers
+		local capturedValue = Evaluator.scorePiecePosition(state, targetPiece)
+		score = score + capturedValue * Evaluator.WEIGHTS.CAPTURE_VALUE_MULT
+	end
+
+	-- 3. Orb collection bonus
+	local orbAtTarget = nil
+	for _, orb in ipairs(orbs) do
+		if orb.row == target.row and orb.col == target.col then
+			orbAtTarget = orb
+			break
+		end
+	end
+
+	if orbAtTarget then
+		local orbValue = Evaluator.scoreOrbValue(orbAtTarget)
+		score = score + orbValue
+
+		-- Penalize risky orb collection
+		if Evaluator.isOrbCollectionRisky(state, player, target) then
+			score = score - Evaluator.WEIGHTS.RISKY_ORB_PENALTY
+		end
+	end
+
+	-- 4. Threat penalty - check if moving here puts us in danger
+	-- (Only if we're not capturing, since capturing removes the threat)
+	if not targetPiece then
+		if Evaluator.isOrbCollectionRisky(state, player, target) then
+			score = score - Evaluator.WEIGHTS.THREAT_PENALTY
+		end
+	end
+
+	return score
+end
+
+--- Get the best move for a player using heuristic evaluation
+---@param state table Game state
+---@param orbs table Array of orbs on the board
+---@param player number Player to find best move for
+---@return table|nil Best move {piece, target} or nil if no moves
+function Evaluator.getBestMove(state, orbs, player)
+	local moves = Evaluator.getAllMoves(state, player)
+
+	if #moves == 0 then
+		return nil
+	end
+
+	local bestMove = nil
+	local bestScore = -math.huge
+
+	for _, move in ipairs(moves) do
+		local score = Evaluator.scoreMove(state, move, orbs)
+		if score > bestScore then
+			bestScore = score
+			bestMove = move
+		end
+	end
+
+	return bestMove
 end
 
 return Evaluator

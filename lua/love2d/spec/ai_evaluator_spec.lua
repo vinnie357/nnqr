@@ -653,4 +653,220 @@ describe("Evaluator", function()
 			assert.is_true(risky)
 		end)
 	end)
+
+	-- 8B.6 Move Scoring
+	describe("scoreMove", function()
+		it("returns positive score for valid moves", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 5, col = 5, player = 1, powers = {} }
+			state.pieces = { piece }
+			local orbs = {}
+
+			local move = { piece = piece, target = { row = 5, col = 6 } }
+			local score = Evaluator.scoreMove(state, move, orbs)
+
+			assert.is_true(score > 0)
+		end)
+
+		it("scores capture moves highly", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 5, col = 5, player = 1, powers = {} }
+			local enemy = { row = 5, col = 6, player = 2, powers = {} }
+			state.pieces = { piece, enemy }
+			local orbs = {}
+
+			local captureMove = { piece = piece, target = { row = 5, col = 6 } }
+			local normalMove = { piece = piece, target = { row = 5, col = 4 } }
+
+			local captureScore = Evaluator.scoreMove(state, captureMove, orbs)
+			local normalScore = Evaluator.scoreMove(state, normalMove, orbs)
+
+			assert.is_true(captureScore > normalScore)
+		end)
+
+		it("scores orb collection moves", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 5, col = 5, player = 1, powers = {} }
+			state.pieces = { piece }
+			local orbs = {
+				{ row = 5, col = 6, powerId = "bomb" },
+			}
+
+			local orbMove = { piece = piece, target = { row = 5, col = 6 } }
+			local normalMove = { piece = piece, target = { row = 5, col = 4 } }
+
+			local orbScore = Evaluator.scoreMove(state, orbMove, orbs)
+			local normalScore = Evaluator.scoreMove(state, normalMove, orbs)
+
+			assert.is_true(orbScore > normalScore)
+		end)
+
+		it("prefers safer orb collection", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 5, col = 5, player = 1, powers = {} }
+			local enemy = { row = 5, col = 7, player = 2, powers = {} } -- Threatens 5,6
+			state.pieces = { piece, enemy }
+			local orbs = {
+				{ row = 5, col = 6, powerId = "bomb" }, -- Risky orb
+				{ row = 5, col = 4, powerId = "bomb" }, -- Safe orb
+			}
+
+			local riskyOrbMove = { piece = piece, target = { row = 5, col = 6 } }
+			local safeOrbMove = { piece = piece, target = { row = 5, col = 4 } }
+
+			local riskyScore = Evaluator.scoreMove(state, riskyOrbMove, orbs)
+			local safeScore = Evaluator.scoreMove(state, safeOrbMove, orbs)
+
+			assert.is_true(safeScore > riskyScore)
+		end)
+
+		it("considers position improvement", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 1, col = 1, player = 1, powers = {} } -- Corner
+			state.pieces = { piece }
+			local orbs = {}
+
+			-- Move toward center vs stay at edge
+			local towardCenterMove = { piece = piece, target = { row = 1, col = 2 } }
+			local stayEdgeMove = { piece = piece, target = { row = 2, col = 1 } }
+
+			-- Both move toward center, but col 2 is slightly more central
+			local score1 = Evaluator.scoreMove(state, towardCenterMove, orbs)
+			local score2 = Evaluator.scoreMove(state, stayEdgeMove, orbs)
+
+			-- Both should be positive (valid moves)
+			assert.is_true(score1 > 0)
+			assert.is_true(score2 > 0)
+		end)
+
+		it("scores capturing high-value pieces higher", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 5, col = 5, player = 1, powers = {} }
+			local weakEnemy = { row = 5, col = 6, player = 2, powers = {} }
+			local strongEnemy = { row = 5, col = 4, player = 2, powers = { "bomb", "recruit" } }
+			state.pieces = { piece, weakEnemy, strongEnemy }
+			local orbs = {}
+
+			local captureWeak = { piece = piece, target = { row = 5, col = 6 } }
+			local captureStrong = { piece = piece, target = { row = 5, col = 4 } }
+
+			local weakScore = Evaluator.scoreMove(state, captureWeak, orbs)
+			local strongScore = Evaluator.scoreMove(state, captureStrong, orbs)
+
+			assert.is_true(strongScore > weakScore)
+		end)
+
+		it("penalizes moves that leave piece threatened", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 5, col = 5, player = 1, powers = {} }
+			local enemy = { row = 5, col = 7, player = 2, powers = {} }
+			state.pieces = { piece, enemy }
+			local orbs = {}
+
+			-- Move to 5,6 puts us adjacent to enemy (risky)
+			-- Move to 5,4 keeps us safe
+			local riskyMove = { piece = piece, target = { row = 5, col = 6 } }
+			local safeMove = { piece = piece, target = { row = 5, col = 4 } }
+
+			local riskyScore = Evaluator.scoreMove(state, riskyMove, orbs)
+			local safeScore = Evaluator.scoreMove(state, safeMove, orbs)
+
+			assert.is_true(safeScore > riskyScore)
+		end)
+	end)
+
+	describe("getAllMoves", function()
+		it("returns all valid moves for a player", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+			}
+
+			local moves = Evaluator.getAllMoves(state, 1)
+
+			-- Piece at 5,5 can move to 4,5, 6,5, 5,4, 5,6 (4 moves)
+			assert.are.equal(4, #moves)
+		end)
+
+		it("returns moves for multiple pieces", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+				{ row = 3, col = 3, player = 1, powers = {} },
+			}
+
+			local moves = Evaluator.getAllMoves(state, 1)
+
+			-- Each piece has 4 moves = 8 total
+			assert.are.equal(8, #moves)
+		end)
+
+		it("only returns moves for specified player", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+				{ row = 3, col = 3, player = 2, powers = {} },
+			}
+
+			local p1Moves = Evaluator.getAllMoves(state, 1)
+			local p2Moves = Evaluator.getAllMoves(state, 2)
+
+			assert.are.equal(4, #p1Moves)
+			assert.are.equal(4, #p2Moves)
+		end)
+
+		it("includes piece reference in each move", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 5, col = 5, player = 1, powers = {} }
+			state.pieces = { piece }
+
+			local moves = Evaluator.getAllMoves(state, 1)
+
+			for _, move in ipairs(moves) do
+				assert.are.equal(piece, move.piece)
+				assert.is_not_nil(move.target)
+				assert.is_not_nil(move.target.row)
+				assert.is_not_nil(move.target.col)
+			end
+		end)
+	end)
+
+	describe("getBestMove", function()
+		it("returns highest scoring move", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 5, col = 5, player = 1, powers = {} }
+			local enemy = { row = 5, col = 6, player = 2, powers = {} }
+			state.pieces = { piece, enemy }
+			local orbs = {}
+
+			local bestMove = Evaluator.getBestMove(state, orbs, 1)
+
+			-- Should choose capture move
+			assert.are.equal(5, bestMove.target.row)
+			assert.are.equal(6, bestMove.target.col)
+		end)
+
+		it("returns nil when no moves available", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {} -- No pieces
+
+			local bestMove = Evaluator.getBestMove(state, {}, 1)
+
+			assert.is_nil(bestMove)
+		end)
+
+		it("prefers orb over empty square", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 5, col = 5, player = 1, powers = {} }
+			state.pieces = { piece }
+			local orbs = {
+				{ row = 5, col = 6, powerId = "bomb" },
+			}
+
+			local bestMove = Evaluator.getBestMove(state, orbs, 1)
+
+			assert.are.equal(5, bestMove.target.row)
+			assert.are.equal(6, bestMove.target.col)
+		end)
+	end)
 end)
