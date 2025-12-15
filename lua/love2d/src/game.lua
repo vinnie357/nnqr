@@ -8,6 +8,7 @@ local Powers = require("src.shared.powers")
 local PowerEffects = require("src.shared.power_effects")
 local GameAnimations = require("src.shared.game_animations")
 local Animations = require("src.shared.animations")
+local Indicators = require("src.shared.indicators")
 
 local Game = {}
 
@@ -306,6 +307,42 @@ function Game.drawPieces()
 			love.graphics.circle("fill", x + 12, y - 20, 6)
 			love.graphics.setColor(0, 0, 0)
 			love.graphics.printf(tostring(#piece.powers), x + 8, y - 24, 10, "center")
+		end
+
+		-- Persistent power indicators
+		local indicators = Indicators.getPieceIndicators(piece)
+		for _, indicator in ipairs(indicators) do
+			if indicator == "jump_proof" then
+				-- Jump Proof: 2 metallic cyan armor bands wrapped around piece
+				love.graphics.setColor(0.5, 0.8, 1, 0.9)
+				love.graphics.setLineWidth(2)
+				love.graphics.ellipse("line", x, y - 8, 22, 11) -- Lower band
+				love.graphics.ellipse("line", x, y - 16, 18, 9) -- Upper band
+				-- White highlight arc on bands
+				love.graphics.setColor(1, 1, 1, 0.5)
+				love.graphics.arc("line", "open", x, y - 8, 22, math.pi + 0.3, math.pi * 2 - 0.3)
+				love.graphics.setLineWidth(1)
+			elseif indicator == "move_diagonal" then
+				-- Move Diagonal: 4 short diagonal lines extending from piece
+				love.graphics.setColor(0.3, 0.9, 0.5, 0.8)
+				love.graphics.setLineWidth(2)
+				local cx, cy = x, y - 10 -- Center of piece
+				local inner, outer = 18, 28 -- Line distances
+				-- Four diagonal directions (isometric squash on Y)
+				for _, dir in ipairs({ { -1, -0.5 }, { 1, -0.5 }, { -1, 0.5 }, { 1, 0.5 } }) do
+					love.graphics.line(
+						cx + dir[1] * inner,
+						cy + dir[2] * inner,
+						cx + dir[1] * outer,
+						cy + dir[2] * outer
+					)
+				end
+				love.graphics.setLineWidth(1)
+			elseif indicator == "invisible" then
+				-- Invisible: Subtle shimmer effect (piece is semi-transparent)
+				love.graphics.setColor(0.7, 0.7, 0.9, 0.3)
+				love.graphics.ellipse("fill", x, y - 10, 24, 12)
+			end
 		end
 
 		-- Selection ring
@@ -664,32 +701,56 @@ function Game.drawMultiplyAnimation(anim, progress)
 	end
 end
 
--- Move Diagonal: Diagonal arrows flash around piece
+-- Move Diagonal: Lines extend outward from piece center
 function Game.drawMoveDiagonalAnimation(anim, progress)
 	local row, col = anim.data.row, anim.data.col
 	local height = GameLogic.getHeight(Game.state, row, col)
 	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
 	y = y + Rendering.getHeightOffset(height)
 
-	-- Pulsing diagonal indicators
-	local alpha = Animations.ease.easeOutQuad(1 - progress)
-	local scale = Animations.ease.easeOutBack(progress)
+	-- Phase 1 (0-50%): Lines extend outward from center
+	-- Phase 2 (50-100%): Lines reach full length, glow settles
+	local extendProgress = math.min(1, progress * 2) -- Reaches full extension at 50%
+	local glowAlpha = 1 - math.max(0, (progress - 0.5) * 1.5) -- Glow fades in second half
 
-	-- Four diagonal directions
-	local dirs = { { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } }
+	local cx, cy = x, y - 10 -- Center of piece
+	local inner = 18 * extendProgress -- Lines extend from center
+	local outer = 28 * extendProgress
+
+	-- Four diagonal directions (isometric squash on Y)
+	local dirs = { { -1, -0.5 }, { 1, -0.5 }, { -1, 0.5 }, { 1, 0.5 } }
+
+	-- Glow effect around extending lines
+	if glowAlpha > 0.2 then
+		love.graphics.setColor(0.3, 0.9, 0.5, glowAlpha * 0.4)
+		for _, dir in ipairs(dirs) do
+			love.graphics.circle("fill", cx + dir[1] * outer, cy + dir[2] * outer, 6 * extendProgress)
+		end
+	end
+
+	-- Extending diagonal lines
+	love.graphics.setColor(0.3, 0.9, 0.5, 0.8)
+	love.graphics.setLineWidth(2)
 	for _, dir in ipairs(dirs) do
-		local dx, dy = dir[1] * 25 * scale, dir[2] * 15 * scale
-		love.graphics.setColor(0.3, 0.9, 0.5, alpha * 0.8)
-		love.graphics.circle("fill", x + dx, y - 10 + dy, 5)
+		love.graphics.line(cx + dir[1] * inner, cy + dir[2] * inner, cx + dir[1] * outer, cy + dir[2] * outer)
+	end
+	love.graphics.setLineWidth(1)
 
-		-- Arrow line
-		love.graphics.setLineWidth(2)
-		love.graphics.line(x, y - 10, x + dx * 0.8, y - 10 + dy * 0.8)
-		love.graphics.setLineWidth(1)
+	-- Sparkles during extension
+	if progress < 0.6 then
+		for i = 1, 4 do
+			local angle = (i / 4) * math.pi * 2 + progress * 4
+			local dist = 20 * extendProgress
+			local sx = cx + math.cos(angle) * dist
+			local sy = cy + math.sin(angle) * dist * 0.5
+
+			love.graphics.setColor(0.5, 1, 0.7, 1 - progress * 1.5)
+			love.graphics.circle("fill", sx, sy, 2)
+		end
 	end
 end
 
--- Jump Proof: Shield bubble appears around piece
+-- Jump Proof: Armor bands wrap around piece
 function Game.drawJumpProofAnimation(anim, progress)
 	local row, col = anim.data.row, anim.data.col
 	local height = GameLogic.getHeight(Game.state, row, col)
@@ -698,25 +759,33 @@ function Game.drawJumpProofAnimation(anim, progress)
 
 	local scale = Animations.getShieldScale(anim, progress)
 
-	-- Shield bubble
-	love.graphics.setColor(0.3, 0.7, 1, 0.4 * scale)
-	love.graphics.ellipse("fill", x, y - 12, 28 * scale, 16 * scale)
+	-- Phase 1 (0-50%): Armor bands scale from 0 to full size (wrapping effect)
+	-- Phase 2 (50-100%): Bands settle, metallic highlight appears
+	local bandScale = math.min(1, progress * 2) -- Reaches full size at 50%
+	local highlightAlpha = math.max(0, (progress - 0.5) * 2) -- Fades in after 50%
 
-	-- Shield outline
-	love.graphics.setColor(0.5, 0.8, 1, 0.8)
-	love.graphics.setLineWidth(2)
-	love.graphics.ellipse("line", x, y - 12, 28 * scale, 16 * scale)
+	-- Metallic cyan armor bands wrapping around
+	love.graphics.setColor(0.5, 0.8, 1, 0.9 * bandScale)
+	love.graphics.setLineWidth(2 + bandScale)
+	love.graphics.ellipse("line", x, y - 8, 22 * bandScale, 11 * bandScale) -- Lower band
+	love.graphics.ellipse("line", x, y - 16, 18 * bandScale, 9 * bandScale) -- Upper band
 	love.graphics.setLineWidth(1)
 
-	-- Shield sparkles
-	if progress < 0.8 then
-		for i = 1, 4 do
-			local angle = (i / 4) * math.pi * 2 + progress * 3
-			local dist = 20 * scale
+	-- White metallic highlight appears as bands settle
+	if highlightAlpha > 0 then
+		love.graphics.setColor(1, 1, 1, 0.5 * highlightAlpha)
+		love.graphics.arc("line", "open", x, y - 8, 22, math.pi + 0.3, math.pi * 2 - 0.3)
+	end
+
+	-- Sparkles during wrapping phase
+	if progress < 0.6 then
+		for i = 1, 6 do
+			local angle = (i / 6) * math.pi * 2 + progress * 6
+			local dist = 25 * (1 - progress)
 			local sx = x + math.cos(angle) * dist
 			local sy = y - 12 + math.sin(angle) * dist * 0.5
 
-			love.graphics.setColor(1, 1, 1, 1 - progress)
+			love.graphics.setColor(0.5, 0.8, 1, 1 - progress * 1.5)
 			love.graphics.circle("fill", sx, sy, 2)
 		end
 	end

@@ -1,6 +1,6 @@
 # NNQR Love2D - Progress Tracker
 
-## Current Phase: Phase 4B - Power Activation & Animations
+## Current Phase: Phase 4C - Persistent Power Indicators
 
 ## Overall Progress
 
@@ -12,9 +12,10 @@
 - [~] Phase 3: Network Architecture (protocol done, server pending)
 - [x] Phase 4: Power-Up Framework (core logic)
 - [x] Phase 4B: Power Activation & Animations
+- [x] Phase 4C: Persistent Power Indicators
 - [ ] Phase 5: Polish & Integration
 
-**Test Count: 376 passing**
+**Test Count: 381 passing**
 
 ---
 
@@ -154,6 +155,29 @@
 
 ---
 
+## Phase 4C: Persistent Power Indicators - COMPLETE
+
+### Design Decisions
+- Jump Proof indicator: Armor bands - 2 metallic cyan rings wrapped around torus
+- Move Diagonal indicator: Diagonal lines - 4 short lines extending from piece corners
+- Invisible indicator: Subtle shimmer effect (semi-transparent overlay)
+- Activation animations transition smoothly into persistent indicators
+
+### Tests - COMPLETE
+- [x] Indicators.getPieceIndicators() returns empty for no flags
+- [x] Returns "jump_proof" when isJumpProof == true
+- [x] Returns "move_diagonal" when canMoveDiagonally == true
+- [x] Returns "invisible" when isInvisible == true
+- [x] Returns multiple indicators for pieces with multiple flags
+
+### Implementation - COMPLETE
+- [x] `src/shared/indicators.lua` - Indicators module
+- [x] Persistent indicator rendering in `Game.drawPieces()`
+- [x] Updated Jump Proof animation (armor wrap-on effect)
+- [x] Updated Move Diagonal animation (lines extend effect)
+
+---
+
 ## Phase 5: Polish & Integration
 
 - [ ] Sound system
@@ -256,6 +280,32 @@
 
 **Total Tests: 376 passing** (+133 from Phase 4B)
 
+### Session 4 (Phase 4C)
+**TDD Cycle - Indicators Module:**
+- Wrote 5 indicator tests (RED)
+- Implemented `src/shared/indicators.lua` (GREEN)
+- Returns indicator names based on piece flags (isJumpProof, canMoveDiagonally, isInvisible)
+
+**Persistent Indicator Rendering:**
+- Added persistent indicator rendering in `Game.drawPieces()`
+- Jump Proof: 2 metallic cyan armor bands wrapped around torus
+- Move Diagonal: 4 short green diagonal lines extending from piece
+- Invisible: Subtle shimmer effect
+
+**Animation Updates:**
+- Updated Jump Proof animation: armor bands wrap on (instead of shield bubble)
+- Updated Move Diagonal animation: lines extend outward from center
+
+**Files Created This Session:**
+- `src/shared/indicators.lua` - Indicators module (29 lines)
+- `spec/indicators_spec.lua` - Indicator tests (5 tests)
+- `docs/phase4c_indicators.md` - Phase 4C plan document
+
+**Files Modified This Session:**
+- `src/game.lua` - Persistent indicators, updated animations
+
+**Total Tests: 381 passing** (+5 from Phase 4C)
+
 ---
 
 ## Test Breakdown
@@ -271,4 +321,5 @@
 | power_effects_spec.lua | 46 |
 | animations_spec.lua | 112 |
 | game_animations_spec.lua | 15 |
-| **Total** | **376** |
+| indicators_spec.lua | 5 |
+| **Total** | **381** |
