@@ -1,6 +1,6 @@
 # NNQR Love2D - Progress Tracker
 
-## Current Phase: Phase 4C - Persistent Power Indicators
+## Current Phase: Phase 5 - Polish & Integration
 
 ## Overall Progress
 
@@ -13,9 +13,12 @@
 - [x] Phase 4: Power-Up Framework (core logic)
 - [x] Phase 4B: Power Activation & Animations
 - [x] Phase 4C: Persistent Power Indicators
-- [ ] Phase 5: Polish & Integration
+- [x] Phase 5A: UI System (menus, settings, screens)
+- [x] Phase 5B: Sound System
+- [x] Phase 5C: Particle Effects
+- [ ] Phase 5D: Network Server (optional)
 
-**Test Count: 381 passing**
+**Test Count: 492 passing**
 
 ---
 
@@ -180,12 +183,58 @@
 
 ## Phase 5: Polish & Integration
 
-- [ ] Sound system
-- [ ] Particle effects
-- [ ] Complete UI
-- [ ] Network server implementation
+### Phase 5A: UI System - COMPLETE
+
+**Tests - 37 tests**
+- [x] UI state creation and screen management
+- [x] Menu navigation (selectNext, selectPrev)
+- [x] Menu items for each screen
+- [x] Volume settings (master, sfx, music)
+- [x] Mute toggle
+
+**Implementation**
+- [x] `src/shared/ui.lua` - Screen state, menu navigation, volume settings
+- [x] Main menu screen with New Game, Settings, Quit
+- [x] Settings screen with volume sliders and mute toggle
+- [x] Game over screen with Play Again, Main Menu
+- [x] Turn banner animation between turns
+
+### Phase 5B: Sound System - COMPLETE
+
+**Tests - 31 tests**
+- [x] Sound manager state creation
+- [x] Volume control (master, sfx, music)
+- [x] Mute toggle
+- [x] Event-to-sound mapping
+- [x] Power-to-sound mapping
+- [x] Effective volume calculation
+
+**Implementation**
+- [x] `src/shared/sound_manager.lua` - Volume control, event/power mapping
+- [x] Graceful handling of missing sound files
+- [x] Integration with UI volume settings
+- [x] Sound hooks in game.lua for move, capture, select, menu events
+
+### Phase 5C: Particle Effects - COMPLETE
+
+**Tests - 32 tests (18 + 14)**
+- [x] Particle config definitions (explosion, teleport, recruit, multiply, power_activate, orb_collect)
+- [x] Power-to-effect mapping
+- [x] Particle system lifecycle (create, spawn, update, clear)
+- [x] Effect progress calculation
+
+**Implementation**
+- [x] `src/shared/particle_config.lua` - Effect definitions and power mapping
+- [x] `src/shared/particles.lua` - Active effect management
+- [x] Particle rendering in game.lua
+- [x] Particles spawn on power activation and orb collection
+
+### Phase 5D: Network Server - PENDING (Optional)
+
+- [ ] Love2D headless server implementation
+- [ ] Client networking integration
+- [ ] Lobby system
 - [ ] Reconnection handling
-- [ ] Performance optimization
 
 ---
 
@@ -306,6 +355,53 @@
 
 **Total Tests: 381 passing** (+5 from Phase 4C)
 
+### Session 5 (Phase 5 - Polish)
+
+**TDD Cycle - UI System (Phase 5A):**
+- Wrote 37 UI tests (RED)
+- Implemented `src/shared/ui.lua` (GREEN)
+- Screen state management, menu navigation, volume settings
+
+**TDD Cycle - Tooltip System:**
+- Wrote 17 tooltip tests (RED)
+- Implemented `src/shared/tooltip.lua` (GREEN)
+- Power tooltip formatting and positioning
+
+**TDD Cycle - Sound System (Phase 5B):**
+- Wrote 31 sound manager tests (RED)
+- Implemented `src/shared/sound_manager.lua` (GREEN)
+- Volume control, event/power sound mapping, graceful missing file handling
+
+**TDD Cycle - Particle Effects (Phase 5C):**
+- Wrote 18 particle config tests (RED)
+- Implemented `src/shared/particle_config.lua` (GREEN)
+- Wrote 14 particles tests (RED)
+- Implemented `src/shared/particles.lua` (GREEN)
+
+**Game Integration:**
+- Main menu, settings, game over screens
+- Turn banners between turns
+- Sound hooks for game events
+- Particle spawning on power activation and orb collection
+
+**Files Created This Session:**
+- `src/shared/ui.lua` - Screen/menu state management
+- `src/shared/tooltip.lua` - Power tooltip formatting
+- `src/shared/sound_manager.lua` - Sound system (no actual audio files)
+- `src/shared/particle_config.lua` - Effect definitions
+- `src/shared/particles.lua` - Particle lifecycle management
+- `spec/ui_spec.lua` - UI tests (37)
+- `spec/tooltip_spec.lua` - Tooltip tests (17)
+- `spec/sound_manager_spec.lua` - Sound tests (31)
+- `spec/particle_config_spec.lua` - Particle config tests (18)
+- `spec/particles_spec.lua` - Particles tests (14)
+- `assets/sounds/.gitkeep` - Placeholder for sound files
+
+**Files Modified This Session:**
+- `src/game.lua` - Menu screens, sound hooks, particle integration
+
+**Total Tests: 492 passing** (+111 from Phase 5)
+
 ---
 
 ## Test Breakdown
@@ -322,4 +418,9 @@
 | animations_spec.lua | 112 |
 | game_animations_spec.lua | 15 |
 | indicators_spec.lua | 5 |
-| **Total** | **381** |
+| ui_spec.lua | 37 |
+| tooltip_spec.lua | 17 |
+| sound_manager_spec.lua | 31 |
+| particle_config_spec.lua | 18 |
+| particles_spec.lua | 14 |
+| **Total** | **492** |
