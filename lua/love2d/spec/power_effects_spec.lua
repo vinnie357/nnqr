@@ -1329,6 +1329,412 @@ describe("PowerEffects", function()
 		end)
 	end)
 
+	-- Phase 9B: Terrain Powers
+
+	-- 9B.1 Area Effects
+	describe("plateau", function()
+		it("raises 3x3 area to max height (4)", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "plateau" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activatePlateau(state, piece)
+
+			-- All tiles in 3x3 should be at max height
+			for dr = -1, 1 do
+				for dc = -1, 1 do
+					local row = 4 + dr
+					local col = 5 + dc
+					assert.are.equal(4, state.heightMap[row][col], "Tile at " .. row .. "," .. col .. " should be 4")
+				end
+			end
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "plateau" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activatePlateau(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("moat", function()
+		it("raises center tile to max height", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "moat" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateMoat(state, piece)
+
+			assert.are.equal(4, state.heightMap[4][5])
+		end)
+
+		it("lowers surrounding ring by 1", function()
+			local state = GameLogic.createInitialState()
+			-- Set all heights to 2 first
+			for row = 3, 5 do
+				for col = 4, 6 do
+					state.heightMap[row][col] = 2
+				end
+			end
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "moat" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateMoat(state, piece)
+
+			-- Surrounding tiles should be lowered to 1
+			assert.are.equal(1, state.heightMap[3][4])
+			assert.are.equal(1, state.heightMap[3][5])
+			assert.are.equal(1, state.heightMap[3][6])
+			assert.are.equal(1, state.heightMap[4][4])
+			assert.are.equal(1, state.heightMap[4][6])
+			assert.are.equal(1, state.heightMap[5][4])
+			assert.are.equal(1, state.heightMap[5][5])
+			assert.are.equal(1, state.heightMap[5][6])
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "moat" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateMoat(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("climb_tile", function()
+		it("sets canClimbAny flag on piece", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "climb_tile" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateClimbTile(state, piece)
+			assert.is_true(piece.canClimbAny)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "climb_tile" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateClimbTile(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+
+		it("allows movement to any height when flag is set", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {}, canClimbAny = true },
+			}
+			local piece = state.pieces[1]
+			state.heightMap[4][5] = 0
+			state.heightMap[4][6] = 4 -- Normally can't climb 4 levels
+
+			local moves = PowerEffects.getValidMovesWithPowers(state, piece)
+			local canReachHigh = false
+			for _, move in ipairs(moves) do
+				if move.row == 4 and move.col == 6 then
+					canReachHigh = true
+				end
+			end
+			assert.is_true(canReachHigh)
+		end)
+	end)
+
+	-- 9B.2 Line Effects
+	describe("trench_row", function()
+		it("lowers entire row by 2", function()
+			local state = GameLogic.createInitialState()
+			-- Set row heights
+			for col = 1, 10 do
+				state.heightMap[4][col] = 3
+			end
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "trench_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTrenchRow(state, piece)
+
+			for col = 1, 10 do
+				assert.are.equal(1, state.heightMap[4][col])
+			end
+		end)
+
+		it("clamps at min height 0", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[4][5] = 1 -- Will go below 0
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "trench_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTrenchRow(state, piece)
+
+			assert.are.equal(0, state.heightMap[4][5])
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "trench_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTrenchRow(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("trench_column", function()
+		it("lowers entire column by 2", function()
+			local state = GameLogic.createInitialState()
+			for row = 1, 8 do
+				state.heightMap[row][5] = 4
+			end
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "trench_column" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTrenchColumn(state, piece)
+
+			for row = 1, 8 do
+				assert.are.equal(2, state.heightMap[row][5])
+			end
+		end)
+	end)
+
+	describe("wall_row", function()
+		it("raises entire row by 2", function()
+			local state = GameLogic.createInitialState()
+			for col = 1, 10 do
+				state.heightMap[4][col] = 1
+			end
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "wall_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateWallRow(state, piece)
+
+			for col = 1, 10 do
+				assert.are.equal(3, state.heightMap[4][col])
+			end
+		end)
+
+		it("clamps at max height 4", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[4][5] = 3 -- Will exceed 4
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "wall_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateWallRow(state, piece)
+
+			assert.are.equal(4, state.heightMap[4][5])
+		end)
+	end)
+
+	describe("wall_column", function()
+		it("raises entire column by 2", function()
+			local state = GameLogic.createInitialState()
+			for row = 1, 8 do
+				state.heightMap[row][5] = 1
+			end
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "wall_column" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateWallColumn(state, piece)
+
+			for row = 1, 8 do
+				assert.are.equal(3, state.heightMap[row][5])
+			end
+		end)
+	end)
+
+	-- 9B.3 Invert Powers
+	describe("invert_radial", function()
+		it("flips heights in 3x3 (4 becomes 0, 0 becomes 4)", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[4][5] = 4
+			state.heightMap[3][5] = 0
+			state.heightMap[5][5] = 2
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "invert_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateInvertRadial(state, piece)
+
+			assert.are.equal(0, state.heightMap[4][5]) -- 4 -> 0
+			assert.are.equal(4, state.heightMap[3][5]) -- 0 -> 4
+			assert.are.equal(2, state.heightMap[5][5]) -- 2 -> 2 (midpoint)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "invert_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateInvertRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("invert_row", function()
+		it("flips heights in entire row", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[4][1] = 0
+			state.heightMap[4][5] = 4
+			state.heightMap[4][10] = 1
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "invert_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateInvertRow(state, piece)
+
+			assert.are.equal(4, state.heightMap[4][1]) -- 0 -> 4
+			assert.are.equal(0, state.heightMap[4][5]) -- 4 -> 0
+			assert.are.equal(3, state.heightMap[4][10]) -- 1 -> 3
+		end)
+	end)
+
+	describe("invert_column", function()
+		it("flips heights in entire column", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[1][5] = 0
+			state.heightMap[4][5] = 4
+			state.heightMap[8][5] = 1
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "invert_column" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateInvertColumn(state, piece)
+
+			assert.are.equal(4, state.heightMap[1][5]) -- 0 -> 4
+			assert.are.equal(0, state.heightMap[4][5]) -- 4 -> 0
+			assert.are.equal(3, state.heightMap[8][5]) -- 1 -> 3
+		end)
+	end)
+
+	-- 9B.4 Dredge Powers
+	describe("dredge_radial", function()
+		it("raises tiles under friendly pieces in 3x3", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[3][5] = 1
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "dredge_radial" } },
+				{ row = 3, col = 5, player = 1, powers = {} }, -- Ally
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDredgeRadial(state, piece)
+
+			assert.are.equal(2, state.heightMap[3][5]) -- Raised
+		end)
+
+		it("lowers tiles under enemy pieces in 3x3", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[5][5] = 3
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "dredge_radial" } },
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Enemy
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDredgeRadial(state, piece)
+
+			assert.are.equal(2, state.heightMap[5][5]) -- Lowered
+		end)
+
+		it("raises activator's tile", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[4][5] = 1
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "dredge_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDredgeRadial(state, piece)
+
+			assert.are.equal(2, state.heightMap[4][5]) -- Raised (self is friendly)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "dredge_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDredgeRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("dredge_row", function()
+		it("raises friendly and lowers enemy tiles in row", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[4][1] = 1
+			state.heightMap[4][10] = 3
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "dredge_row" } },
+				{ row = 4, col = 1, player = 1, powers = {} }, -- Ally
+				{ row = 4, col = 10, player = 2, powers = {} }, -- Enemy
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDredgeRow(state, piece)
+
+			assert.are.equal(2, state.heightMap[4][1]) -- Ally raised
+			assert.are.equal(2, state.heightMap[4][10]) -- Enemy lowered
+		end)
+	end)
+
+	describe("dredge_column", function()
+		it("raises friendly and lowers enemy tiles in column", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[1][5] = 1
+			state.heightMap[8][5] = 3
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "dredge_column" } },
+				{ row = 1, col = 5, player = 1, powers = {} }, -- Ally
+				{ row = 8, col = 5, player = 2, powers = {} }, -- Enemy
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDredgeColumn(state, piece)
+
+			assert.are.equal(2, state.heightMap[1][5]) -- Ally raised
+			assert.are.equal(2, state.heightMap[8][5]) -- Enemy lowered
+		end)
+	end)
+
 	describe("getValidMovesWithPowers with flags", function()
 		it("includes diagonal moves when canMoveDiagonally is true", function()
 			local state = GameLogic.createInitialState()

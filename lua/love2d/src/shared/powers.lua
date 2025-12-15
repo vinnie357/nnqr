@@ -241,6 +241,120 @@ Powers.definitions = {
 		description = "Randomly swap positions of all pieces in column",
 		targeting = "self_column",
 	},
+
+	-- Phase 9B: Terrain Powers
+
+	-- 9B.1 Area Effects
+	plateau = {
+		id = "plateau",
+		name = "Plateau",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Raise 3x3 area to maximum height",
+		targeting = "area_3x3",
+	},
+	moat = {
+		id = "moat",
+		name = "Moat",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Raise center to max, lower surrounding ring",
+		targeting = "area_3x3",
+	},
+	climb_tile = {
+		id = "climb_tile",
+		name = "Climb Tile",
+		category = "Movement",
+		duration = "permanent",
+		description = "Piece ignores height restrictions permanently",
+		targeting = "self",
+	},
+
+	-- 9B.2 Line Effects
+	trench_row = {
+		id = "trench_row",
+		name = "Trench Row",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Lower entire row by 2 levels",
+		targeting = "self_row",
+	},
+	trench_column = {
+		id = "trench_column",
+		name = "Trench Column",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Lower entire column by 2 levels",
+		targeting = "self_column",
+	},
+	wall_row = {
+		id = "wall_row",
+		name = "Wall Row",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Raise entire row by 2 levels",
+		targeting = "self_row",
+	},
+	wall_column = {
+		id = "wall_column",
+		name = "Wall Column",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Raise entire column by 2 levels",
+		targeting = "self_column",
+	},
+
+	-- 9B.3 Invert Powers
+	invert_radial = {
+		id = "invert_radial",
+		name = "Invert Radial",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Flip heights in 3x3 area (4 becomes 0, etc.)",
+		targeting = "area_3x3",
+	},
+	invert_row = {
+		id = "invert_row",
+		name = "Invert Row",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Flip heights in entire row",
+		targeting = "self_row",
+	},
+	invert_column = {
+		id = "invert_column",
+		name = "Invert Column",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Flip heights in entire column",
+		targeting = "self_column",
+	},
+
+	-- 9B.4 Dredge Powers
+	dredge_radial = {
+		id = "dredge_radial",
+		name = "Dredge Radial",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Raise friendly tiles, lower enemy tiles in 3x3",
+		targeting = "area_3x3",
+	},
+	dredge_row = {
+		id = "dredge_row",
+		name = "Dredge Row",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Raise friendly tiles, lower enemy tiles in row",
+		targeting = "self_row",
+	},
+	dredge_column = {
+		id = "dredge_column",
+		name = "Dredge Column",
+		category = "Terrain",
+		duration = "single_use",
+		description = "Raise friendly tiles, lower enemy tiles in column",
+		targeting = "self_column",
+	},
 }
 
 -- List of power IDs for random selection

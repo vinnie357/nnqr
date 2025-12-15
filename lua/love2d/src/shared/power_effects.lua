@@ -46,7 +46,7 @@ local function getEmptyTiles(state)
 end
 
 --- Get valid moves considering powers (especially move_diagonal)
---- Uses piece flags (canMoveDiagonally, isJumpProof) set by activation
+--- Uses piece flags (canMoveDiagonally, isJumpProof, canClimbAny) set by activation
 ---@param state table Game state
 ---@param piece table Piece to get moves for
 ---@return table Array of valid moves
@@ -56,6 +56,8 @@ function PowerEffects.getValidMovesWithPowers(state, piece)
 
 	-- Check for diagonal movement - uses FLAG not power inventory
 	local canDiagonal = piece.canMoveDiagonally == true
+	-- Check for climb any height - uses FLAG not power inventory
+	local canClimbAny = piece.canClimbAny == true
 
 	-- Orthogonal directions
 	local directions = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } }
@@ -78,8 +80,9 @@ function PowerEffects.getValidMovesWithPowers(state, piece)
 			if not isDestroyed then
 				local targetHeight = Height.getHeight(state.heightMap, newRow, newCol)
 
-				-- Check height restriction
-				if Height.canMove(pieceHeight, targetHeight) then
+				-- Check height restriction (unless canClimbAny is set)
+				local canMoveToHeight = canClimbAny or Height.canMove(pieceHeight, targetHeight)
+				if canMoveToHeight then
 					-- Check for pieces
 					local targetPiece = nil
 					for _, p in ipairs(state.pieces) do
@@ -949,6 +952,297 @@ function PowerEffects.activateScrambleColumn(state, piece)
 	end
 
 	removePower(piece, "scramble_column")
+
+	return state
+end
+
+-- Phase 9B: Terrain Powers
+
+-- 9B.1 Area Effects
+
+--- Activate plateau power (raise 3x3 area to max height)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activatePlateau(state, piece)
+	for dr = -1, 1 do
+		for dc = -1, 1 do
+			local row = piece.row + dr
+			local col = piece.col + dc
+			if Logic.isValidPosition(row, col) then
+				Height.setHeight(state.heightMap, row, col, Height.MAX_HEIGHT)
+			end
+		end
+	end
+
+	removePower(piece, "plateau")
+
+	return state
+end
+
+--- Activate moat power (raise center to max, lower surrounding ring)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateMoat(state, piece)
+	-- Raise center to max
+	Height.setHeight(state.heightMap, piece.row, piece.col, Height.MAX_HEIGHT)
+
+	-- Lower surrounding ring by 1
+	for dr = -1, 1 do
+		for dc = -1, 1 do
+			if not (dr == 0 and dc == 0) then
+				local row = piece.row + dr
+				local col = piece.col + dc
+				if Logic.isValidPosition(row, col) then
+					local currentHeight = Height.getHeight(state.heightMap, row, col)
+					Height.setHeight(state.heightMap, row, col, currentHeight - 1)
+				end
+			end
+		end
+	end
+
+	removePower(piece, "moat")
+
+	return state
+end
+
+--- Activate climb_tile power (piece ignores height restrictions)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateClimbTile(state, piece)
+	piece.canClimbAny = true
+
+	removePower(piece, "climb_tile")
+
+	return state
+end
+
+-- 9B.2 Line Effects
+
+--- Activate trench_row power (lower entire row by 2)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateTrenchRow(state, piece)
+	local targetRow = piece.row
+
+	for col = 1, state.cols do
+		local currentHeight = Height.getHeight(state.heightMap, targetRow, col)
+		Height.setHeight(state.heightMap, targetRow, col, currentHeight - 2)
+	end
+
+	removePower(piece, "trench_row")
+
+	return state
+end
+
+--- Activate trench_column power (lower entire column by 2)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateTrenchColumn(state, piece)
+	local targetCol = piece.col
+
+	for row = 1, state.rows do
+		local currentHeight = Height.getHeight(state.heightMap, row, targetCol)
+		Height.setHeight(state.heightMap, row, targetCol, currentHeight - 2)
+	end
+
+	removePower(piece, "trench_column")
+
+	return state
+end
+
+--- Activate wall_row power (raise entire row by 2)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateWallRow(state, piece)
+	local targetRow = piece.row
+
+	for col = 1, state.cols do
+		local currentHeight = Height.getHeight(state.heightMap, targetRow, col)
+		Height.setHeight(state.heightMap, targetRow, col, currentHeight + 2)
+	end
+
+	removePower(piece, "wall_row")
+
+	return state
+end
+
+--- Activate wall_column power (raise entire column by 2)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateWallColumn(state, piece)
+	local targetCol = piece.col
+
+	for row = 1, state.rows do
+		local currentHeight = Height.getHeight(state.heightMap, row, targetCol)
+		Height.setHeight(state.heightMap, row, targetCol, currentHeight + 2)
+	end
+
+	removePower(piece, "wall_column")
+
+	return state
+end
+
+-- 9B.3 Invert Powers
+
+--- Invert a height value (4 becomes 0, 0 becomes 4, etc.)
+---@param height number Current height (0-4)
+---@return number Inverted height
+local function invertHeight(height)
+	return Height.MAX_HEIGHT - height
+end
+
+--- Activate invert_radial power (flip heights in 3x3)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateInvertRadial(state, piece)
+	for dr = -1, 1 do
+		for dc = -1, 1 do
+			local row = piece.row + dr
+			local col = piece.col + dc
+			if Logic.isValidPosition(row, col) then
+				local currentHeight = Height.getHeight(state.heightMap, row, col)
+				Height.setHeight(state.heightMap, row, col, invertHeight(currentHeight))
+			end
+		end
+	end
+
+	removePower(piece, "invert_radial")
+
+	return state
+end
+
+--- Activate invert_row power (flip heights in row)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateInvertRow(state, piece)
+	local targetRow = piece.row
+
+	for col = 1, state.cols do
+		local currentHeight = Height.getHeight(state.heightMap, targetRow, col)
+		Height.setHeight(state.heightMap, targetRow, col, invertHeight(currentHeight))
+	end
+
+	removePower(piece, "invert_row")
+
+	return state
+end
+
+--- Activate invert_column power (flip heights in column)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateInvertColumn(state, piece)
+	local targetCol = piece.col
+
+	for row = 1, state.rows do
+		local currentHeight = Height.getHeight(state.heightMap, row, targetCol)
+		Height.setHeight(state.heightMap, row, targetCol, invertHeight(currentHeight))
+	end
+
+	removePower(piece, "invert_column")
+
+	return state
+end
+
+-- 9B.4 Dredge Powers
+
+--- Helper to get piece at position
+---@param state table Game state
+---@param row number Row
+---@param col number Column
+---@return table|nil Piece at position or nil
+local function getPieceAtPosition(state, row, col)
+	for _, p in ipairs(state.pieces) do
+		if p.row == row and p.col == col then
+			return p
+		end
+	end
+	return nil
+end
+
+--- Activate dredge_radial power (raise friendly tiles, lower enemy tiles in 3x3)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateDredgeRadial(state, piece)
+	for dr = -1, 1 do
+		for dc = -1, 1 do
+			local row = piece.row + dr
+			local col = piece.col + dc
+			if Logic.isValidPosition(row, col) then
+				local pieceOnTile = getPieceAtPosition(state, row, col)
+				if pieceOnTile then
+					local currentHeight = Height.getHeight(state.heightMap, row, col)
+					if pieceOnTile.player == piece.player then
+						-- Friendly: raise
+						Height.setHeight(state.heightMap, row, col, currentHeight + 1)
+					else
+						-- Enemy: lower
+						Height.setHeight(state.heightMap, row, col, currentHeight - 1)
+					end
+				end
+			end
+		end
+	end
+
+	removePower(piece, "dredge_radial")
+
+	return state
+end
+
+--- Activate dredge_row power (raise friendly tiles, lower enemy tiles in row)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateDredgeRow(state, piece)
+	local targetRow = piece.row
+
+	for col = 1, state.cols do
+		local pieceOnTile = getPieceAtPosition(state, targetRow, col)
+		if pieceOnTile then
+			local currentHeight = Height.getHeight(state.heightMap, targetRow, col)
+			if pieceOnTile.player == piece.player then
+				Height.setHeight(state.heightMap, targetRow, col, currentHeight + 1)
+			else
+				Height.setHeight(state.heightMap, targetRow, col, currentHeight - 1)
+			end
+		end
+	end
+
+	removePower(piece, "dredge_row")
+
+	return state
+end
+
+--- Activate dredge_column power (raise friendly tiles, lower enemy tiles in column)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateDredgeColumn(state, piece)
+	local targetCol = piece.col
+
+	for row = 1, state.rows do
+		local pieceOnTile = getPieceAtPosition(state, row, targetCol)
+		if pieceOnTile then
+			local currentHeight = Height.getHeight(state.heightMap, row, targetCol)
+			if pieceOnTile.player == piece.player then
+				Height.setHeight(state.heightMap, row, targetCol, currentHeight + 1)
+			else
+				Height.setHeight(state.heightMap, row, targetCol, currentHeight - 1)
+			end
+		end
+	end
+
+	removePower(piece, "dredge_column")
 
 	return state
 end
