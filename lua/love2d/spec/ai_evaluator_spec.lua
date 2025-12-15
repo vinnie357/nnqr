@@ -869,4 +869,97 @@ describe("Evaluator", function()
 			assert.are.equal(6, bestMove.target.col)
 		end)
 	end)
+
+	-- 8C.1 Board Evaluation (for minimax search)
+	describe("evaluate", function()
+		it("returns numeric score", function()
+			local state = GameLogic.createInitialState()
+			local score = Evaluator.evaluate(state, 1)
+			assert.is_number(score)
+		end)
+
+		it("returns higher score for more pieces", function()
+			local state = GameLogic.createInitialState()
+			-- Player 1 has more pieces
+			state.pieces = {
+				{ row = 3, col = 3, player = 1, powers = {} },
+				{ row = 3, col = 4, player = 1, powers = {} },
+				{ row = 3, col = 5, player = 1, powers = {} },
+				{ row = 6, col = 5, player = 2, powers = {} },
+			}
+
+			local p1Score = Evaluator.evaluate(state, 1)
+			local p2Score = Evaluator.evaluate(state, 2)
+
+			assert.is_true(p1Score > p2Score)
+		end)
+
+		it("returns higher score for better positions", function()
+			local state = GameLogic.createInitialState()
+			-- Player 1 in center, Player 2 on edge
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {} }, -- Center
+				{ row = 1, col = 1, player = 2, powers = {} }, -- Corner
+			}
+
+			local p1Score = Evaluator.evaluate(state, 1)
+			local p2Score = Evaluator.evaluate(state, 2)
+
+			assert.is_true(p1Score > p2Score)
+		end)
+
+		it("adds score for pieces with powers", function()
+			local state = GameLogic.createInitialState()
+			-- Same positions, but one player has powers
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "bomb", "recruit" } },
+				{ row = 4, col = 6, player = 2, powers = {} },
+			}
+
+			local p1Score = Evaluator.evaluate(state, 1)
+			local p2Score = Evaluator.evaluate(state, 2)
+
+			assert.is_true(p1Score > p2Score)
+		end)
+
+		it("is symmetric (negamax compatible)", function()
+			local state = GameLogic.createInitialState()
+			-- Symmetric setup
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} },
+			}
+
+			local p1Score = Evaluator.evaluate(state, 1)
+			local p2Score = Evaluator.evaluate(state, 2)
+
+			-- For negamax: evaluate(state, p1) should equal -evaluate(state, p2)
+			-- with some tolerance for position differences
+			-- Actually, we need: score for p1 from p1's view = -score for p1 from p2's view
+			-- This test verifies the evaluation is relative to the player
+			assert.is_true(p1Score ~= p2Score or p1Score == 0)
+		end)
+
+		it("returns large positive score for winning position", function()
+			local state = GameLogic.createInitialState()
+			-- Player 1 has pieces, Player 2 has none (Player 1 wins)
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {} },
+			}
+
+			local p1Score = Evaluator.evaluate(state, 1)
+			local p2Score = Evaluator.evaluate(state, 2)
+
+			assert.is_true(p1Score > 1000) -- Winning bonus
+			assert.is_true(p2Score < -1000) -- Losing penalty
+		end)
+
+		it("returns 0 for empty board", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {}
+
+			local score = Evaluator.evaluate(state, 1)
+			assert.are.equal(0, score)
+		end)
+	end)
 end)

@@ -22,6 +22,9 @@ Evaluator.WEIGHTS = {
 	THREAT_PENALTY = 30, -- Penalty for moving into threatened position
 	POSITION_WEIGHT = 1, -- Weight for position improvement
 	RISKY_ORB_PENALTY = 20, -- Penalty for risky orb collection
+	-- Board evaluation weights (for minimax)
+	PIECE_VALUE = 100, -- Base value per piece
+	WIN_BONUS = 10000, -- Bonus for winning position
 }
 
 -- Power value scores for orb collection priority
@@ -510,6 +513,50 @@ function Evaluator.getBestMove(state, orbs, player)
 	end
 
 	return bestMove
+end
+
+--- Evaluate the entire board position for a player (for minimax search)
+--- Returns a score from the perspective of the given player
+--- Positive = good for player, Negative = bad for player
+---@param state table Game state
+---@param player number Player to evaluate for
+---@return number Score (positive = good for player)
+function Evaluator.evaluate(state, player)
+	if not state.pieces or #state.pieces == 0 then
+		return 0
+	end
+
+	local opponent = player == 1 and 2 or 1
+	local myScore = 0
+	local opponentScore = 0
+
+	-- Count pieces and sum their values
+	local myPieceCount = 0
+	local opponentPieceCount = 0
+
+	for _, piece in ipairs(state.pieces) do
+		local pieceScore = Evaluator.WEIGHTS.PIECE_VALUE
+		-- Add position score
+		pieceScore = pieceScore + Evaluator.scorePiecePosition(state, piece)
+
+		if piece.player == player then
+			myScore = myScore + pieceScore
+			myPieceCount = myPieceCount + 1
+		else
+			opponentScore = opponentScore + pieceScore
+			opponentPieceCount = opponentPieceCount + 1
+		end
+	end
+
+	-- Check for winning/losing positions
+	if opponentPieceCount == 0 and myPieceCount > 0 then
+		return Evaluator.WEIGHTS.WIN_BONUS + myScore
+	elseif myPieceCount == 0 and opponentPieceCount > 0 then
+		return -Evaluator.WEIGHTS.WIN_BONUS - opponentScore
+	end
+
+	-- Return relative score
+	return myScore - opponentScore
 end
 
 return Evaluator
