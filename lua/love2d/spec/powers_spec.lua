@@ -237,4 +237,90 @@ describe("Powers", function()
 			end)
 		end)
 	end)
+
+	describe("overheat mechanic", function()
+		describe("countPowerById", function()
+			it("returns 0 for piece with no powers", function()
+				local piece = { powers = {} }
+				assert.are.equal(0, Powers.countPowerById(piece, "move_diagonal"))
+			end)
+
+			it("returns 0 for piece with nil powers", function()
+				local piece = {}
+				assert.are.equal(0, Powers.countPowerById(piece, "move_diagonal"))
+			end)
+
+			it("returns 1 for piece with one of that power", function()
+				local piece = { powers = { "move_diagonal" } }
+				assert.are.equal(1, Powers.countPowerById(piece, "move_diagonal"))
+			end)
+
+			it("returns correct count for multiple of same power", function()
+				local piece = { powers = { "bomb", "bomb", "bomb" } }
+				assert.are.equal(3, Powers.countPowerById(piece, "bomb"))
+			end)
+
+			it("counts only the specified power", function()
+				local piece = { powers = { "bomb", "move_diagonal", "bomb", "jump_proof", "bomb" } }
+				assert.are.equal(3, Powers.countPowerById(piece, "bomb"))
+				assert.are.equal(1, Powers.countPowerById(piece, "move_diagonal"))
+				assert.are.equal(1, Powers.countPowerById(piece, "jump_proof"))
+			end)
+
+			it("returns 0 for power not on piece", function()
+				local piece = { powers = { "bomb", "move_diagonal" } }
+				assert.are.equal(0, Powers.countPowerById(piece, "jump_proof"))
+			end)
+		end)
+
+		describe("checkOverheat", function()
+			it("returns nil when no powers", function()
+				local piece = { powers = {} }
+				assert.is_nil(Powers.checkOverheat(piece))
+			end)
+
+			it("returns nil when under threshold (9 of same)", function()
+				local piece = { powers = {} }
+				for _ = 1, 9 do
+					table.insert(piece.powers, "bomb")
+				end
+				assert.is_nil(Powers.checkOverheat(piece))
+			end)
+
+			it("returns powerId when at threshold (10 of same)", function()
+				local piece = { powers = {} }
+				for _ = 1, 10 do
+					table.insert(piece.powers, "bomb")
+				end
+				assert.are.equal("bomb", Powers.checkOverheat(piece))
+			end)
+
+			it("returns powerId when over threshold (11+ of same)", function()
+				local piece = { powers = {} }
+				for _ = 1, 12 do
+					table.insert(piece.powers, "move_diagonal")
+				end
+				assert.are.equal("move_diagonal", Powers.checkOverheat(piece))
+			end)
+
+			it("returns first overheated power when multiple at threshold", function()
+				local piece = { powers = {} }
+				-- Add 10 bombs and 10 move_diagonals
+				for _ = 1, 10 do
+					table.insert(piece.powers, "bomb")
+				end
+				for _ = 1, 10 do
+					table.insert(piece.powers, "move_diagonal")
+				end
+				-- Should return one of them (first found)
+				local result = Powers.checkOverheat(piece)
+				assert.is_true(result == "bomb" or result == "move_diagonal")
+			end)
+
+			it("handles nil powers gracefully", function()
+				local piece = {}
+				assert.is_nil(Powers.checkOverheat(piece))
+			end)
+		end)
+	end)
 end)

@@ -520,6 +520,33 @@ function Game.drawPieces()
 			love.graphics.printf(tostring(#piece.powers), x + 8, y - 24, 10, "center")
 		end
 
+		-- Overheat warning (8+ of same power)
+		local maxPowerCount = Game.getMaxPowerCount(piece)
+		if maxPowerCount >= 8 then
+			local warningIntensity = (maxPowerCount - 7) / 3 -- 8=0.33, 9=0.67, 10+=1.0
+			local pulse = (math.sin(love.timer.getTime() * (4 + maxPowerCount)) + 1) / 2
+
+			-- Orange/red glow around piece
+			if maxPowerCount >= 9 then
+				-- Critical: Rapid red pulse
+				love.graphics.setColor(1, 0.2, 0.1, 0.5 * pulse * warningIntensity)
+			else
+				-- Warning: Orange glow
+				love.graphics.setColor(1, 0.5, 0.1, 0.3 * pulse * warningIntensity)
+			end
+			love.graphics.ellipse("fill", x, y - 10, 30, 15)
+
+			-- Warning ring
+			love.graphics.setLineWidth(2)
+			if maxPowerCount >= 9 then
+				love.graphics.setColor(1, 0.2, 0.1, 0.8 * pulse)
+			else
+				love.graphics.setColor(1, 0.6, 0.2, 0.6 * pulse)
+			end
+			love.graphics.ellipse("line", x, y - 10, 28, 14)
+			love.graphics.setLineWidth(1)
+		end
+
 		-- Persistent power indicators
 		local indicators = Indicators.getPieceIndicators(piece)
 		for _, indicator in ipairs(indicators) do
@@ -1445,6 +1472,12 @@ function Game.mousepressed(x, y, button)
 					local collectedOrb = Powers.collectOrb(movingPiece, Game.orbs)
 					if collectedOrb then
 						Game.spawnOrbParticles(movingPiece.row, movingPiece.col)
+
+						-- Check for overheat (10+ of same power = explosion)
+						local overheatedPower = Powers.checkOverheat(movingPiece)
+						if overheatedPower then
+							Game.handlePieceOverheat(movingPiece, overheatedPower)
+						end
 					end
 
 					-- Check for extra move from move_again
@@ -1838,6 +1871,62 @@ function Game.spawnOrbParticles(row, col)
 	y = y + Rendering.getHeightOffset(height) - 8 -- Center on orb
 
 	Particles.spawn(Game.particles, "orb_collect", x, y)
+end
+
+--- Handle piece overheating (10+ of same power causes explosion)
+---@param piece table The piece that overheated
+---@param powerId string The power ID that caused the overheat
+function Game.handlePieceOverheat(piece, powerId)
+	-- Spawn explosion particles at piece location
+	if Game.particles then
+		local height = GameLogic.getHeight(Game.state, piece.row, piece.col)
+		local x, y = Rendering.boardToScreen(piece.row, piece.col, Game.boardOffsetX, Game.boardOffsetY)
+		y = y + Rendering.getHeightOffset(height) - 10
+
+		Particles.spawn(Game.particles, "explosion", x, y)
+	end
+
+	-- Play explosion sound
+	Game.playSoundForEvent("capture") -- Reuse capture sound for now
+
+	-- Remove piece from game
+	for i, p in ipairs(Game.state.pieces) do
+		if p == piece then
+			table.remove(Game.state.pieces, i)
+			break
+		end
+	end
+
+	-- Clear selection if this was the selected piece
+	if Game.state.selectedPiece == piece then
+		Game.state.selectedPiece = nil
+		Game.state.validMoves = {}
+	end
+end
+
+--- Get the highest count of any single power on a piece (for visual warnings)
+---@param piece table The piece to check
+---@return number, string|nil The highest count and the power ID, or 0, nil
+function Game.getMaxPowerCount(piece)
+	if not piece.powers or #piece.powers == 0 then
+		return 0, nil
+	end
+
+	local counts = {}
+	for _, powerId in ipairs(piece.powers) do
+		counts[powerId] = (counts[powerId] or 0) + 1
+	end
+
+	local maxCount = 0
+	local maxPower = nil
+	for powerId, count in pairs(counts) do
+		if count > maxCount then
+			maxCount = count
+			maxPower = powerId
+		end
+	end
+
+	return maxCount, maxPower
 end
 
 function Game.wheelmoved(x, y) end

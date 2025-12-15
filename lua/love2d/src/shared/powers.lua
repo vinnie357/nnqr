@@ -275,4 +275,45 @@ function Powers.canMoveDiagonally(piece)
 	return Powers.hasPower(piece, "move_diagonal")
 end
 
+-- Overheat threshold (10+ of same power causes explosion)
+Powers.OVERHEAT_THRESHOLD = 10
+
+--- Count occurrences of a specific power on a piece
+---@param piece table Piece to check
+---@param powerId string Power ID to count
+---@return number Count of power
+function Powers.countPowerById(piece, powerId)
+	if not piece.powers then
+		return 0
+	end
+	local count = 0
+	for _, p in ipairs(piece.powers) do
+		if p == powerId then
+			count = count + 1
+		end
+	end
+	return count
+end
+
+--- Check if piece has overheated (10+ of same power)
+---@param piece table Piece to check
+---@return string|nil Power ID that caused overheat, or nil
+function Powers.checkOverheat(piece)
+	if not piece.powers then
+		return nil
+	end
+
+	-- Count each unique power
+	local counts = {}
+	for _, powerId in ipairs(piece.powers) do
+		counts[powerId] = (counts[powerId] or 0) + 1
+		-- Early return if threshold reached
+		if counts[powerId] >= Powers.OVERHEAT_THRESHOLD then
+			return powerId
+		end
+	end
+
+	return nil
+end
+
 return Powers

@@ -407,4 +407,53 @@ describe("GameLogic", function()
 			end)
 		end)
 	end)
+
+	describe("overheat mechanic", function()
+		local Powers
+
+		setup(function()
+			Powers = require("src.shared.powers")
+		end)
+
+		it("piece with 9 of same power does not overheat", function()
+			local piece = { powers = {} }
+			for _ = 1, 9 do
+				table.insert(piece.powers, "bomb")
+			end
+			assert.is_nil(Powers.checkOverheat(piece))
+		end)
+
+		it("piece with 10 of same power overheats", function()
+			local piece = { powers = {} }
+			for _ = 1, 10 do
+				table.insert(piece.powers, "bomb")
+			end
+			assert.are.equal("bomb", Powers.checkOverheat(piece))
+		end)
+
+		it("adding power can trigger overheat", function()
+			local piece = { powers = {} }
+			for _ = 1, 9 do
+				Powers.addPower(piece, "bomb")
+			end
+			assert.is_nil(Powers.checkOverheat(piece))
+
+			Powers.addPower(piece, "bomb")
+			assert.are.equal("bomb", Powers.checkOverheat(piece))
+		end)
+
+		it("different powers don't contribute to same overheat", function()
+			local piece = { powers = {} }
+			for _ = 1, 5 do
+				Powers.addPower(piece, "bomb")
+				Powers.addPower(piece, "move_diagonal")
+			end
+			-- 5 bombs + 5 move_diagonal = no overheat
+			assert.is_nil(Powers.checkOverheat(piece))
+		end)
+
+		it("OVERHEAT_THRESHOLD constant is 10", function()
+			assert.are.equal(10, Powers.OVERHEAT_THRESHOLD)
+		end)
+	end)
 end)
