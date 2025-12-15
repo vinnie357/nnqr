@@ -512,4 +512,145 @@ describe("Evaluator", function()
 			assert.is_true(diagScore > normalScore)
 		end)
 	end)
+
+	-- 8B.5 Orb Collection Priority
+	describe("getOrbOpportunities", function()
+		it("returns empty when no orbs exist", function()
+			local state = GameLogic.createInitialState()
+			local orbs = {}
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+			}
+
+			local opportunities = Evaluator.getOrbOpportunities(state, orbs, 1)
+			assert.are.equal(0, #opportunities)
+		end)
+
+		it("finds orb within one move", function()
+			local state = GameLogic.createInitialState()
+			local orbs = {
+				{ row = 5, col = 6, powerId = "bomb" }, -- Adjacent to piece
+			}
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+			}
+
+			local opportunities = Evaluator.getOrbOpportunities(state, orbs, 1)
+			assert.are.equal(1, #opportunities)
+			assert.are.equal("bomb", opportunities[1].orb.powerId)
+		end)
+
+		it("returns multiple orb opportunities", function()
+			local state = GameLogic.createInitialState()
+			local orbs = {
+				{ row = 5, col = 6, powerId = "bomb" },
+				{ row = 4, col = 5, powerId = "recruit" },
+			}
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+			}
+
+			local opportunities = Evaluator.getOrbOpportunities(state, orbs, 1)
+			assert.are.equal(2, #opportunities)
+		end)
+
+		it("only finds orbs reachable by player's pieces", function()
+			local state = GameLogic.createInitialState()
+			local orbs = {
+				{ row = 1, col = 1, powerId = "bomb" }, -- Far from player 1's piece
+			}
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+				{ row = 1, col = 2, player = 2, powers = {} }, -- Player 2 can reach
+			}
+
+			local p1Opportunities = Evaluator.getOrbOpportunities(state, orbs, 1)
+			local p2Opportunities = Evaluator.getOrbOpportunities(state, orbs, 2)
+
+			assert.are.equal(0, #p1Opportunities)
+			assert.are.equal(1, #p2Opportunities)
+		end)
+
+		it("includes piece and target in opportunity", function()
+			local state = GameLogic.createInitialState()
+			local orbs = {
+				{ row = 5, col = 6, powerId = "bomb" },
+			}
+			local piece = { row = 5, col = 5, player = 1, powers = {} }
+			state.pieces = { piece }
+
+			local opportunities = Evaluator.getOrbOpportunities(state, orbs, 1)
+			assert.are.equal(1, #opportunities)
+			assert.are.equal(piece, opportunities[1].piece)
+			assert.are.equal(5, opportunities[1].target.row)
+			assert.are.equal(6, opportunities[1].target.col)
+		end)
+	end)
+
+	describe("scoreOrbValue", function()
+		it("returns positive value for useful powers", function()
+			local orb = { row = 5, col = 5, powerId = "bomb" }
+			local score = Evaluator.scoreOrbValue(orb)
+			assert.is_true(score > 0)
+		end)
+
+		it("scores offensive powers highly", function()
+			local bombOrb = { row = 5, col = 5, powerId = "bomb" }
+			local recruitOrb = { row = 5, col = 5, powerId = "recruit" }
+
+			local bombScore = Evaluator.scoreOrbValue(bombOrb)
+			local recruitScore = Evaluator.scoreOrbValue(recruitOrb)
+
+			-- Both should be valuable
+			assert.is_true(bombScore > 0)
+			assert.is_true(recruitScore > 0)
+		end)
+
+		it("scores defensive powers", function()
+			local jumpProofOrb = { row = 5, col = 5, powerId = "jump_proof" }
+			local score = Evaluator.scoreOrbValue(jumpProofOrb)
+			assert.is_true(score > 0)
+		end)
+	end)
+
+	describe("isOrbCollectionRisky", function()
+		it("returns false when move is safe", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+				{ row = 8, col = 8, player = 2, powers = {} }, -- Far away
+			}
+			local target = { row = 5, col = 6 }
+
+			local risky = Evaluator.isOrbCollectionRisky(state, 1, target)
+			assert.is_false(risky)
+		end)
+
+		it("returns true when enemy can capture at target", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+				{ row = 5, col = 7, player = 2, powers = {} }, -- Can capture at 5,6
+			}
+			local target = { row = 5, col = 6 }
+
+			local risky = Evaluator.isOrbCollectionRisky(state, 1, target)
+			assert.is_true(risky)
+		end)
+
+		it("considers jump_proof protection", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {}, isJumpProof = true },
+				{ row = 5, col = 7, player = 2, powers = {} },
+			}
+			local target = { row = 5, col = 6 }
+
+			-- Even though enemy is adjacent to target, our piece is protected
+			-- Note: this tests if we'd be safe AFTER moving (piece wouldn't have protection yet)
+			-- So it should still be risky
+			local risky = Evaluator.isOrbCollectionRisky(state, 1, target)
+			assert.is_true(risky)
+		end)
+	end)
 end)

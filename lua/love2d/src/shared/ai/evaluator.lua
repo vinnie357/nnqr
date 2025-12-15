@@ -15,6 +15,29 @@ Evaluator.WEIGHTS = {
 	POWER_BONUS = 8, -- Bonus per power in inventory
 	JUMP_PROOF_BONUS = 15, -- Bonus for being jump proof
 	DIAGONAL_BONUS = 10, -- Bonus for diagonal movement
+	ORB_BASE_VALUE = 15, -- Base value for collecting any orb
+}
+
+-- Power value scores for orb collection priority
+Evaluator.POWER_VALUES = {
+	-- Offensive powers (high value)
+	bomb = 25,
+	destroy_row = 20,
+	destroy_column = 20,
+	recruit = 22,
+	-- Defensive powers
+	jump_proof = 18,
+	-- Movement powers
+	move_diagonal = 15,
+	move_again = 12,
+	relocate = 10,
+	-- Terrain powers
+	raise_tile = 8,
+	lower_tile = 8,
+	-- Utility powers
+	multiply = 18,
+	invisible = 12,
+	refurb = 6,
 }
 
 --- Get all pieces belonging to a player that can be captured by opponent next turn
@@ -290,6 +313,84 @@ function Evaluator.scorePiecePosition(state, piece)
 	end
 
 	return score
+end
+
+--- Get all orb collection opportunities for a player
+--- Returns moves where a piece can collect an orb in one move
+---@param state table Game state
+---@param orbs table Array of orb objects {row, col, powerId}
+---@param player number Player whose opportunities to find
+---@return table Array of {piece, target, orb} objects
+function Evaluator.getOrbOpportunities(state, orbs, player)
+	local opportunities = {}
+
+	if not orbs or #orbs == 0 then
+		return opportunities
+	end
+
+	-- Build a map of orb positions for quick lookup
+	local orbMap = {}
+	for _, orb in ipairs(orbs) do
+		orbMap[orb.row .. "," .. orb.col] = orb
+	end
+
+	-- For each of our pieces, check if any valid moves land on an orb
+	for _, piece in ipairs(state.pieces) do
+		if piece.player == player then
+			local moves = PowerEffects.getValidMovesWithPowers(state, piece)
+			for _, move in ipairs(moves) do
+				local key = move.row .. "," .. move.col
+				local orb = orbMap[key]
+				if orb then
+					table.insert(opportunities, {
+						piece = piece,
+						target = { row = move.row, col = move.col },
+						orb = orb,
+					})
+				end
+			end
+		end
+	end
+
+	return opportunities
+end
+
+--- Score the value of collecting an orb based on its power
+---@param orb table Orb object with powerId
+---@return number Value score for the orb
+function Evaluator.scoreOrbValue(orb)
+	local powerId = orb.powerId
+	local powerValue = Evaluator.POWER_VALUES[powerId]
+
+	if powerValue then
+		return powerValue
+	end
+
+	-- Default value for unknown powers
+	return Evaluator.WEIGHTS.ORB_BASE_VALUE
+end
+
+--- Check if moving to collect an orb would put the piece at risk
+---@param state table Game state
+---@param player number Player considering the move
+---@param target table Target position {row, col}
+---@return boolean True if enemy can capture at target position next turn
+function Evaluator.isOrbCollectionRisky(state, player, target)
+	local opponent = player == 1 and 2 or 1
+
+	-- Check if any enemy piece can reach the target position
+	for _, enemyPiece in ipairs(state.pieces) do
+		if enemyPiece.player == opponent then
+			local moves = PowerEffects.getValidMovesWithPowers(state, enemyPiece)
+			for _, move in ipairs(moves) do
+				if move.row == target.row and move.col == target.col then
+					return true
+				end
+			end
+		end
+	end
+
+	return false
 end
 
 return Evaluator
