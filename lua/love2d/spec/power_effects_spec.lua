@@ -844,6 +844,233 @@ describe("PowerEffects", function()
 		end)
 	end)
 
+	-- Phase 9A.3: Extended Recruitment
+	describe("recruit_row", function()
+		it("returns all enemy pieces in same row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "recruit_row" } },
+				{ row = 4, col = 1, player = 2, powers = {} }, -- Enemy in row
+				{ row = 4, col = 10, player = 2, powers = {} }, -- Enemy in row
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Enemy different row
+				{ row = 4, col = 3, player = 1, powers = {} }, -- Ally in row (excluded)
+			}
+			local piece = state.pieces[1]
+
+			local targets = PowerEffects.getRecruitRowTargets(state, piece)
+			assert.are.equal(2, #targets)
+		end)
+
+		it("excludes own pieces", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "recruit_row" } },
+				{ row = 4, col = 3, player = 1, powers = {} }, -- Ally
+				{ row = 4, col = 7, player = 2, powers = {} }, -- Enemy
+			}
+			local piece = state.pieces[1]
+
+			local targets = PowerEffects.getRecruitRowTargets(state, piece)
+			for _, t in ipairs(targets) do
+				assert.are_not.equal(1, t.player)
+			end
+		end)
+
+		it("converts all enemies in row to own team", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "recruit_row" } },
+				{ row = 4, col = 1, player = 2, powers = {} },
+				{ row = 4, col = 10, player = 2, powers = {} },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateRecruitRow(state, piece)
+
+			-- All pieces should now be player 1
+			for _, p in ipairs(state.pieces) do
+				if p.row == 4 then
+					assert.are.equal(1, p.player)
+				end
+			end
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "recruit_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateRecruitRow(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("recruit_column", function()
+		it("returns all enemy pieces in same column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "recruit_column" } },
+				{ row = 1, col = 5, player = 2, powers = {} }, -- Enemy in column
+				{ row = 8, col = 5, player = 2, powers = {} }, -- Enemy in column
+				{ row = 4, col = 6, player = 2, powers = {} }, -- Enemy different column
+				{ row = 2, col = 5, player = 1, powers = {} }, -- Ally in column (excluded)
+			}
+			local piece = state.pieces[1]
+
+			local targets = PowerEffects.getRecruitColumnTargets(state, piece)
+			assert.are.equal(2, #targets)
+		end)
+
+		it("converts all enemies in column to own team", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "recruit_column" } },
+				{ row = 1, col = 5, player = 2, powers = {} },
+				{ row = 8, col = 5, player = 2, powers = {} },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateRecruitColumn(state, piece)
+
+			-- All pieces in column 5 should now be player 1
+			for _, p in ipairs(state.pieces) do
+				if p.col == 5 then
+					assert.are.equal(1, p.player)
+				end
+			end
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "recruit_column" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateRecruitColumn(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	-- Phase 9A.4: Scramble Powers
+	describe("scramble_radial", function()
+		it("shuffles positions of all pieces in 3x3 area", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scramble_radial" } },
+				{ row = 3, col = 5, player = 2, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} },
+				{ row = 4, col = 4, player = 2, powers = {} },
+			}
+
+			-- Record original positions
+			local originalPositions = {}
+			for _, p in ipairs(state.pieces) do
+				table.insert(originalPositions, { row = p.row, col = p.col })
+			end
+
+			local piece = state.pieces[1]
+			state = PowerEffects.activateScrambleRadial(state, piece)
+
+			-- Same number of pieces
+			assert.are.equal(4, #state.pieces)
+
+			-- All pieces should still be on original positions (just shuffled among them)
+			local newPositions = {}
+			for _, p in ipairs(state.pieces) do
+				newPositions[p.row .. "," .. p.col] = true
+			end
+			for _, pos in ipairs(originalPositions) do
+				assert.is_true(newPositions[pos.row .. "," .. pos.col])
+			end
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scramble_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateScrambleRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+
+		it("does not affect pieces outside 3x3 area", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scramble_radial" } },
+				{ row = 1, col = 1, player = 2, powers = {} }, -- Far away
+			}
+			local farPiece = state.pieces[2]
+			local originalRow, originalCol = farPiece.row, farPiece.col
+
+			state = PowerEffects.activateScrambleRadial(state, state.pieces[1])
+
+			-- Far piece unchanged
+			assert.are.equal(originalRow, farPiece.row)
+			assert.are.equal(originalCol, farPiece.col)
+		end)
+	end)
+
+	-- Phase 9A.5: Smart Bombs
+	describe("smart_bombs", function()
+		it("returns only enemy pieces in 3x3 area", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "smart_bombs" } },
+				{ row = 3, col = 5, player = 2, powers = {} }, -- Enemy
+				{ row = 4, col = 4, player = 1, powers = {} }, -- Ally (excluded)
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Enemy
+			}
+			local piece = state.pieces[1]
+
+			local targets = PowerEffects.getSmartBombsTargets(state, piece)
+			assert.are.equal(2, #targets)
+			for _, t in ipairs(targets) do
+				assert.are.equal(2, t.player)
+			end
+		end)
+
+		it("destroys only enemy pieces in 3x3 area", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "smart_bombs" } },
+				{ row = 3, col = 5, player = 2, powers = {} }, -- Enemy - destroyed
+				{ row = 4, col = 4, player = 1, powers = {} }, -- Ally - survives
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Enemy - destroyed
+			}
+			local piece = state.pieces[1]
+			local ally = state.pieces[3]
+
+			state = PowerEffects.activateSmartBombs(state, piece)
+
+			-- Should have 2 pieces left (activator + ally)
+			assert.are.equal(2, #state.pieces)
+			-- Ally should survive
+			local allyFound = false
+			for _, p in ipairs(state.pieces) do
+				if p == ally then
+					allyFound = true
+				end
+			end
+			assert.is_true(allyFound)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "smart_bombs" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateSmartBombs(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
 	describe("getValidMovesWithPowers with flags", function()
 		it("includes diagonal moves when canMoveDiagonally is true", function()
 			local state = GameLogic.createInitialState()

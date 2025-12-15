@@ -159,6 +159,44 @@ Powers.definitions = {
 		description = "Destroy all pieces in this column including self",
 		targeting = "self_column",
 	},
+
+	-- Phase 9A.3: Extended Recruitment
+	recruit_row = {
+		id = "recruit_row",
+		name = "Recruit Row",
+		category = "Strategic",
+		duration = "single_use",
+		description = "Convert all enemy pieces in this row to your side",
+		targeting = "self_row",
+	},
+	recruit_column = {
+		id = "recruit_column",
+		name = "Recruit Column",
+		category = "Strategic",
+		duration = "single_use",
+		description = "Convert all enemy pieces in this column to your side",
+		targeting = "self_column",
+	},
+
+	-- Phase 9A.4: Scramble Powers
+	scramble_radial = {
+		id = "scramble_radial",
+		name = "Scramble Radial",
+		category = "Chaos",
+		duration = "single_use",
+		description = "Randomly swap positions of all pieces in 3x3 area",
+		targeting = "area_3x3",
+	},
+
+	-- Phase 9A.5: Smart Bombs
+	smart_bombs = {
+		id = "smart_bombs",
+		name = "Smart Bombs",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Destroy all enemy pieces in 3x3 area (allies unaffected)",
+		targeting = "area_3x3",
+	},
 }
 
 -- List of power IDs for random selection
