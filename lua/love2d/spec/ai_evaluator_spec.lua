@@ -393,4 +393,123 @@ describe("Evaluator", function()
 			assert.is_false(shouldUse)
 		end)
 	end)
+
+	-- 8B.4 Position Scoring
+	describe("scorePosition", function()
+		it("returns higher score for center positions than edges", function()
+			local state = GameLogic.createInitialState()
+
+			-- Center position (row 4-5, col 5-6 on 10x8 board)
+			local centerScore = Evaluator.scorePosition(state, 4, 5)
+			-- Edge position
+			local edgeScore = Evaluator.scorePosition(state, 1, 1)
+
+			assert.is_true(centerScore > edgeScore)
+		end)
+
+		it("returns higher score for high ground than low ground", function()
+			local state = GameLogic.createInitialState()
+
+			-- Set height at position (5,5) to 3
+			state.heightMap[5][5] = 3
+			-- Keep height at position (5,6) at 0
+			state.heightMap[5][6] = 0
+
+			local highScore = Evaluator.scorePosition(state, 5, 5)
+			local lowScore = Evaluator.scorePosition(state, 5, 6)
+
+			assert.is_true(highScore > lowScore)
+		end)
+
+		it("returns consistent scores for symmetric positions", function()
+			local state = GameLogic.createInitialState()
+
+			-- Positions (4,5) and (5,6) should have similar scores if heights equal
+			-- (both near center)
+			local score1 = Evaluator.scorePosition(state, 4, 5)
+			local score2 = Evaluator.scorePosition(state, 5, 6)
+
+			-- Should be close (within 10% difference)
+			local diff = math.abs(score1 - score2)
+			local maxScore = math.max(score1, score2)
+			assert.is_true(diff / maxScore < 0.2) -- Within 20%
+		end)
+
+		it("combines center and height bonuses", function()
+			local state = GameLogic.createInitialState()
+
+			-- Center + high ground = best
+			state.heightMap[4][5] = 4
+			local bestScore = Evaluator.scorePosition(state, 4, 5)
+
+			-- Edge + low ground = worst
+			state.heightMap[1][1] = 0
+			local worstScore = Evaluator.scorePosition(state, 1, 1)
+
+			-- Center + low ground = medium
+			state.heightMap[4][6] = 0
+			local mediumScore = Evaluator.scorePosition(state, 4, 6)
+
+			assert.is_true(bestScore > mediumScore)
+			assert.is_true(mediumScore > worstScore)
+		end)
+
+		it("returns 0 for destroyed tiles", function()
+			local state = GameLogic.createInitialState()
+			state.destroyedTiles = { ["3,3"] = true }
+
+			local score = Evaluator.scorePosition(state, 3, 3)
+			assert.are.equal(0, score)
+		end)
+	end)
+
+	describe("scorePiecePosition", function()
+		it("includes base position score", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 4, col = 5, player = 1, powers = {} }
+			state.pieces = { piece }
+
+			local score = Evaluator.scorePiecePosition(state, piece)
+			local posScore = Evaluator.scorePosition(state, 4, 5)
+
+			-- Piece score should include position score
+			assert.is_true(score >= posScore)
+		end)
+
+		it("adds bonus for pieces with powers", function()
+			local state = GameLogic.createInitialState()
+			local pieceWithPowers = { row = 4, col = 5, player = 1, powers = { "bomb", "recruit" } }
+			local pieceNoPowers = { row = 4, col = 6, player = 1, powers = {} }
+			state.pieces = { pieceWithPowers, pieceNoPowers }
+
+			local scoreWith = Evaluator.scorePiecePosition(state, pieceWithPowers)
+			local scoreWithout = Evaluator.scorePiecePosition(state, pieceNoPowers)
+
+			assert.is_true(scoreWith > scoreWithout)
+		end)
+
+		it("adds bonus for jump_proof pieces", function()
+			local state = GameLogic.createInitialState()
+			local protectedPiece = { row = 4, col = 5, player = 1, powers = {}, isJumpProof = true }
+			local normalPiece = { row = 4, col = 6, player = 1, powers = {} }
+			state.pieces = { protectedPiece, normalPiece }
+
+			local protectedScore = Evaluator.scorePiecePosition(state, protectedPiece)
+			local normalScore = Evaluator.scorePiecePosition(state, normalPiece)
+
+			assert.is_true(protectedScore > normalScore)
+		end)
+
+		it("adds bonus for diagonal movement", function()
+			local state = GameLogic.createInitialState()
+			local diagonalPiece = { row = 4, col = 5, player = 1, powers = {}, canMoveDiagonally = true }
+			local normalPiece = { row = 4, col = 6, player = 1, powers = {} }
+			state.pieces = { diagonalPiece, normalPiece }
+
+			local diagScore = Evaluator.scorePiecePosition(state, diagonalPiece)
+			local normalScore = Evaluator.scorePiecePosition(state, normalPiece)
+
+			assert.is_true(diagScore > normalScore)
+		end)
+	end)
 end)

@@ -3,8 +3,19 @@
 
 local PowerEffects = require("src.shared.power_effects")
 local Powers = require("src.shared.powers")
+local Height = require("src.shared.height")
+local Logic = require("src.logic")
 
 local Evaluator = {}
+
+-- Scoring weights
+Evaluator.WEIGHTS = {
+	CENTER_BONUS = 10, -- Max bonus for center position
+	HEIGHT_BONUS = 5, -- Bonus per height level
+	POWER_BONUS = 8, -- Bonus per power in inventory
+	JUMP_PROOF_BONUS = 15, -- Bonus for being jump proof
+	DIAGONAL_BONUS = 10, -- Bonus for diagonal movement
+}
 
 --- Get all pieces belonging to a player that can be captured by opponent next turn
 ---@param state table Game state
@@ -220,6 +231,65 @@ function Evaluator.shouldUseBomb(state, piece)
 	end
 
 	return false, {}
+end
+
+--- Score a board position based on strategic value
+--- Higher scores for center positions and high ground
+---@param state table Game state
+---@param row number Row position
+---@param col number Column position
+---@return number Position score (0 for destroyed tiles)
+function Evaluator.scorePosition(state, row, col)
+	-- Destroyed tiles have no value
+	if state.destroyedTiles and state.destroyedTiles[row .. "," .. col] then
+		return 0
+	end
+
+	local score = 0
+
+	-- Center bonus: distance from center, closer = better
+	-- Board is 10x8, center is around (4.5, 5.5)
+	local centerRow = (Logic.BOARD_ROWS + 1) / 2 -- 4.5
+	local centerCol = (Logic.BOARD_COLS + 1) / 2 -- 5.5
+
+	local distFromCenter = math.sqrt((row - centerRow) ^ 2 + (col - centerCol) ^ 2)
+	local maxDist = math.sqrt(centerRow ^ 2 + centerCol ^ 2) -- Max possible distance
+
+	-- Normalize: 0 at edge, 1 at center
+	local centerFactor = 1 - (distFromCenter / maxDist)
+	score = score + centerFactor * Evaluator.WEIGHTS.CENTER_BONUS
+
+	-- Height bonus
+	local height = Height.getHeight(state.heightMap, row, col)
+	score = score + height * Evaluator.WEIGHTS.HEIGHT_BONUS
+
+	return score
+end
+
+--- Score a piece's position including its attributes
+--- Includes base position score plus bonuses for powers and abilities
+---@param state table Game state
+---@param piece table Piece to evaluate
+---@return number Piece position score
+function Evaluator.scorePiecePosition(state, piece)
+	-- Start with base position score
+	local score = Evaluator.scorePosition(state, piece.row, piece.col)
+
+	-- Bonus for powers in inventory
+	if piece.powers then
+		score = score + #piece.powers * Evaluator.WEIGHTS.POWER_BONUS
+	end
+
+	-- Bonus for activated abilities
+	if piece.isJumpProof then
+		score = score + Evaluator.WEIGHTS.JUMP_PROOF_BONUS
+	end
+
+	if piece.canMoveDiagonally then
+		score = score + Evaluator.WEIGHTS.DIAGONAL_BONUS
+	end
+
+	return score
 end
 
 return Evaluator
