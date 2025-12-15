@@ -284,42 +284,46 @@ Current: 243 → Target: ~300 tests
 ```
 lua/love2d/
 ├── docs/
-│   ├── implementation_plan.md    # This file
-│   ├── progress.md               # Progress tracking
-│   ├── network_protocol.md       # Protocol specification
-│   └── powers.md                 # Power definitions
+│   ├── roadmap.md                # High-level overview
+│   ├── roadmap_progress.md       # Terse status tracker
+│   ├── powers.md                 # Power definitions
+│   └── phases/
+│       ├── phase1-5_foundation.md    # This file
+│       ├── phase1-5_progress.md      # Progress tracking
+│       ├── phase4c_indicators.md     # Phase 4C plan
+│       ├── phase6_overheat.md        # Overheat mechanic plan
+│       ├── phase7_destroyed_tiles.md # Destroyed tiles plan
+│       ├── phase8_ai.md              # AI opponent plan
+│       ├── phase9_powers.md          # Remaining powers plan
+│       └── phase10_multiplayer/
+│           ├── phase10_multiplayer.md  # Multiplayer plan
+│           ├── network_protocol.md     # Protocol specification
+│           └── elixir_notes.md         # Elixir server notes
 ├── src/
-│   ├── client/
-│   │   ├── rendering.lua         # Clean modern rendering
-│   │   ├── input.lua             # Input handling
-│   │   ├── animations.lua        # Smooth animations
-│   │   ├── ui.lua                # UI components
-│   │   └── network.lua           # Client networking
-│   ├── server/
-│   │   ├── main.lua              # Headless server entry
-│   │   ├── lobby.lua             # Game lobby management
-│   │   └── session.lua           # Game session handling
 │   ├── shared/
 │   │   ├── logic.lua             # Core game rules
-│   │   ├── board.lua             # Board state management
 │   │   ├── height.lua            # Height system
 │   │   ├── powers.lua            # Power definitions & effects
+│   │   ├── power_effects.lua     # Power effect implementations
 │   │   ├── protocol.lua          # Message serialization
-│   │   └── constants.lua         # Shared constants
+│   │   ├── game_logic.lua        # Game state management
+│   │   ├── rendering.lua         # Rendering utilities
+│   │   ├── animations.lua        # Animation system
+│   │   ├── game_animations.lua   # Game animation integration
+│   │   ├── indicators.lua        # Persistent power indicators
+│   │   ├── ui.lua                # UI state management
+│   │   ├── tooltip.lua           # Power tooltips
+│   │   ├── sound_manager.lua     # Sound system
+│   │   ├── particle_config.lua   # Particle effect definitions
+│   │   └── particles.lua         # Particle system
 │   ├── stubs/
 │   │   ├── p2p.lua               # Peer-to-peer stub
-│   │   ├── client_hosted.lua     # Client-hosted stub
-│   │   └── elixir_notes.md       # Elixir server notes
-│   ├── game.lua                  # Main game module (client)
-│   └── logic.lua                 # Legacy (migrate to shared/)
-├── spec/
-│   ├── logic_spec.lua            # Existing logic tests
-│   ├── height_spec.lua           # Height system tests
-│   ├── protocol_spec.lua         # Protocol tests
-│   └── powers_spec.lua           # Power system tests
-├── assets/                       # Future assets
-├── main.lua                      # Client entry point
-├── server_main.lua               # Server entry point
+│   │   └── client_hosted.lua     # Client-hosted stub
+│   ├── game.lua                  # Main game module
+│   └── logic.lua                 # Core logic (shared base)
+├── spec/                         # Test files (492 tests)
+├── assets/                       # Game assets
+├── main.lua                      # Entry point
 └── conf.lua                      # Love2D configuration
 ```
 

@@ -106,7 +106,7 @@ New:
 
 | File | Action | Description |
 |------|--------|-------------|
-| `docs/phase4c_indicators.md` | CREATE | This plan document |
+| `docs/phases/phase4c_indicators.md` | CREATE | This plan document |
 | `spec/indicators_spec.lua` | CREATE | Tests for Indicators module (~5 tests) |
 | `src/shared/indicators.lua` | CREATE | Indicators module with `getPieceIndicators()` |
 | `src/game.lua` | MODIFY | Add indicator rendering in `drawPieces()`, update animations |
@@ -128,5 +128,5 @@ New:
 5. Update `Game.drawJumpProofAnimation()` for wrap-on effect
 6. Update `Game.drawMoveDiagonalAnimation()` for extend effect
 7. Manual testing with game
-8. Update `docs/progress.md`
+8. Update `docs/phases/phase1-5_progress.md`
 9. Commit

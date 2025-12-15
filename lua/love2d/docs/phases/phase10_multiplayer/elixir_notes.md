@@ -75,7 +75,7 @@ scalable multiplayer support.
 ## Protocol Compatibility
 
 Use same JSON message format as Love2D server:
-- Messages defined in `docs/network_protocol.md`
+- Messages defined in `network_protocol.md` (same directory)
 - Same types: CONNECT, MOVE, GAME_STATE, etc.
 - Clients don't need to know which server they're using
 

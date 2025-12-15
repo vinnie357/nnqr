@@ -260,7 +260,7 @@
 **Stubs Created:**
 - `src/stubs/p2p.lua` - Peer-to-peer networking stub
 - `src/stubs/client_hosted.lua` - Client-hosted server stub
-- `src/stubs/elixir_notes.md` - Future Elixir server documentation
+- `docs/phases/phase10_multiplayer/elixir_notes.md` - Future Elixir server documentation
 
 ### Session 2 (Current)
 **TDD Cycle - Game Logic Integration:**
@@ -348,7 +348,7 @@
 **Files Created This Session:**
 - `src/shared/indicators.lua` - Indicators module (29 lines)
 - `spec/indicators_spec.lua` - Indicator tests (5 tests)
-- `docs/phase4c_indicators.md` - Phase 4C plan document
+- `docs/phases/phase4c_indicators.md` - Phase 4C plan document
 
 **Files Modified This Session:**
 - `src/game.lua` - Persistent indicators, updated animations
