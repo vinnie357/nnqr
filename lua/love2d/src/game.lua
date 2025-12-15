@@ -14,6 +14,7 @@ local Tooltip = require("src.shared.tooltip")
 local SoundManager = require("src.shared.sound_manager")
 local Particles = require("src.shared.particles")
 local ParticleConfig = require("src.shared.particle_config")
+local AI = require("src.shared.ai.ai")
 
 local Game = {}
 
@@ -49,6 +50,11 @@ Game.loadedSounds = {} -- Cache for Love2D sound sources
 
 -- Particle system state
 Game.particles = nil
+
+-- AI state
+Game.ai = nil -- AI state (nil for 2-player, or AI.create() for vs AI)
+Game.aiThinkingTimer = 0 -- Delay before AI moves
+Game.aiThinkingDelay = 0.8 -- Seconds to wait before AI makes move
 
 -- Turn banner state
 Game.turnBanner = {
@@ -108,6 +114,40 @@ function Game.init()
 		duration = 2.0,
 		player = 1,
 	}
+
+	-- Reset AI state
+	Game.ai = nil
+	Game.aiThinkingTimer = 0
+end
+
+--- Start a new game against AI
+---@param difficulty string "easy"|"medium"|"hard"|"expert"
+function Game.startVsAI(difficulty)
+	Game.init()
+	Game.ai = AI.create(difficulty or "easy", 2)
+	UI.setScreen(Game.uiState, "playing")
+end
+
+--- Start a new 2-player game
+function Game.startTwoPlayer()
+	Game.init()
+	Game.ai = nil
+	UI.setScreen(Game.uiState, "playing")
+end
+
+--- Check if current game is against AI
+---@return boolean
+function Game.isVsAI()
+	return Game.ai ~= nil
+end
+
+--- Get AI difficulty if playing vs AI
+---@return string|nil
+function Game.getAIDifficulty()
+	if Game.ai then
+		return Game.ai.difficulty
+	end
+	return nil
 end
 
 function Game.generateTerrain()
@@ -227,6 +267,79 @@ function Game.update(dt)
 		Game.hoveredTile = { row = row, col = col }
 	else
 		Game.hoveredTile = nil
+	end
+
+	-- Handle AI turn
+	if Game.ai and AI.isAITurn(Game.ai, Game.state) and Game.state.gameState == "playing" then
+		Game.aiThinkingTimer = Game.aiThinkingTimer + dt
+		if Game.aiThinkingTimer >= Game.aiThinkingDelay then
+			Game.executeAIMove()
+			Game.aiThinkingTimer = 0
+		end
+	end
+end
+
+--- Execute the AI's chosen move
+function Game.executeAIMove()
+	if not Game.ai then
+		return
+	end
+
+	local move = AI.chooseMove(Game.ai, Game.state)
+	if not move then
+		-- No valid moves - end turn (or handle stalemate)
+		Game.state = GameLogic.endTurn(Game.state)
+		return
+	end
+
+	local movingPiece = Game.state.pieces[move.piece]
+	local targetPiece = GameLogic.getPieceAt(Game.state, move.target.row, move.target.col)
+
+	-- Execute the move
+	Game.state = GameLogic.movePiece(Game.state, movingPiece, move.target.row, move.target.col)
+
+	-- Play move or capture sound
+	if targetPiece then
+		Game.playSoundForEvent("capture")
+	else
+		Game.playSoundForEvent("move")
+	end
+
+	-- Collect orb if present
+	local collectedOrb = Powers.collectOrb(movingPiece, Game.orbs)
+	if collectedOrb then
+		Game.spawnOrbParticles(movingPiece.row, movingPiece.col)
+
+		-- Check for overheat (10+ of same power = explosion)
+		local overheatedPower = Powers.checkOverheat(movingPiece)
+		if overheatedPower then
+			Game.handlePieceOverheat(movingPiece, overheatedPower)
+		end
+	end
+
+	-- End the turn (AI doesn't use extra moves for now)
+	Game.state = GameLogic.endTurn(Game.state)
+
+	-- Check for game over
+	if Game.state.gameState == "gameover" then
+		UI.setScreen(Game.uiState, "gameover")
+	else
+		-- Show turn banner for new player
+		Game.showTurnBanner(Game.state.currentPlayer)
+
+		-- Check for orb spawn
+		if Powers.shouldSpawnOrbs(Game.state.turn) then
+			local newOrbs = Powers.spawnOrbs(
+				Game.state.cols,
+				Game.state.rows,
+				Game.state.pieces,
+				Game.orbs,
+				Powers.getOrbSpawnCount()
+			)
+			for _, orb in ipairs(newOrbs) do
+				table.insert(Game.orbs, orb)
+			end
+		end
 	end
 end
 
