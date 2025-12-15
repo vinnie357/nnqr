@@ -12,6 +12,8 @@ local Indicators = require("src.shared.indicators")
 local UI = require("src.shared.ui")
 local Tooltip = require("src.shared.tooltip")
 local SoundManager = require("src.shared.sound_manager")
+local Particles = require("src.shared.particles")
+local ParticleConfig = require("src.shared.particle_config")
 
 local Game = {}
 
@@ -44,6 +46,9 @@ Game.animations = nil
 -- Sound state
 Game.soundManager = nil
 Game.loadedSounds = {} -- Cache for Love2D sound sources
+
+-- Particle system state
+Game.particles = nil
 
 -- Turn banner state
 Game.turnBanner = {
@@ -92,6 +97,9 @@ function Game.init()
 	Game.soundManager = SoundManager.create()
 	Game.loadedSounds = {}
 	Game.preloadSounds()
+
+	-- Initialize particle system
+	Game.particles = Particles.create()
 
 	-- Reset turn banner
 	Game.turnBanner = {
@@ -207,6 +215,11 @@ function Game.update(dt)
 		GameAnimations.update(Game.animations, dt)
 	end
 
+	-- Update particles
+	if Game.particles then
+		Particles.update(Game.particles, dt)
+	end
+
 	-- Update hovered tile
 	local mx, my = love.mouse.getPosition()
 	local row, col = Rendering.screenToBoard(mx, my, Game.boardOffsetX, Game.boardOffsetY)
@@ -239,6 +252,7 @@ function Game.drawPlayingScreen()
 	Game.drawPowerTargets()
 	Game.drawPieces()
 	Game.drawAnimations()
+	Game.drawParticles()
 	Game.drawUI()
 	Game.drawPowerMenu()
 	Game.drawTurnBanner()
@@ -915,6 +929,55 @@ function Game.drawAnimations()
 	end
 end
 
+function Game.drawParticles()
+	if not Game.particles then
+		return
+	end
+
+	local effects = Particles.getActiveEffects(Game.particles)
+	for _, effect in ipairs(effects) do
+		local progress = Particles.getProgress(effect)
+		Game.drawParticleEffect(effect, progress)
+	end
+end
+
+function Game.drawParticleEffect(effect, progress)
+	local x, y = effect.x, effect.y
+	local count = effect.count
+	local spread = effect.spread
+	local speed = effect.speed
+	local speedY = effect.speedY or 0
+	local size = effect.size
+	local color = effect.color
+	local fadeOut = effect.fadeOut
+
+	-- Calculate alpha based on fadeOut
+	local alpha = 1
+	if fadeOut and progress > 0.5 then
+		alpha = 1 - (progress - 0.5) * 2
+	end
+
+	-- Draw particles radiating outward
+	for i = 1, count do
+		-- Use a deterministic seed based on index for consistent particle positions
+		local angle = (i / count) * math.rad(spread) - math.rad(spread / 2)
+		local speedVal = speed.min + (speed.max - speed.min) * ((i % 5) / 4) -- Vary speed
+
+		-- Calculate particle position based on elapsed time and speed
+		local elapsed = effect.elapsed
+		local px = x + math.cos(angle) * speedVal * elapsed
+		local py = y + math.sin(angle) * speedVal * elapsed * 0.5 -- Isometric squash
+		py = py + speedY * elapsed -- Apply vertical movement
+
+		-- Size interpolation
+		local currentSize = size.start + (size.finish - size.start) * progress
+
+		-- Draw particle
+		love.graphics.setColor(color[1], color[2], color[3], (color[4] or 1) * alpha)
+		love.graphics.circle("fill", px, py, currentSize)
+	end
+end
+
 function Game.drawAnimation(anim, progress)
 	if anim.type == "destroy_row" then
 		Game.drawDestroyRowAnimation(anim, progress)
@@ -1379,7 +1442,10 @@ function Game.mousepressed(x, y, button)
 					end
 
 					-- Collect orb if present
-					Powers.collectOrb(movingPiece, Game.orbs)
+					local collectedOrb = Powers.collectOrb(movingPiece, Game.orbs)
+					if collectedOrb then
+						Game.spawnOrbParticles(movingPiece.row, movingPiece.col)
+					end
 
 					-- Check for extra move from move_again
 					if Game.state.extraMove then
@@ -1612,6 +1678,7 @@ function Game.startNewGame()
 	Game.generateTerrain()
 	Game.orbs = {}
 	Game.animations = GameAnimations.create()
+	Game.particles = Particles.create()
 	Game.powerMode = nil
 	Game.powerTargets = {}
 	Game.turnBanner = {
@@ -1657,6 +1724,9 @@ end
 function Game.executepower(piece, powerId, target)
 	-- Play power sound
 	Game.playSoundForPower(powerId)
+
+	-- Spawn particles at piece position
+	Game.spawnPowerParticles(powerId, piece.row, piece.col)
 
 	local anim = nil
 
@@ -1743,6 +1813,31 @@ function Game.refreshSelection()
 	if Game.state.selectedPiece then
 		Game.state = GameLogic.selectPiece(Game.state, Game.state.selectedPiece)
 	end
+end
+
+function Game.spawnPowerParticles(powerId, row, col)
+	if not Game.particles then
+		return
+	end
+
+	local height = GameLogic.getHeight(Game.state, row, col)
+	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+	y = y + Rendering.getHeightOffset(height) - 10 -- Center on piece
+
+	local effectType = ParticleConfig.getPowerEffect(powerId)
+	Particles.spawn(Game.particles, effectType, x, y)
+end
+
+function Game.spawnOrbParticles(row, col)
+	if not Game.particles then
+		return
+	end
+
+	local height = GameLogic.getHeight(Game.state, row, col)
+	local x, y = Rendering.boardToScreen(row, col, Game.boardOffsetX, Game.boardOffsetY)
+	y = y + Rendering.getHeightOffset(height) - 8 -- Center on orb
+
+	Particles.spawn(Game.particles, "orb_collect", x, y)
 end
 
 function Game.wheelmoved(x, y) end
