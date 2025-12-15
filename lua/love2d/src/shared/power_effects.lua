@@ -1247,4 +1247,235 @@ function PowerEffects.activateDredgeColumn(state, piece)
 	return state
 end
 
+-- Phase 9C: Power Transfer Powers
+
+-- 9C.1 Teach (Share to allies)
+
+--- Helper to copy powers to a target piece (excluding the power being used)
+---@param source table Source piece
+---@param target table Target piece
+---@param excludePower string Power to exclude (the teach power being consumed)
+local function copyPowersTo(source, target, excludePower)
+	if not source.powers then
+		return
+	end
+	if not target.powers then
+		target.powers = {}
+	end
+
+	for _, power in ipairs(source.powers) do
+		if power ~= excludePower then
+			table.insert(target.powers, power)
+		end
+	end
+end
+
+--- Activate teach_radial power (copy powers to adjacent allies)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateTeachRadial(state, piece)
+	-- Find adjacent allies
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player == piece.player then
+			local dr = math.abs(p.row - piece.row)
+			local dc = math.abs(p.col - piece.col)
+			if dr <= 1 and dc <= 1 then
+				copyPowersTo(piece, p, "teach_radial")
+			end
+		end
+	end
+
+	removePower(piece, "teach_radial")
+
+	return state
+end
+
+--- Activate teach_row power (copy powers to allies in row)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateTeachRow(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player == piece.player and p.row == piece.row then
+			copyPowersTo(piece, p, "teach_row")
+		end
+	end
+
+	removePower(piece, "teach_row")
+
+	return state
+end
+
+--- Activate teach_column power (copy powers to allies in column)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateTeachColumn(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player == piece.player and p.col == piece.col then
+			copyPowersTo(piece, p, "teach_column")
+		end
+	end
+
+	removePower(piece, "teach_column")
+
+	return state
+end
+
+-- 9C.2 Learn (Absorb from allies)
+
+--- Helper to absorb all powers from a source piece
+---@param source table Source piece (will lose powers)
+---@param target table Target piece (will gain powers)
+local function absorbPowersFrom(source, target)
+	if not source.powers or #source.powers == 0 then
+		return
+	end
+	if not target.powers then
+		target.powers = {}
+	end
+
+	-- Copy all powers to target
+	for _, power in ipairs(source.powers) do
+		table.insert(target.powers, power)
+	end
+
+	-- Clear source powers
+	source.powers = {}
+end
+
+--- Activate learn_radial power (absorb powers from adjacent allies)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateLearnRadial(state, piece)
+	-- Remove the learn power first
+	removePower(piece, "learn_radial")
+
+	-- Find adjacent allies and absorb their powers
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player == piece.player then
+			local dr = math.abs(p.row - piece.row)
+			local dc = math.abs(p.col - piece.col)
+			if dr <= 1 and dc <= 1 then
+				absorbPowersFrom(p, piece)
+			end
+		end
+	end
+
+	return state
+end
+
+--- Activate learn_row power (absorb powers from allies in row)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateLearnRow(state, piece)
+	removePower(piece, "learn_row")
+
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player == piece.player and p.row == piece.row then
+			absorbPowersFrom(p, piece)
+		end
+	end
+
+	return state
+end
+
+--- Activate learn_column power (absorb powers from allies in column)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateLearnColumn(state, piece)
+	removePower(piece, "learn_column")
+
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player == piece.player and p.col == piece.col then
+			absorbPowersFrom(p, piece)
+		end
+	end
+
+	return state
+end
+
+-- 9C.3 Pilfer (Steal from enemies)
+
+--- Helper to steal one random power from a source piece
+---@param source table Source piece (enemy)
+---@param target table Target piece (will gain power)
+---@return boolean True if a power was stolen
+local function stealRandomPower(source, target)
+	if not source.powers or #source.powers == 0 then
+		return false
+	end
+	if not target.powers then
+		target.powers = {}
+	end
+
+	-- Pick random power
+	local idx = math.random(#source.powers)
+	local stolenPower = source.powers[idx]
+
+	-- Add to target
+	table.insert(target.powers, stolenPower)
+
+	-- Remove from source
+	table.remove(source.powers, idx)
+
+	return true
+end
+
+--- Activate pilfer_radial power (steal one power from each adjacent enemy)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activatePilferRadial(state, piece)
+	removePower(piece, "pilfer_radial")
+
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player then
+			local dr = math.abs(p.row - piece.row)
+			local dc = math.abs(p.col - piece.col)
+			if dr <= 1 and dc <= 1 then
+				stealRandomPower(p, piece)
+			end
+		end
+	end
+
+	return state
+end
+
+--- Activate pilfer_row power (steal one power from each enemy in row)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activatePilferRow(state, piece)
+	removePower(piece, "pilfer_row")
+
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player and p.row == piece.row then
+			stealRandomPower(p, piece)
+		end
+	end
+
+	return state
+end
+
+--- Activate pilfer_column power (steal one power from each enemy in column)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activatePilferColumn(state, piece)
+	removePower(piece, "pilfer_column")
+
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player and p.col == piece.col then
+			stealRandomPower(p, piece)
+		end
+	end
+
+	return state
+end
+
 return PowerEffects

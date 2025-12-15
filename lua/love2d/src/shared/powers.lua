@@ -355,6 +355,86 @@ Powers.definitions = {
 		description = "Raise friendly tiles, lower enemy tiles in column",
 		targeting = "self_column",
 	},
+
+	-- Phase 9C: Power Transfer Powers
+
+	-- 9C.1 Teach (Share to allies)
+	teach_radial = {
+		id = "teach_radial",
+		name = "Teach Radial",
+		category = "Strategic",
+		duration = "single_use",
+		description = "Copy all your powers to adjacent allies",
+		targeting = "area_3x3",
+	},
+	teach_row = {
+		id = "teach_row",
+		name = "Teach Row",
+		category = "Strategic",
+		duration = "single_use",
+		description = "Copy all your powers to allies in row",
+		targeting = "self_row",
+	},
+	teach_column = {
+		id = "teach_column",
+		name = "Teach Column",
+		category = "Strategic",
+		duration = "single_use",
+		description = "Copy all your powers to allies in column",
+		targeting = "self_column",
+	},
+
+	-- 9C.2 Learn (Absorb from allies)
+	learn_radial = {
+		id = "learn_radial",
+		name = "Learn Radial",
+		category = "Strategic",
+		duration = "single_use",
+		description = "Take all powers from adjacent allies",
+		targeting = "area_3x3",
+	},
+	learn_row = {
+		id = "learn_row",
+		name = "Learn Row",
+		category = "Strategic",
+		duration = "single_use",
+		description = "Take all powers from allies in row",
+		targeting = "self_row",
+	},
+	learn_column = {
+		id = "learn_column",
+		name = "Learn Column",
+		category = "Strategic",
+		duration = "single_use",
+		description = "Take all powers from allies in column",
+		targeting = "self_column",
+	},
+
+	-- 9C.3 Pilfer (Steal from enemies)
+	pilfer_radial = {
+		id = "pilfer_radial",
+		name = "Pilfer Radial",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Steal one random power from each adjacent enemy",
+		targeting = "area_3x3",
+	},
+	pilfer_row = {
+		id = "pilfer_row",
+		name = "Pilfer Row",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Steal one random power from each enemy in row",
+		targeting = "self_row",
+	},
+	pilfer_column = {
+		id = "pilfer_column",
+		name = "Pilfer Column",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Steal one random power from each enemy in column",
+		targeting = "self_column",
+	},
 }
 
 -- List of power IDs for random selection

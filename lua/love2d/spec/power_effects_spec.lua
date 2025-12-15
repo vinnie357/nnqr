@@ -1735,6 +1735,259 @@ describe("PowerEffects", function()
 		end)
 	end)
 
+	-- Phase 9C: Power Transfer Powers
+
+	-- 9C.1 Teach (Share to allies)
+	describe("teach_radial", function()
+		it("copies all powers to adjacent allies", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "teach_radial", "bomb", "jump_proof" } },
+				{ row = 3, col = 5, player = 1, powers = {} }, -- Ally adjacent
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Enemy (excluded)
+			}
+			local piece = state.pieces[1]
+			local ally = state.pieces[2]
+
+			state = PowerEffects.activateTeachRadial(state, piece)
+
+			-- Ally should have bomb and jump_proof (not teach_radial which was consumed)
+			assert.are.equal(2, #ally.powers)
+			local hasBomb = false
+			local hasJumpProof = false
+			for _, p in ipairs(ally.powers) do
+				if p == "bomb" then
+					hasBomb = true
+				end
+				if p == "jump_proof" then
+					hasJumpProof = true
+				end
+			end
+			assert.is_true(hasBomb)
+			assert.is_true(hasJumpProof)
+		end)
+
+		it("does not copy to enemies", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "teach_radial", "bomb" } },
+				{ row = 3, col = 5, player = 2, powers = {} }, -- Enemy
+			}
+			local piece = state.pieces[1]
+			local enemy = state.pieces[2]
+
+			state = PowerEffects.activateTeachRadial(state, piece)
+
+			assert.are.equal(0, #enemy.powers)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "teach_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTeachRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("teach_row", function()
+		it("copies all powers to allies in row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "teach_row", "bomb" } },
+				{ row = 4, col = 1, player = 1, powers = {} }, -- Ally in row
+				{ row = 4, col = 10, player = 1, powers = {} }, -- Ally in row
+				{ row = 5, col = 5, player = 1, powers = {} }, -- Ally different row (excluded)
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTeachRow(state, piece)
+
+			assert.are.equal(1, #state.pieces[2].powers) -- bomb
+			assert.are.equal(1, #state.pieces[3].powers) -- bomb
+			assert.are.equal(0, #state.pieces[4].powers) -- not in row
+		end)
+	end)
+
+	describe("teach_column", function()
+		it("copies all powers to allies in column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "teach_column", "bomb" } },
+				{ row = 1, col = 5, player = 1, powers = {} }, -- Ally in column
+				{ row = 8, col = 5, player = 1, powers = {} }, -- Ally in column
+				{ row = 4, col = 6, player = 1, powers = {} }, -- Ally different column (excluded)
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTeachColumn(state, piece)
+
+			assert.are.equal(1, #state.pieces[2].powers) -- bomb
+			assert.are.equal(1, #state.pieces[3].powers) -- bomb
+			assert.are.equal(0, #state.pieces[4].powers) -- not in column
+		end)
+	end)
+
+	-- 9C.2 Learn (Absorb from allies)
+	describe("learn_radial", function()
+		it("takes all powers from adjacent allies", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "learn_radial" } },
+				{ row = 3, col = 5, player = 1, powers = { "bomb", "jump_proof" } }, -- Ally with powers
+				{ row = 5, col = 5, player = 2, powers = { "recruit" } }, -- Enemy (excluded)
+			}
+			local piece = state.pieces[1]
+			local ally = state.pieces[2]
+
+			state = PowerEffects.activateLearnRadial(state, piece)
+
+			-- Piece should have absorbed ally's powers
+			assert.are.equal(2, #piece.powers)
+			-- Ally should have no powers left
+			assert.are.equal(0, #ally.powers)
+		end)
+
+		it("does not take from enemies", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "learn_radial" } },
+				{ row = 3, col = 5, player = 2, powers = { "bomb" } }, -- Enemy
+			}
+			local piece = state.pieces[1]
+			local enemy = state.pieces[2]
+
+			state = PowerEffects.activateLearnRadial(state, piece)
+
+			assert.are.equal(0, #piece.powers) -- learn_radial consumed, nothing learned
+			assert.are.equal(1, #enemy.powers) -- Enemy keeps powers
+		end)
+	end)
+
+	describe("learn_row", function()
+		it("takes all powers from allies in row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "learn_row" } },
+				{ row = 4, col = 1, player = 1, powers = { "bomb" } },
+				{ row = 4, col = 10, player = 1, powers = { "recruit" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateLearnRow(state, piece)
+
+			assert.are.equal(2, #piece.powers) -- bomb + recruit
+			assert.are.equal(0, #state.pieces[2].powers)
+			assert.are.equal(0, #state.pieces[3].powers)
+		end)
+	end)
+
+	describe("learn_column", function()
+		it("takes all powers from allies in column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "learn_column" } },
+				{ row = 1, col = 5, player = 1, powers = { "bomb" } },
+				{ row = 8, col = 5, player = 1, powers = { "recruit" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateLearnColumn(state, piece)
+
+			assert.are.equal(2, #piece.powers) -- bomb + recruit
+			assert.are.equal(0, #state.pieces[2].powers)
+			assert.are.equal(0, #state.pieces[3].powers)
+		end)
+	end)
+
+	-- 9C.3 Pilfer (Steal from enemies)
+	describe("pilfer_radial", function()
+		it("steals one random power from each adjacent enemy", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "pilfer_radial" } },
+				{ row = 3, col = 5, player = 2, powers = { "bomb", "recruit" } }, -- Enemy with powers
+				{ row = 5, col = 5, player = 1, powers = { "jump_proof" } }, -- Ally (excluded)
+			}
+			local piece = state.pieces[1]
+			local enemy = state.pieces[2]
+
+			state = PowerEffects.activatePilferRadial(state, piece)
+
+			-- Piece should have stolen 1 power
+			assert.are.equal(1, #piece.powers)
+			-- Enemy should have 1 power left
+			assert.are.equal(1, #enemy.powers)
+		end)
+
+		it("does not steal from allies", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "pilfer_radial" } },
+				{ row = 3, col = 5, player = 1, powers = { "bomb" } }, -- Ally
+			}
+			local piece = state.pieces[1]
+			local ally = state.pieces[2]
+
+			state = PowerEffects.activatePilferRadial(state, piece)
+
+			assert.are.equal(0, #piece.powers) -- Nothing stolen
+			assert.are.equal(1, #ally.powers) -- Ally keeps power
+		end)
+
+		it("handles enemies with no powers", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "pilfer_radial" } },
+				{ row = 3, col = 5, player = 2, powers = {} }, -- Enemy with no powers
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activatePilferRadial(state, piece)
+
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("pilfer_row", function()
+		it("steals one power from each enemy in row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "pilfer_row" } },
+				{ row = 4, col = 1, player = 2, powers = { "bomb" } },
+				{ row = 4, col = 10, player = 2, powers = { "recruit" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activatePilferRow(state, piece)
+
+			assert.are.equal(2, #piece.powers) -- Stole from both
+			assert.are.equal(0, #state.pieces[2].powers)
+			assert.are.equal(0, #state.pieces[3].powers)
+		end)
+	end)
+
+	describe("pilfer_column", function()
+		it("steals one power from each enemy in column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "pilfer_column" } },
+				{ row = 1, col = 5, player = 2, powers = { "bomb" } },
+				{ row = 8, col = 5, player = 2, powers = { "recruit" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activatePilferColumn(state, piece)
+
+			assert.are.equal(2, #piece.powers) -- Stole from both
+			assert.are.equal(0, #state.pieces[2].powers)
+			assert.are.equal(0, #state.pieces[3].powers)
+		end)
+	end)
+
 	describe("getValidMovesWithPowers with flags", function()
 		it("includes diagonal moves when canMoveDiagonally is true", function()
 			local state = GameLogic.createInitialState()
