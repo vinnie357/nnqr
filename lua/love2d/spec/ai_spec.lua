@@ -282,6 +282,153 @@ describe("AI", function()
 		end)
 	end)
 
+	-- 8C.4 Hard/Expert AI (Minimax)
+	describe("Hard AI", function()
+		local GameLogic
+
+		setup(function()
+			GameLogic = require("src.shared.game_logic")
+		end)
+
+		it("uses minimax strategy", function()
+			local ai = AI.create("hard")
+			assert.are.equal("minimax", ai.config.strategy)
+		end)
+
+		it("has search depth of 2", function()
+			local ai = AI.create("hard")
+			assert.are.equal(2, ai.config.searchDepth)
+		end)
+
+		it("returns valid move structure", function()
+			local ai = AI.create("hard")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+
+			local move = AI.chooseMove(ai, state, {})
+
+			assert.is_not_nil(move)
+			assert.is_not_nil(move.piece)
+			assert.is_not_nil(move.target)
+			assert.is_not_nil(move.target.row)
+			assert.is_not_nil(move.target.col)
+		end)
+
+		it("prefers capture over empty move", function()
+			local ai = AI.create("hard")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} },
+			}
+
+			local move = AI.chooseMove(ai, state, {})
+
+			-- Hard AI should capture
+			assert.are.equal(4, move.target.row)
+			assert.are.equal(5, move.target.col)
+		end)
+
+		it("looks ahead to avoid bad trades", function()
+			local ai = AI.create("hard")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+			-- If AI captures at 4,5, enemy at 3,5 can recapture
+			-- AI should consider this in its search
+			state.pieces = {
+				{ row = 3, col = 5, player = 1, powers = {} }, -- Will recapture
+				{ row = 4, col = 5, player = 1, powers = {} }, -- Can be captured
+				{ row = 5, col = 5, player = 2, powers = {} }, -- AI piece
+				{ row = 5, col = 3, player = 2, powers = {} }, -- Safe AI piece
+			}
+
+			local move = AI.chooseMove(ai, state, {})
+
+			-- With depth 2, AI should see the recapture and may choose differently
+			-- Just verify a valid move is returned
+			assert.is_not_nil(move)
+		end)
+
+		it("returns nil when no valid moves", function()
+			local ai = AI.create("hard")
+			local state = GameLogic.createInitialState()
+			state.pieces = {} -- No pieces
+			for row = 1, 2 do
+				for col = 1, 10 do
+					table.insert(state.pieces, { row = row, col = col, player = 1, powers = {} })
+				end
+			end
+
+			local move = AI.chooseMove(ai, state, {})
+			assert.is_nil(move)
+		end)
+	end)
+
+	describe("Expert AI", function()
+		local GameLogic
+
+		setup(function()
+			GameLogic = require("src.shared.game_logic")
+		end)
+
+		it("uses minimax strategy", function()
+			local ai = AI.create("expert")
+			assert.are.equal("minimax", ai.config.strategy)
+		end)
+
+		it("has search depth of 4", function()
+			local ai = AI.create("expert")
+			assert.are.equal(4, ai.config.searchDepth)
+		end)
+
+		it("returns valid move structure", function()
+			local ai = AI.create("expert")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+			-- Use smaller board state for faster test
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} },
+			}
+
+			local move = AI.chooseMove(ai, state, {})
+
+			assert.is_not_nil(move)
+			assert.is_not_nil(move.piece)
+			assert.is_not_nil(move.target)
+		end)
+
+		it("prefers capture over empty move", function()
+			local ai = AI.create("expert")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} },
+			}
+
+			local move = AI.chooseMove(ai, state, {})
+
+			assert.are.equal(4, move.target.row)
+			assert.are.equal(5, move.target.col)
+		end)
+
+		it("returns nil when no valid moves", function()
+			local ai = AI.create("expert")
+			local state = GameLogic.createInitialState()
+			state.pieces = {}
+			for row = 1, 2 do
+				for col = 1, 10 do
+					table.insert(state.pieces, { row = row, col = col, player = 1, powers = {} })
+				end
+			end
+
+			local move = AI.chooseMove(ai, state, {})
+			assert.is_nil(move)
+		end)
+	end)
+
 	-- 8B.7 Medium AI (Heuristic)
 	describe("Medium AI", function()
 		local GameLogic

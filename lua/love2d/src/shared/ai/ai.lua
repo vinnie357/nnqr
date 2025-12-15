@@ -4,6 +4,7 @@
 
 local PowerEffects = require("src.shared.power_effects")
 local Evaluator = require("src.shared.ai.evaluator")
+local Search = require("src.shared.ai.search")
 
 local AI = {}
 
@@ -98,23 +99,18 @@ local function chooseRandomMove(moves)
 	return moves[math.random(#moves)]
 end
 
---- Choose a heuristic move using the Evaluator (Medium AI)
+--- Convert a move from {piece=object, target} format to {piece=index, target} format
 ---@param gameState table Game state
----@param player number Player to find move for
----@param orbs table Array of orbs on the board
----@return table|nil Move {piece, target} or nil
-local function chooseHeuristicMove(gameState, player, orbs)
-	local bestMove = Evaluator.getBestMove(gameState, orbs, player)
-
-	if not bestMove then
+---@param move table Move with piece object reference
+---@return table|nil Move with piece index, or nil if piece not found
+local function convertMoveToIndex(gameState, move)
+	if not move then
 		return nil
 	end
 
-	-- Convert from Evaluator format {piece=object, target={row,col}}
-	-- to AI format {piece=index, target={row,col}}
 	local pieceIndex = nil
 	for idx, p in ipairs(gameState.pieces) do
-		if p == bestMove.piece then
+		if p == move.piece then
 			pieceIndex = idx
 			break
 		end
@@ -126,8 +122,28 @@ local function chooseHeuristicMove(gameState, player, orbs)
 
 	return {
 		piece = pieceIndex,
-		target = bestMove.target,
+		target = move.target,
 	}
+end
+
+--- Choose a heuristic move using the Evaluator (Medium AI)
+---@param gameState table Game state
+---@param player number Player to find move for
+---@param orbs table Array of orbs on the board
+---@return table|nil Move {piece, target} or nil
+local function chooseHeuristicMove(gameState, player, orbs)
+	local bestMove = Evaluator.getBestMove(gameState, orbs, player)
+	return convertMoveToIndex(gameState, bestMove)
+end
+
+--- Choose a move using minimax search (Hard/Expert AI)
+---@param gameState table Game state
+---@param player number Player to find move for
+---@param depth number Search depth
+---@return table|nil Move {piece, target} or nil
+local function chooseMinimaxMove(gameState, player, depth)
+	local bestMove = Search.findBestMove(gameState, depth, player)
+	return convertMoveToIndex(gameState, bestMove)
 end
 
 --- Choose a move for the AI
@@ -152,8 +168,8 @@ function AI.chooseMove(aiState, gameState, orbs)
 		-- Phase 8B: Use rule-based evaluation
 		return chooseHeuristicMove(gameState, aiState.player, orbs)
 	elseif strategy == "minimax" then
-		-- TODO: Phase 8C - implement minimax search
-		return chooseRandomMove(moves)
+		-- Phase 8C: Use minimax search with alpha-beta pruning
+		return chooseMinimaxMove(gameState, aiState.player, aiState.config.searchDepth)
 	end
 
 	return chooseRandomMove(moves)
