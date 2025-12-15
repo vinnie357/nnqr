@@ -1071,6 +1071,264 @@ describe("PowerEffects", function()
 		end)
 	end)
 
+	-- Phase 9A.2: Acidic Powers
+	describe("acidic_radial", function()
+		it("destroys all pieces in 3x3 area", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "acidic_radial" } },
+				{ row = 3, col = 5, player = 2, powers = {} },
+				{ row = 4, col = 4, player = 2, powers = {} },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateAcidicRadial(state, piece)
+			-- Only activator remains
+			assert.are.equal(1, #state.pieces)
+		end)
+
+		it("destroys tiles in 3x3 area", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "acidic_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateAcidicRadial(state, piece)
+
+			-- All tiles in 3x3 area should be destroyed
+			assert.is_true(GameLogic.isTileDestroyed(state, 3, 4))
+			assert.is_true(GameLogic.isTileDestroyed(state, 3, 5))
+			assert.is_true(GameLogic.isTileDestroyed(state, 4, 4))
+			assert.is_true(GameLogic.isTileDestroyed(state, 4, 6))
+			assert.is_true(GameLogic.isTileDestroyed(state, 5, 5))
+		end)
+
+		it("does NOT destroy tile under activator", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "acidic_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateAcidicRadial(state, piece)
+
+			-- Activator's tile should NOT be destroyed
+			assert.is_false(GameLogic.isTileDestroyed(state, 4, 5))
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "acidic_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateAcidicRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("acidic_row", function()
+		it("destroys all pieces in row except activator", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "acidic_row" } },
+				{ row = 4, col = 1, player = 2, powers = {} },
+				{ row = 4, col = 10, player = 2, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Different row - survives
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateAcidicRow(state, piece)
+			-- Activator + piece in different row
+			assert.are.equal(2, #state.pieces)
+		end)
+
+		it("destroys all tiles in row except under activator", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "acidic_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateAcidicRow(state, piece)
+
+			-- All tiles in row except activator's tile destroyed
+			for col = 1, 10 do
+				if col ~= 5 then
+					assert.is_true(
+						GameLogic.isTileDestroyed(state, 4, col),
+						"Tile at 4," .. col .. " should be destroyed"
+					)
+				else
+					assert.is_false(GameLogic.isTileDestroyed(state, 4, 5), "Activator's tile should NOT be destroyed")
+				end
+			end
+		end)
+	end)
+
+	describe("acidic_column", function()
+		it("destroys all pieces in column except activator", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "acidic_column" } },
+				{ row = 1, col = 5, player = 2, powers = {} },
+				{ row = 8, col = 5, player = 2, powers = {} },
+				{ row = 4, col = 6, player = 2, powers = {} }, -- Different column - survives
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateAcidicColumn(state, piece)
+			-- Activator + piece in different column
+			assert.are.equal(2, #state.pieces)
+		end)
+
+		it("destroys all tiles in column except under activator", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "acidic_column" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateAcidicColumn(state, piece)
+
+			-- All tiles in column except activator's tile destroyed
+			for row = 1, 8 do
+				if row ~= 4 then
+					assert.is_true(
+						GameLogic.isTileDestroyed(state, row, 5),
+						"Tile at " .. row .. ",5 should be destroyed"
+					)
+				else
+					assert.is_false(GameLogic.isTileDestroyed(state, 4, 5), "Activator's tile should NOT be destroyed")
+				end
+			end
+		end)
+	end)
+
+	-- Phase 9A.4: Scramble Row/Column
+	describe("scramble_row", function()
+		it("shuffles positions of all pieces in row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scramble_row" } },
+				{ row = 4, col = 1, player = 2, powers = {} },
+				{ row = 4, col = 10, player = 2, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Different row - unaffected
+			}
+
+			-- Record original positions in row
+			local originalCols = {}
+			for _, p in ipairs(state.pieces) do
+				if p.row == 4 then
+					table.insert(originalCols, p.col)
+				end
+			end
+
+			local piece = state.pieces[1]
+			state = PowerEffects.activateScrambleRow(state, piece)
+
+			-- Same pieces, positions shuffled within row
+			local newCols = {}
+			for _, p in ipairs(state.pieces) do
+				if p.row == 4 then
+					table.insert(newCols, p.col)
+				end
+			end
+
+			-- Same columns used, just shuffled
+			table.sort(originalCols)
+			table.sort(newCols)
+			assert.are.same(originalCols, newCols)
+		end)
+
+		it("does not affect pieces in other rows", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scramble_row" } },
+				{ row = 5, col = 7, player = 2, powers = {} },
+			}
+			local otherPiece = state.pieces[2]
+
+			state = PowerEffects.activateScrambleRow(state, state.pieces[1])
+
+			assert.are.equal(5, otherPiece.row)
+			assert.are.equal(7, otherPiece.col)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scramble_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateScrambleRow(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("scramble_column", function()
+		it("shuffles positions of all pieces in column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scramble_column" } },
+				{ row = 1, col = 5, player = 2, powers = {} },
+				{ row = 8, col = 5, player = 2, powers = {} },
+				{ row = 4, col = 6, player = 2, powers = {} }, -- Different column - unaffected
+			}
+
+			-- Record original rows in column
+			local originalRows = {}
+			for _, p in ipairs(state.pieces) do
+				if p.col == 5 then
+					table.insert(originalRows, p.row)
+				end
+			end
+
+			local piece = state.pieces[1]
+			state = PowerEffects.activateScrambleColumn(state, piece)
+
+			-- Same pieces, positions shuffled within column
+			local newRows = {}
+			for _, p in ipairs(state.pieces) do
+				if p.col == 5 then
+					table.insert(newRows, p.row)
+				end
+			end
+
+			table.sort(originalRows)
+			table.sort(newRows)
+			assert.are.same(originalRows, newRows)
+		end)
+
+		it("does not affect pieces in other columns", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scramble_column" } },
+				{ row = 3, col = 7, player = 2, powers = {} },
+			}
+			local otherPiece = state.pieces[2]
+
+			state = PowerEffects.activateScrambleColumn(state, state.pieces[1])
+
+			assert.are.equal(3, otherPiece.row)
+			assert.are.equal(7, otherPiece.col)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scramble_column" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateScrambleColumn(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
 	describe("getValidMovesWithPowers with flags", function()
 		it("includes diagonal moves when canMoveDiagonally is true", function()
 			local state = GameLogic.createInitialState()

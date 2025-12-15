@@ -777,4 +777,180 @@ function PowerEffects.activateSmartBombs(state, piece)
 	return state
 end
 
+-- Phase 9A.2: Acidic Powers
+
+--- Activate acidic_radial power (destroy pieces AND tiles in 3x3 area)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateAcidicRadial(state, piece)
+	-- First destroy pieces (excluding activator)
+	local targets = PowerEffects.getDestroyRadialTargets(state, piece)
+	for _, target in ipairs(targets) do
+		for i = #state.pieces, 1, -1 do
+			if state.pieces[i] == target then
+				table.remove(state.pieces, i)
+				break
+			end
+		end
+	end
+
+	-- Initialize destroyedTiles if needed
+	if not state.destroyedTiles then
+		state.destroyedTiles = {}
+	end
+
+	-- Destroy tiles in 3x3 area (except under activator)
+	for dr = -1, 1 do
+		for dc = -1, 1 do
+			local row = piece.row + dr
+			local col = piece.col + dc
+			-- Skip activator's tile
+			if not (dr == 0 and dc == 0) then
+				if Logic.isValidPosition(row, col) then
+					state.destroyedTiles[row .. "," .. col] = true
+				end
+			end
+		end
+	end
+
+	removePower(piece, "acidic_radial")
+
+	return state
+end
+
+--- Activate acidic_row power (destroy pieces AND tiles in row)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateAcidicRow(state, piece)
+	local targetRow = piece.row
+
+	-- Destroy pieces in row (except activator)
+	for i = #state.pieces, 1, -1 do
+		local p = state.pieces[i]
+		if p.row == targetRow and p ~= piece then
+			table.remove(state.pieces, i)
+		end
+	end
+
+	-- Initialize destroyedTiles if needed
+	if not state.destroyedTiles then
+		state.destroyedTiles = {}
+	end
+
+	-- Destroy tiles in row (except under activator)
+	for col = 1, state.cols do
+		if col ~= piece.col then
+			state.destroyedTiles[targetRow .. "," .. col] = true
+		end
+	end
+
+	removePower(piece, "acidic_row")
+
+	return state
+end
+
+--- Activate acidic_column power (destroy pieces AND tiles in column)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateAcidicColumn(state, piece)
+	local targetCol = piece.col
+
+	-- Destroy pieces in column (except activator)
+	for i = #state.pieces, 1, -1 do
+		local p = state.pieces[i]
+		if p.col == targetCol and p ~= piece then
+			table.remove(state.pieces, i)
+		end
+	end
+
+	-- Initialize destroyedTiles if needed
+	if not state.destroyedTiles then
+		state.destroyedTiles = {}
+	end
+
+	-- Destroy tiles in column (except under activator)
+	for row = 1, state.rows do
+		if row ~= piece.row then
+			state.destroyedTiles[row .. "," .. targetCol] = true
+		end
+	end
+
+	removePower(piece, "acidic_column")
+
+	return state
+end
+
+-- Phase 9A.4: Scramble Row/Column
+
+--- Activate scramble_row power (shuffle positions of pieces in row)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateScrambleRow(state, piece)
+	local targetRow = piece.row
+
+	-- Find all pieces in row
+	local piecesInRow = {}
+	local cols = {}
+
+	for _, p in ipairs(state.pieces) do
+		if p.row == targetRow then
+			table.insert(piecesInRow, p)
+			table.insert(cols, p.col)
+		end
+	end
+
+	-- Shuffle columns
+	for i = #cols, 2, -1 do
+		local j = math.random(i)
+		cols[i], cols[j] = cols[j], cols[i]
+	end
+
+	-- Assign shuffled columns to pieces
+	for i, p in ipairs(piecesInRow) do
+		p.col = cols[i]
+	end
+
+	removePower(piece, "scramble_row")
+
+	return state
+end
+
+--- Activate scramble_column power (shuffle positions of pieces in column)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateScrambleColumn(state, piece)
+	local targetCol = piece.col
+
+	-- Find all pieces in column
+	local piecesInCol = {}
+	local rows = {}
+
+	for _, p in ipairs(state.pieces) do
+		if p.col == targetCol then
+			table.insert(piecesInCol, p)
+			table.insert(rows, p.row)
+		end
+	end
+
+	-- Shuffle rows
+	for i = #rows, 2, -1 do
+		local j = math.random(i)
+		rows[i], rows[j] = rows[j], rows[i]
+	end
+
+	-- Assign shuffled rows to pieces
+	for i, p in ipairs(piecesInCol) do
+		p.row = rows[i]
+	end
+
+	removePower(piece, "scramble_column")
+
+	return state
+end
+
 return PowerEffects

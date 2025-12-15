@@ -197,6 +197,50 @@ Powers.definitions = {
 		description = "Destroy all enemy pieces in 3x3 area (allies unaffected)",
 		targeting = "area_3x3",
 	},
+
+	-- Phase 9A.2: Acidic Powers
+	acidic_radial = {
+		id = "acidic_radial",
+		name = "Acidic Radial",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Destroy pieces and tiles in 3x3 area",
+		targeting = "area_3x3",
+	},
+	acidic_row = {
+		id = "acidic_row",
+		name = "Acidic Row",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Destroy all pieces and tiles in row (except under self)",
+		targeting = "self_row",
+	},
+	acidic_column = {
+		id = "acidic_column",
+		name = "Acidic Column",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Destroy all pieces and tiles in column (except under self)",
+		targeting = "self_column",
+	},
+
+	-- Phase 9A.4: Scramble Row/Column
+	scramble_row = {
+		id = "scramble_row",
+		name = "Scramble Row",
+		category = "Chaos",
+		duration = "single_use",
+		description = "Randomly swap positions of all pieces in row",
+		targeting = "self_row",
+	},
+	scramble_column = {
+		id = "scramble_column",
+		name = "Scramble Column",
+		category = "Chaos",
+		duration = "single_use",
+		description = "Randomly swap positions of all pieces in column",
+		targeting = "self_column",
+	},
 }
 
 -- List of power IDs for random selection
