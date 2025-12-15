@@ -86,4 +86,83 @@ describe("Evaluator", function()
 			assert.are.equal(5, threatened[1].col)
 		end)
 	end)
+
+	-- 8B.2 Opportunity Detection
+	describe("getCaptureOpportunities", function()
+		it("returns empty table when no captures available", function()
+			local state = GameLogic.createInitialState()
+			-- Initial board has no adjacent enemy pieces
+			local opportunities = Evaluator.getCaptureOpportunities(state, 1)
+			assert.are.equal(0, #opportunities)
+		end)
+
+		it("finds single capture opportunity", function()
+			local state = GameLogic.createInitialState()
+			-- Setup: Player 1 piece at (5,5) can capture Player 2 piece at (4,5)
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+				{ row = 4, col = 5, player = 2, powers = {} },
+			}
+
+			local opportunities = Evaluator.getCaptureOpportunities(state, 1)
+			assert.are.equal(1, #opportunities)
+			assert.are.equal(5, opportunities[1].piece.row)
+			assert.are.equal(5, opportunities[1].piece.col)
+			assert.are.equal(4, opportunities[1].target.row)
+			assert.are.equal(5, opportunities[1].target.col)
+		end)
+
+		it("finds multiple capture opportunities", function()
+			local state = GameLogic.createInitialState()
+			-- Setup: Two Player 1 pieces that can each capture a Player 2 piece
+			state.pieces = {
+				{ row = 5, col = 3, player = 1, powers = {} }, -- Can capture at 4,3
+				{ row = 5, col = 7, player = 1, powers = {} }, -- Can capture at 4,7
+				{ row = 4, col = 3, player = 2, powers = {} },
+				{ row = 4, col = 7, player = 2, powers = {} },
+			}
+
+			local opportunities = Evaluator.getCaptureOpportunities(state, 1)
+			assert.are.equal(2, #opportunities)
+		end)
+
+		it("includes target piece information", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+				{ row = 4, col = 5, player = 2, powers = { "bomb" } },
+			}
+
+			local opportunities = Evaluator.getCaptureOpportunities(state, 1)
+			assert.are.equal(1, #opportunities)
+			assert.is_not_nil(opportunities[1].targetPiece)
+			assert.are.equal(2, opportunities[1].targetPiece.player)
+		end)
+
+		it("respects jump_proof on target piece", function()
+			local state = GameLogic.createInitialState()
+			-- Setup: Player 2 piece has jump_proof, cannot be captured
+			state.pieces = {
+				{ row = 5, col = 5, player = 1, powers = {} },
+				{ row = 4, col = 5, player = 2, powers = {}, isJumpProof = true },
+			}
+
+			local opportunities = Evaluator.getCaptureOpportunities(state, 1)
+			assert.are.equal(0, #opportunities) -- Cannot capture jump_proof piece
+		end)
+
+		it("works for player 2", function()
+			local state = GameLogic.createInitialState()
+			-- Setup: Player 2 piece can capture Player 1 piece
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} },
+			}
+
+			local opportunities = Evaluator.getCaptureOpportunities(state, 2)
+			assert.are.equal(1, #opportunities)
+			assert.are.equal(5, opportunities[1].piece.row) -- Player 2's piece
+			assert.are.equal(4, opportunities[1].target.row) -- Capture target
+		end)
+	end)
 end)

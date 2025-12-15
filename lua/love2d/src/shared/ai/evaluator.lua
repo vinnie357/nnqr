@@ -41,4 +41,34 @@ function Evaluator.getThreatenedPieces(state, player)
 	return threatened
 end
 
+--- Get all capture opportunities for a player
+--- Returns moves where the player can capture an enemy piece
+---@param state table Game state
+---@param player number Player whose capture opportunities to find
+---@return table Array of {piece, target, targetPiece} objects
+function Evaluator.getCaptureOpportunities(state, player)
+	local opportunities = {}
+
+	-- For each of our pieces, check if any valid moves capture an enemy
+	for _, piece in ipairs(state.pieces) do
+		if piece.player == player then
+			local moves = PowerEffects.getValidMovesWithPowers(state, piece)
+			for _, move in ipairs(moves) do
+				-- Check if this move lands on an enemy piece
+				for _, enemyPiece in ipairs(state.pieces) do
+					if enemyPiece.player ~= player and enemyPiece.row == move.row and enemyPiece.col == move.col then
+						table.insert(opportunities, {
+							piece = piece,
+							target = { row = move.row, col = move.col },
+							targetPiece = enemyPiece,
+						})
+					end
+				end
+			end
+		end
+	end
+
+	return opportunities
+end
+
 return Evaluator
