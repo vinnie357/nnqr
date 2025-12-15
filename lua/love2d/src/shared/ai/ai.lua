@@ -1,7 +1,9 @@
 -- AI Module
 -- Phase 8A: AI Framework
+-- Phase 8B: Medium AI with heuristic evaluation
 
 local PowerEffects = require("src.shared.power_effects")
+local Evaluator = require("src.shared.ai.evaluator")
 
 local AI = {}
 
@@ -96,26 +98,59 @@ local function chooseRandomMove(moves)
 	return moves[math.random(#moves)]
 end
 
+--- Choose a heuristic move using the Evaluator (Medium AI)
+---@param gameState table Game state
+---@param player number Player to find move for
+---@param orbs table Array of orbs on the board
+---@return table|nil Move {piece, target} or nil
+local function chooseHeuristicMove(gameState, player, orbs)
+	local bestMove = Evaluator.getBestMove(gameState, orbs, player)
+
+	if not bestMove then
+		return nil
+	end
+
+	-- Convert from Evaluator format {piece=object, target={row,col}}
+	-- to AI format {piece=index, target={row,col}}
+	local pieceIndex = nil
+	for idx, p in ipairs(gameState.pieces) do
+		if p == bestMove.piece then
+			pieceIndex = idx
+			break
+		end
+	end
+
+	if not pieceIndex then
+		return nil
+	end
+
+	return {
+		piece = pieceIndex,
+		target = bestMove.target,
+	}
+end
+
 --- Choose a move for the AI
 ---@param aiState table AI state
 ---@param gameState table Current game state
+---@param orbs table? Optional array of orbs on the board
 ---@return table|nil {piece, target, powers} Move to make, or nil if no valid moves
-function AI.chooseMove(aiState, gameState)
+function AI.chooseMove(aiState, gameState, orbs)
+	orbs = orbs or {}
+
 	local moves = getAllValidMoves(gameState, aiState.player)
 
 	if #moves == 0 then
 		return nil
 	end
 
-	-- For now, all difficulties use random move selection
-	-- Medium, Hard, Expert will be implemented in phases 8B and 8C
 	local strategy = aiState.config.strategy
 
 	if strategy == "random" then
 		return chooseRandomMove(moves)
 	elseif strategy == "heuristic" then
-		-- TODO: Phase 8B - implement rule-based evaluation
-		return chooseRandomMove(moves)
+		-- Phase 8B: Use rule-based evaluation
+		return chooseHeuristicMove(gameState, aiState.player, orbs)
 	elseif strategy == "minimax" then
 		-- TODO: Phase 8C - implement minimax search
 		return chooseRandomMove(moves)

@@ -281,4 +281,118 @@ describe("AI", function()
 			assert.are.equal("Unknown", AI.getDifficultyDisplayName("invalid"))
 		end)
 	end)
+
+	-- 8B.7 Medium AI (Heuristic)
+	describe("Medium AI", function()
+		local GameLogic
+
+		setup(function()
+			GameLogic = require("src.shared.game_logic")
+		end)
+
+		it("prefers capture over empty move", function()
+			local ai = AI.create("medium")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+			-- AI piece can capture or move to empty
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {} }, -- Capturable enemy
+				{ row = 5, col = 5, player = 2, powers = {} }, -- AI piece
+			}
+
+			local move = AI.chooseMove(ai, state)
+
+			-- Medium AI should always capture when available
+			assert.are.equal(4, move.target.row)
+			assert.are.equal(5, move.target.col)
+		end)
+
+		it("prefers orb collection over empty move", function()
+			local ai = AI.create("medium")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+			state.pieces = {
+				{ row = 5, col = 5, player = 2, powers = {} },
+			}
+			-- Add orbs to game state (Medium AI needs access to orbs)
+			local orbs = {
+				{ row = 5, col = 6, powerId = "bomb" },
+			}
+
+			local move = AI.chooseMove(ai, state, orbs)
+
+			-- Should move to collect the orb
+			assert.are.equal(5, move.target.row)
+			assert.are.equal(6, move.target.col)
+		end)
+
+		it("avoids moving into danger when possible", function()
+			local ai = AI.create("medium")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+			-- AI piece at 5,5 can move to 5,6 (threatened by enemy at 5,7) or 5,4 (safe)
+			state.pieces = {
+				{ row = 5, col = 5, player = 2, powers = {} },
+				{ row = 5, col = 7, player = 1, powers = {} }, -- Threatens 5,6
+			}
+
+			local move = AI.chooseMove(ai, state, {})
+
+			-- Should prefer safe move (5,4 or 4,5 or 6,5) over risky move (5,6)
+			local isRiskyMove = move.target.row == 5 and move.target.col == 6
+			assert.is_false(isRiskyMove)
+		end)
+
+		it("captures high-value pieces over low-value", function()
+			local ai = AI.create("medium")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+			-- AI piece can capture either enemy
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {} }, -- Low value enemy
+				{ row = 5, col = 4, player = 1, powers = { "bomb", "recruit" } }, -- High value enemy
+				{ row = 5, col = 5, player = 2, powers = {} }, -- AI piece
+			}
+
+			local move = AI.chooseMove(ai, state, {})
+
+			-- Should capture the high-value piece
+			assert.are.equal(5, move.target.row)
+			assert.are.equal(4, move.target.col)
+		end)
+
+		it("returns valid move structure", function()
+			local ai = AI.create("medium")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+
+			local move = AI.chooseMove(ai, state, {})
+
+			assert.is_not_nil(move)
+			assert.is_not_nil(move.piece)
+			assert.is_not_nil(move.target)
+			assert.is_not_nil(move.target.row)
+			assert.is_not_nil(move.target.col)
+		end)
+
+		it("works with empty orbs array", function()
+			local ai = AI.create("medium")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+
+			-- Should not error when orbs is empty
+			local move = AI.chooseMove(ai, state, {})
+			assert.is_not_nil(move)
+		end)
+
+		it("works when orbs parameter is nil", function()
+			local ai = AI.create("medium")
+			local state = GameLogic.createInitialState()
+			state.currentPlayer = 2
+
+			-- Should not error when orbs is nil (backwards compatibility)
+			local move = AI.chooseMove(ai, state)
+			assert.is_not_nil(move)
+		end)
+	end)
 end)
