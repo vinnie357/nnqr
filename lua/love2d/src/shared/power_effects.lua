@@ -522,4 +522,112 @@ function PowerEffects.activateRefurb(state, piece, target)
 	return state
 end
 
+-- Phase 9A.1: Destroy Variants
+
+--- Get targets for destroy_radial power (pieces in 3x3 area, excluding activator)
+--- Unlike bomb, this only affects pieces, not terrain
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Array of pieces in 3x3 area
+function PowerEffects.getDestroyRadialTargets(state, piece)
+	local targets = {}
+
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece then
+			local dr = math.abs(p.row - piece.row)
+			local dc = math.abs(p.col - piece.col)
+			if dr <= 1 and dc <= 1 then
+				table.insert(targets, p)
+			end
+		end
+	end
+
+	return targets
+end
+
+--- Activate destroy_radial power (destroys pieces in 3x3 area, no terrain damage)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateDestroyRadial(state, piece)
+	local targets = PowerEffects.getDestroyRadialTargets(state, piece)
+
+	-- Remove targets
+	for _, target in ipairs(targets) do
+		for i = #state.pieces, 1, -1 do
+			if state.pieces[i] == target then
+				table.remove(state.pieces, i)
+				break
+			end
+		end
+	end
+
+	removePower(piece, "destroy_radial")
+
+	return state
+end
+
+--- Activate kamikaze_radial power (destroys pieces in 3x3 INCLUDING self)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateKamikazeRadial(state, piece)
+	-- Get all pieces in 3x3 area INCLUDING activator
+	local targets = {}
+
+	for _, p in ipairs(state.pieces) do
+		local dr = math.abs(p.row - piece.row)
+		local dc = math.abs(p.col - piece.col)
+		if dr <= 1 and dc <= 1 then
+			table.insert(targets, p)
+		end
+	end
+
+	-- Remove all targets (including self)
+	for _, target in ipairs(targets) do
+		for i = #state.pieces, 1, -1 do
+			if state.pieces[i] == target then
+				table.remove(state.pieces, i)
+				break
+			end
+		end
+	end
+
+	return state
+end
+
+--- Activate kamikaze_row power (destroys all pieces in row INCLUDING self)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateKamikazeRow(state, piece)
+	local targetRow = piece.row
+
+	-- Remove all pieces in the row (including self)
+	for i = #state.pieces, 1, -1 do
+		if state.pieces[i].row == targetRow then
+			table.remove(state.pieces, i)
+		end
+	end
+
+	return state
+end
+
+--- Activate kamikaze_column power (destroys all pieces in column INCLUDING self)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateKamikazeColumn(state, piece)
+	local targetCol = piece.col
+
+	-- Remove all pieces in the column (including self)
+	for i = #state.pieces, 1, -1 do
+		if state.pieces[i].col == targetCol then
+			table.remove(state.pieces, i)
+		end
+	end
+
+	return state
+end
+
 return PowerEffects

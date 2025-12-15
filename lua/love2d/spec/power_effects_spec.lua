@@ -683,6 +683,167 @@ describe("PowerEffects", function()
 		end)
 	end)
 
+	-- Phase 9A.1: Destroy Variants
+	describe("destroy_radial", function()
+		it("returns pieces in 3x3 area excluding activator", function()
+			local state = GameLogic.createInitialState()
+			-- Move piece to center and add neighbors
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.row = 4
+			piece.col = 5
+
+			-- Add some nearby pieces
+			local neighbor1 = GameLogic.getPieceAt(state, 2, 4)
+			neighbor1.row = 4
+			neighbor1.col = 4
+
+			local neighbor2 = GameLogic.getPieceAt(state, 2, 6)
+			neighbor2.row = 3
+			neighbor2.col = 5
+
+			local targets = PowerEffects.getDestroyRadialTargets(state, piece)
+			assert.is_true(#targets >= 2)
+		end)
+
+		it("excludes the activating piece", function()
+			local state = GameLogic.createInitialState()
+			local piece = GameLogic.getPieceAt(state, 2, 5)
+			piece.row = 4
+			piece.col = 5
+
+			local targets = PowerEffects.getDestroyRadialTargets(state, piece)
+			for _, t in ipairs(targets) do
+				assert.are_not.equal(piece, t)
+			end
+		end)
+
+		it("includes pieces in all 8 directions", function()
+			local state = GameLogic.createInitialState()
+			-- Create isolated test state
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = {} }, -- Activator
+				{ row = 3, col = 5, player = 2, powers = {} }, -- North
+				{ row = 5, col = 5, player = 2, powers = {} }, -- South
+				{ row = 4, col = 4, player = 2, powers = {} }, -- West
+				{ row = 4, col = 6, player = 2, powers = {} }, -- East
+				{ row = 3, col = 4, player = 2, powers = {} }, -- NW
+				{ row = 3, col = 6, player = 2, powers = {} }, -- NE
+				{ row = 5, col = 4, player = 2, powers = {} }, -- SW
+				{ row = 5, col = 6, player = 2, powers = {} }, -- SE
+			}
+			local piece = state.pieces[1]
+
+			local targets = PowerEffects.getDestroyRadialTargets(state, piece)
+			assert.are.equal(8, #targets)
+		end)
+
+		it("destroys all pieces in 3x3 area", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "destroy_radial" } },
+				{ row = 3, col = 5, player = 2, powers = {} },
+				{ row = 4, col = 4, player = 2, powers = {} },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDestroyRadial(state, piece)
+			-- Only activator should remain
+			assert.are.equal(1, #state.pieces)
+			assert.are.equal(piece, state.pieces[1])
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "destroy_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDestroyRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+
+		it("does NOT lower terrain (unlike bomb)", function()
+			local state = GameLogic.createInitialState()
+			state.heightMap[4][5] = 2
+			state.heightMap[3][5] = 2
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "destroy_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDestroyRadial(state, piece)
+			-- Heights should be unchanged
+			assert.are.equal(2, state.heightMap[4][5])
+			assert.are.equal(2, state.heightMap[3][5])
+		end)
+	end)
+
+	describe("kamikaze_radial", function()
+		it("destroys all pieces in 3x3 area INCLUDING self", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "kamikaze_radial" } },
+				{ row = 3, col = 5, player = 2, powers = {} },
+				{ row = 4, col = 4, player = 2, powers = {} },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateKamikazeRadial(state, piece)
+			-- ALL pieces destroyed including activator
+			assert.are.equal(0, #state.pieces)
+		end)
+
+		it("includes enemies and allies", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "kamikaze_radial" } },
+				{ row = 3, col = 5, player = 1, powers = {} }, -- Ally
+				{ row = 4, col = 4, player = 2, powers = {} }, -- Enemy
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateKamikazeRadial(state, piece)
+			assert.are.equal(0, #state.pieces)
+		end)
+	end)
+
+	describe("kamikaze_row", function()
+		it("destroys all pieces in row INCLUDING self", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "kamikaze_row" } },
+				{ row = 4, col = 1, player = 2, powers = {} },
+				{ row = 4, col = 10, player = 2, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Different row - survives
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateKamikazeRow(state, piece)
+			-- Only piece in different row survives
+			assert.are.equal(1, #state.pieces)
+			assert.are.equal(5, state.pieces[1].row)
+		end)
+	end)
+
+	describe("kamikaze_column", function()
+		it("destroys all pieces in column INCLUDING self", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "kamikaze_column" } },
+				{ row = 1, col = 5, player = 2, powers = {} },
+				{ row = 8, col = 5, player = 2, powers = {} },
+				{ row = 4, col = 6, player = 2, powers = {} }, -- Different column - survives
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateKamikazeColumn(state, piece)
+			-- Only piece in different column survives
+			assert.are.equal(1, #state.pieces)
+			assert.are.equal(6, state.pieces[1].col)
+		end)
+	end)
+
 	describe("getValidMovesWithPowers with flags", function()
 		it("includes diagonal moves when canMoveDiagonally is true", function()
 			local state = GameLogic.createInitialState()

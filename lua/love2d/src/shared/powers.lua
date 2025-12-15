@@ -125,6 +125,40 @@ Powers.definitions = {
 		description = "Repair an adjacent destroyed tile",
 		targeting = "adjacent_destroyed",
 	},
+
+	-- Phase 9A.1: Destroy Variants
+	destroy_radial = {
+		id = "destroy_radial",
+		name = "Destroy Radial",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Destroy all pieces in 3x3 area (does not affect terrain)",
+		targeting = "area_3x3",
+	},
+	kamikaze_radial = {
+		id = "kamikaze_radial",
+		name = "Kamikaze Radial",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Destroy all pieces in 3x3 area including self",
+		targeting = "area_3x3",
+	},
+	kamikaze_row = {
+		id = "kamikaze_row",
+		name = "Kamikaze Row",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Destroy all pieces in this row including self",
+		targeting = "self_row",
+	},
+	kamikaze_column = {
+		id = "kamikaze_column",
+		name = "Kamikaze Column",
+		category = "Offensive",
+		duration = "single_use",
+		description = "Destroy all pieces in this column including self",
+		targeting = "self_column",
+	},
 }
 
 -- List of power IDs for random selection
