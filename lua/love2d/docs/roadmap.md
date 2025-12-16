@@ -104,6 +104,19 @@ Implemented 70 additional powers to reach 82-power parity.
 
 ---
 
+### Phase 9B: Power Integration Fix ⏳ IN PROGRESS
+Fix critical bug where 70+ powers show animations but don't execute game logic.
+
+- **89 new tests** (integration tests for all 82 powers)
+- PowerExecutor module for centralized dispatch
+- Orbs moved into game state (server-ready)
+- Blocking field added to power definitions
+- Generic animations for all power categories
+
+[Details](phases/phase9b_power_integration.md) | [Progress](phases/phase9b_power_integration_progress.md)
+
+---
+
 ### Phase 10: Network Multiplayer
 LAN multiplayer with lobby system using Love2D server.
 

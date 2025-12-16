@@ -57,6 +57,12 @@ describe("GameLogic", function()
 			local state = GameLogic.createInitialState()
 			assert.are.equal("playing", state.gameState)
 		end)
+
+		it("initializes empty orbs table for power orbs on board", function()
+			local state = GameLogic.createInitialState()
+			assert.is_table(state.orbs)
+			assert.are.equal(0, #state.orbs)
+		end)
 	end)
 
 	describe("getPieceAt", function()

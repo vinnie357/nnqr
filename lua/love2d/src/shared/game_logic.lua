@@ -27,6 +27,7 @@ function GameLogic.createInitialState()
 		winner = nil,
 		turn = 0,
 		destroyedTiles = {}, -- Map of "row,col" -> true for destroyed tiles
+		orbs = {}, -- Power orbs on the board (server-ready architecture)
 	}
 
 	-- Create pieces for both players

@@ -2201,26 +2201,47 @@ end
 
 -- 9E.6 Purify Powers
 
---- Helper to remove all debuffs from a piece
+--- Helper to remove all debuffs from a piece (ally cleansing)
+--- Debuffs: Spyware bugging, Tripwire, Inhibit, Parasite infection
 ---@param piece table Piece to purify
 local function removeDebuffs(piece)
+	piece.powersRevealed = nil -- Spyware bugging device
 	piece.isTripwired = nil
 	piece.tripwireOwner = nil
 	piece.isInhibited = nil
 	piece.parasitizedBy = nil
 end
 
---- Activate purify_radial - remove debuffs from adjacent allies
+--- Helper to remove all buffs from a piece (enemy debuffing)
+--- Buffs: Grow Quadradius, Climb Tile, Move Diagonal, Jump Proof,
+---        Flat To Sphere, Invisible, Scavenger, Beneficiary
+---@param piece table Piece to strip buffs from
+local function removeBuffs(piece)
+	piece.growQuadradiusLevel = nil
+	piece.canClimbAny = nil
+	piece.canMoveDiagonally = nil
+	piece.isJumpProof = nil
+	piece.canWrap = nil
+	piece.isInvisible = nil
+	piece.isScavenger = nil
+	piece.isBeneficiary = nil
+end
+
+--- Activate purify_radial - remove debuffs from adjacent allies, buffs from adjacent enemies
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activatePurifyRadial(state, piece)
 	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player == piece.player then
+		if p ~= piece then
 			local dr = math.abs(p.row - piece.row)
 			local dc = math.abs(p.col - piece.col)
 			if dr <= 1 and dc <= 1 then
-				removeDebuffs(p)
+				if p.player == piece.player then
+					removeDebuffs(p) -- Allies: remove bad stuff
+				else
+					removeBuffs(p) -- Enemies: remove good stuff
+				end
 			end
 		end
 	end
@@ -2230,14 +2251,18 @@ function PowerEffects.activatePurifyRadial(state, piece)
 	return state
 end
 
---- Activate purify_row - remove debuffs from allies in row
+--- Activate purify_row - remove debuffs from allies in row, buffs from enemies in row
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activatePurifyRow(state, piece)
 	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player == piece.player and p.row == piece.row then
-			removeDebuffs(p)
+		if p ~= piece and p.row == piece.row then
+			if p.player == piece.player then
+				removeDebuffs(p) -- Allies: remove bad stuff
+			else
+				removeBuffs(p) -- Enemies: remove good stuff
+			end
 		end
 	end
 
@@ -2246,14 +2271,18 @@ function PowerEffects.activatePurifyRow(state, piece)
 	return state
 end
 
---- Activate purify_column - remove debuffs from allies in column
+--- Activate purify_column - remove debuffs from allies in column, buffs from enemies in column
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activatePurifyColumn(state, piece)
 	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player == piece.player and p.col == piece.col then
-			removeDebuffs(p)
+		if p ~= piece and p.col == piece.col then
+			if p.player == piece.player then
+				removeDebuffs(p) -- Allies: remove bad stuff
+			else
+				removeBuffs(p) -- Enemies: remove good stuff
+			end
 		end
 	end
 

@@ -16,6 +16,7 @@ Powers.definitions = {
 		duration = "permanent",
 		description = "Enables diagonal movement for this piece",
 		targeting = "self",
+		blocking = false,
 	},
 	move_again = {
 		id = "move_again",
@@ -24,6 +25,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Take another move immediately after this one",
 		targeting = "self",
+		blocking = false,
 	},
 	relocate = {
 		id = "relocate",
@@ -32,6 +34,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Teleport to a random empty tile",
 		targeting = "self",
+		blocking = true,
 	},
 
 	-- Offensive Powers
@@ -42,6 +45,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy all pieces in this row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	destroy_column = {
 		id = "destroy_column",
@@ -50,6 +54,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy all pieces in this column",
 		targeting = "self_column",
+		blocking = true,
 	},
 	bomb = {
 		id = "bomb",
@@ -58,6 +63,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy pieces in 3x3 area and lower terrain",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 
 	-- Defensive Powers
@@ -68,6 +74,7 @@ Powers.definitions = {
 		duration = "permanent",
 		description = "Piece cannot be captured by normal movement",
 		targeting = "self",
+		blocking = false,
 	},
 
 	-- Terrain Powers
@@ -78,6 +85,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Increase adjacent tile height by 1",
 		targeting = "adjacent",
+		blocking = true,
 	},
 	lower_tile = {
 		id = "lower_tile",
@@ -86,6 +94,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Decrease adjacent tile height by 1",
 		targeting = "adjacent",
+		blocking = true,
 	},
 
 	-- Strategic Powers
@@ -96,6 +105,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Convert one adjacent enemy piece to your side",
 		targeting = "adjacent_enemy",
+		blocking = true,
 	},
 	multiply = {
 		id = "multiply",
@@ -104,6 +114,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Create a copy of this piece on adjacent empty tile",
 		targeting = "adjacent_empty",
+		blocking = true,
 	},
 
 	-- Utility Powers
@@ -114,6 +125,7 @@ Powers.definitions = {
 		duration = "permanent",
 		description = "Piece is hidden from opponent until it attacks",
 		targeting = "self",
+		blocking = false,
 	},
 
 	-- Restoration Powers
@@ -124,6 +136,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Repair an adjacent destroyed tile",
 		targeting = "adjacent_destroyed",
+		blocking = true,
 	},
 
 	-- Phase 9A.1: Destroy Variants
@@ -134,6 +147,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy all pieces in 3x3 area (does not affect terrain)",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	kamikaze_radial = {
 		id = "kamikaze_radial",
@@ -142,6 +156,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy all pieces in 3x3 area including self",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	kamikaze_row = {
 		id = "kamikaze_row",
@@ -150,6 +165,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy all pieces in this row including self",
 		targeting = "self_row",
+		blocking = true,
 	},
 	kamikaze_column = {
 		id = "kamikaze_column",
@@ -158,6 +174,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy all pieces in this column including self",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- Phase 9A.3: Extended Recruitment
@@ -168,6 +185,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Convert all enemy pieces in this row to your side",
 		targeting = "self_row",
+		blocking = true,
 	},
 	recruit_column = {
 		id = "recruit_column",
@@ -176,6 +194,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Convert all enemy pieces in this column to your side",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- Phase 9A.4: Scramble Powers
@@ -186,6 +205,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Randomly swap positions of all pieces in 3x3 area",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 
 	-- Phase 9A.5: Smart Bombs
@@ -196,6 +216,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy all enemy pieces in 3x3 area (allies unaffected)",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 
 	-- Phase 9A.2: Acidic Powers
@@ -206,6 +227,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy pieces and tiles in 3x3 area",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	acidic_row = {
 		id = "acidic_row",
@@ -214,6 +236,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy all pieces and tiles in row (except under self)",
 		targeting = "self_row",
+		blocking = true,
 	},
 	acidic_column = {
 		id = "acidic_column",
@@ -222,6 +245,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy all pieces and tiles in column (except under self)",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- Phase 9A.4: Scramble Row/Column
@@ -232,6 +256,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Randomly swap positions of all pieces in row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	scramble_column = {
 		id = "scramble_column",
@@ -240,6 +265,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Randomly swap positions of all pieces in column",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- Phase 9B: Terrain Powers
@@ -252,6 +278,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Raise 3x3 area to maximum height",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	moat = {
 		id = "moat",
@@ -260,6 +287,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Raise center to max, lower surrounding ring",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	climb_tile = {
 		id = "climb_tile",
@@ -268,6 +296,7 @@ Powers.definitions = {
 		duration = "permanent",
 		description = "Piece ignores height restrictions permanently",
 		targeting = "self",
+		blocking = false,
 	},
 
 	-- 9B.2 Line Effects
@@ -278,6 +307,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Lower entire row by 2 levels",
 		targeting = "self_row",
+		blocking = true,
 	},
 	trench_column = {
 		id = "trench_column",
@@ -286,6 +316,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Lower entire column by 2 levels",
 		targeting = "self_column",
+		blocking = true,
 	},
 	wall_row = {
 		id = "wall_row",
@@ -294,6 +325,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Raise entire row by 2 levels",
 		targeting = "self_row",
+		blocking = true,
 	},
 	wall_column = {
 		id = "wall_column",
@@ -302,6 +334,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Raise entire column by 2 levels",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- 9B.3 Invert Powers
@@ -312,6 +345,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Flip heights in 3x3 area (4 becomes 0, etc.)",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	invert_row = {
 		id = "invert_row",
@@ -320,6 +354,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Flip heights in entire row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	invert_column = {
 		id = "invert_column",
@@ -328,6 +363,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Flip heights in entire column",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- 9B.4 Dredge Powers
@@ -338,6 +374,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Raise friendly tiles, lower enemy tiles in 3x3",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	dredge_row = {
 		id = "dredge_row",
@@ -346,6 +383,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Raise friendly tiles, lower enemy tiles in row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	dredge_column = {
 		id = "dredge_column",
@@ -354,6 +392,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Raise friendly tiles, lower enemy tiles in column",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- Phase 9C: Power Transfer Powers
@@ -366,6 +405,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Copy all your powers to adjacent allies",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	teach_row = {
 		id = "teach_row",
@@ -374,6 +414,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Copy all your powers to allies in row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	teach_column = {
 		id = "teach_column",
@@ -382,6 +423,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Copy all your powers to allies in column",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- 9C.2 Learn (Absorb from allies)
@@ -392,6 +434,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Take all powers from adjacent allies",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	learn_row = {
 		id = "learn_row",
@@ -400,6 +443,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Take all powers from allies in row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	learn_column = {
 		id = "learn_column",
@@ -408,6 +452,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Take all powers from allies in column",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- 9C.3 Pilfer (Steal from enemies)
@@ -418,6 +463,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Steal one random power from each adjacent enemy",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	pilfer_row = {
 		id = "pilfer_row",
@@ -426,6 +472,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Steal one random power from each enemy in row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	pilfer_column = {
 		id = "pilfer_column",
@@ -434,6 +481,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Steal one random power from each enemy in column",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- Phase 9D: Meta Powers
@@ -444,6 +492,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Double all powers on this piece",
 		targeting = "self",
+		blocking = false,
 	},
 	orbic_rehash = {
 		id = "orbic_rehash",
@@ -452,6 +501,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Respawn all orbs at new random locations",
 		targeting = "global",
+		blocking = true,
 	},
 	cancel_multiply = {
 		id = "cancel_multiply",
@@ -460,6 +510,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Destroy the most recently multiplied piece",
 		targeting = "global",
+		blocking = true,
 	},
 	grow_quadradius = {
 		id = "grow_quadradius",
@@ -468,6 +519,7 @@ Powers.definitions = {
 		duration = "permanent",
 		description = "Extend power range by 1 (stacks up to 3x)",
 		targeting = "self",
+		blocking = false,
 	},
 	beneficiary = {
 		id = "beneficiary",
@@ -476,6 +528,7 @@ Powers.definitions = {
 		duration = "permanent",
 		description = "All allied pieces' powers transfer to this piece when they die",
 		targeting = "self",
+		blocking = false,
 	},
 
 	-- Phase 9E: Movement & Control Powers
@@ -488,6 +541,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Swap positions with an adjacent piece",
 		targeting = "adjacent",
+		blocking = true,
 	},
 	scavenger = {
 		id = "scavenger",
@@ -496,6 +550,7 @@ Powers.definitions = {
 		duration = "permanent",
 		description = "Inherit powers from captured enemies",
 		targeting = "self",
+		blocking = false,
 	},
 	flat_to_sphere = {
 		id = "flat_to_sphere",
@@ -504,6 +559,7 @@ Powers.definitions = {
 		duration = "permanent",
 		description = "Enable wraparound movement (edges connect)",
 		targeting = "self",
+		blocking = false,
 	},
 
 	-- 9E.5 Intelligence Powers
@@ -514,6 +570,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Reveal powers of adjacent enemy pieces",
 		targeting = "area_3x3",
+		blocking = false,
 	},
 	spyware_row = {
 		id = "spyware_row",
@@ -522,6 +579,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Reveal powers of enemy pieces in row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	spyware_column = {
 		id = "spyware_column",
@@ -530,6 +588,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Reveal powers of enemy pieces in column",
 		targeting = "self_column",
+		blocking = false,
 	},
 	orb_spy_radial = {
 		id = "orb_spy_radial",
@@ -538,6 +597,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Reveal contents of adjacent orbs",
 		targeting = "area_3x3",
+		blocking = false,
 	},
 	orb_spy_row = {
 		id = "orb_spy_row",
@@ -546,6 +606,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Reveal contents of orbs in row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	orb_spy_column = {
 		id = "orb_spy_column",
@@ -554,6 +615,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Reveal contents of orbs in column",
 		targeting = "self_column",
+		blocking = false,
 	},
 
 	-- 9E.6 Restoration Powers
@@ -564,6 +626,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Repair all destroyed tiles in 3x3 area",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	refurb_row = {
 		id = "refurb_row",
@@ -572,6 +635,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Repair all destroyed tiles in row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	refurb_column = {
 		id = "refurb_column",
@@ -580,6 +644,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Repair all destroyed tiles in column",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- 9E.4 Bankrupt Powers (create power-draining trap tiles)
@@ -590,6 +655,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Create power-draining traps in 3x3 area",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	bankrupt_row = {
 		id = "bankrupt_row",
@@ -598,6 +664,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Create power-draining traps in entire row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	bankrupt_column = {
 		id = "bankrupt_column",
@@ -606,6 +673,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Create power-draining traps in entire column",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- 9E.2 Tripwire Powers (kill pieces that move)
@@ -616,6 +684,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Adjacent enemies die if they move",
 		targeting = "area_3x3",
+		blocking = true,
 	},
 	tripwire_row = {
 		id = "tripwire_row",
@@ -624,6 +693,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Row enemies die if they move",
 		targeting = "self_row",
+		blocking = true,
 	},
 	tripwire_column = {
 		id = "tripwire_column",
@@ -632,6 +702,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Column enemies die if they move",
 		targeting = "self_column",
+		blocking = true,
 	},
 
 	-- 9E.3 Inhibit Powers (block orb collection)
@@ -642,6 +713,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Adjacent enemies can't collect powers",
 		targeting = "area_3x3",
+		blocking = false,
 	},
 	inhibit_row = {
 		id = "inhibit_row",
@@ -650,6 +722,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Row enemies can't collect powers",
 		targeting = "self_row",
+		blocking = true,
 	},
 	inhibit_column = {
 		id = "inhibit_column",
@@ -658,6 +731,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Column enemies can't collect powers",
 		targeting = "self_column",
+		blocking = false,
 	},
 
 	-- 9C.4 Parasite Powers (redirect power collection)
@@ -668,6 +742,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Adjacent enemies' future collected powers go to you",
 		targeting = "area_3x3",
+		blocking = false,
 	},
 	parasite_row = {
 		id = "parasite_row",
@@ -676,6 +751,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Row enemies' future collected powers go to you",
 		targeting = "self_row",
+		blocking = true,
 	},
 	parasite_column = {
 		id = "parasite_column",
@@ -684,6 +760,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Column enemies' future collected powers go to you",
 		targeting = "self_column",
+		blocking = false,
 	},
 
 	-- 9E.6 Purify Powers (remove debuffs)
@@ -694,14 +771,16 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Remove debuffs from adjacent allies",
 		targeting = "area_3x3",
+		blocking = false,
 	},
 	purify_row = {
 		id = "purify_row",
 		name = "Purify Row",
 		category = "Restoration",
 		duration = "single_use",
-		description = "Remove debuffs from allies in row",
+		description = "Cleanse ally debuffs and remove enemy buffs in row",
 		targeting = "self_row",
+		blocking = true,
 	},
 	purify_column = {
 		id = "purify_column",
@@ -710,6 +789,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Remove debuffs from allies in column",
 		targeting = "self_column",
+		blocking = false,
 	},
 
 	-- 9E.1 Hotspot (teleport destination tile)
@@ -720,6 +800,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Create a teleport destination or teleport to existing hotspot",
 		targeting = "self",
+		blocking = true,
 	},
 
 	-- 9E.1 Centerpult (jump to center of 4-piece square)
@@ -730,6 +811,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Jump to center of a 2x2 square formation",
 		targeting = "special",
+		blocking = true,
 	},
 }
 
