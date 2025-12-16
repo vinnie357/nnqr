@@ -45,8 +45,33 @@ local function getEmptyTiles(state)
 	return empty
 end
 
+--- Helper to wrap a position around the board edges
+---@param row number Row position
+---@param col number Column position
+---@param rows number Board rows
+---@param cols number Board columns
+---@return number Wrapped row, number Wrapped column
+local function wrapPosition(row, col, rows, cols)
+	local wrappedRow = row
+	local wrappedCol = col
+
+	if row < 1 then
+		wrappedRow = rows
+	elseif row > rows then
+		wrappedRow = 1
+	end
+
+	if col < 1 then
+		wrappedCol = cols
+	elseif col > cols then
+		wrappedCol = 1
+	end
+
+	return wrappedRow, wrappedCol
+end
+
 --- Get valid moves considering powers (especially move_diagonal)
---- Uses piece flags (canMoveDiagonally, isJumpProof, canClimbAny) set by activation
+--- Uses piece flags (canMoveDiagonally, isJumpProof, canClimbAny, canWrap) set by activation
 ---@param state table Game state
 ---@param piece table Piece to get moves for
 ---@return table Array of valid moves
@@ -58,6 +83,8 @@ function PowerEffects.getValidMovesWithPowers(state, piece)
 	local canDiagonal = piece.canMoveDiagonally == true
 	-- Check for climb any height - uses FLAG not power inventory
 	local canClimbAny = piece.canClimbAny == true
+	-- Check for wraparound movement - uses FLAG not power inventory
+	local canWrap = piece.canWrap == true
 
 	-- Orthogonal directions
 	local directions = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } }
@@ -73,6 +100,11 @@ function PowerEffects.getValidMovesWithPowers(state, piece)
 	for _, dir in ipairs(directions) do
 		local newRow = piece.row + dir[1]
 		local newCol = piece.col + dir[2]
+
+		-- Handle wraparound if canWrap is true
+		if canWrap then
+			newRow, newCol = wrapPosition(newRow, newCol, state.rows, state.cols)
+		end
 
 		if Logic.isValidPosition(newRow, newCol) then
 			-- Check if tile is destroyed (cannot move to destroyed tiles)
@@ -1628,6 +1660,254 @@ function PowerEffects.activateBeneficiary(state, piece)
 
 	-- Set the beneficiary flag
 	piece.isBeneficiary = true
+
+	return state
+end
+
+-- Phase 9E: Movement & Control Powers
+
+-- 9E.1 Special Movement
+
+--- Get valid targets for switcheroo (all adjacent pieces)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Array of adjacent pieces
+function PowerEffects.getSwitcherooTargets(state, piece)
+	local targets = {}
+
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece then
+			local dr = math.abs(p.row - piece.row)
+			local dc = math.abs(p.col - piece.col)
+			if dr <= 1 and dc <= 1 then
+				table.insert(targets, p)
+			end
+		end
+	end
+
+	return targets
+end
+
+--- Activate switcheroo - swap positions with target piece
+---@param state table Game state
+---@param piece table Piece activating power
+---@param target table Target piece to swap with
+---@return table Updated game state
+function PowerEffects.activateSwitcheroo(state, piece, target)
+	-- Swap positions
+	local tempRow, tempCol = piece.row, piece.col
+	piece.row, piece.col = target.row, target.col
+	target.row, target.col = tempRow, tempCol
+
+	removePower(piece, "switcheroo")
+
+	return state
+end
+
+--- Activate scavenger - piece inherits powers from captured enemies
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateScavenger(state, piece)
+	piece.isScavenger = true
+
+	removePower(piece, "scavenger")
+
+	return state
+end
+
+--- Activate flat_to_sphere - enable wraparound movement
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateFlatToSphere(state, piece)
+	piece.canWrap = true
+
+	removePower(piece, "flat_to_sphere")
+
+	return state
+end
+
+-- 9E.5 Intelligence Powers
+
+--- Activate spyware_radial - reveal powers of adjacent enemy pieces
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateSpywareRadial(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player then
+			local dr = math.abs(p.row - piece.row)
+			local dc = math.abs(p.col - piece.col)
+			if dr <= 1 and dc <= 1 then
+				p.powersRevealed = true
+			end
+		end
+	end
+
+	removePower(piece, "spyware_radial")
+
+	return state
+end
+
+--- Activate spyware_row - reveal powers of enemy pieces in row
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateSpywareRow(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player and p.row == piece.row then
+			p.powersRevealed = true
+		end
+	end
+
+	removePower(piece, "spyware_row")
+
+	return state
+end
+
+--- Activate spyware_column - reveal powers of enemy pieces in column
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateSpywareColumn(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player and p.col == piece.col then
+			p.powersRevealed = true
+		end
+	end
+
+	removePower(piece, "spyware_column")
+
+	return state
+end
+
+--- Activate orb_spy_radial - reveal contents of adjacent orbs
+---@param state table Game state
+---@param piece table Piece activating power
+---@param orbs table Array of orbs
+---@return table Updated game state, table Updated orbs
+function PowerEffects.activateOrbSpyRadial(state, piece, orbs)
+	for _, orb in ipairs(orbs) do
+		local dr = math.abs(orb.row - piece.row)
+		local dc = math.abs(orb.col - piece.col)
+		if dr <= 1 and dc <= 1 then
+			orb.revealed = true
+		end
+	end
+
+	removePower(piece, "orb_spy_radial")
+
+	return state, orbs
+end
+
+--- Activate orb_spy_row - reveal contents of orbs in row
+---@param state table Game state
+---@param piece table Piece activating power
+---@param orbs table Array of orbs
+---@return table Updated game state, table Updated orbs
+function PowerEffects.activateOrbSpyRow(state, piece, orbs)
+	for _, orb in ipairs(orbs) do
+		if orb.row == piece.row then
+			orb.revealed = true
+		end
+	end
+
+	removePower(piece, "orb_spy_row")
+
+	return state, orbs
+end
+
+--- Activate orb_spy_column - reveal contents of orbs in column
+---@param state table Game state
+---@param piece table Piece activating power
+---@param orbs table Array of orbs
+---@return table Updated game state, table Updated orbs
+function PowerEffects.activateOrbSpyColumn(state, piece, orbs)
+	for _, orb in ipairs(orbs) do
+		if orb.col == piece.col then
+			orb.revealed = true
+		end
+	end
+
+	removePower(piece, "orb_spy_column")
+
+	return state, orbs
+end
+
+-- 9E.6 Restoration Powers
+
+--- Activate refurb_radial - repair destroyed tiles in 3x3 area
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateRefurbRadial(state, piece)
+	if not state.destroyedTiles then
+		removePower(piece, "refurb_radial")
+		return state
+	end
+
+	for dr = -1, 1 do
+		for dc = -1, 1 do
+			local row = piece.row + dr
+			local col = piece.col + dc
+			if Logic.isValidPosition(row, col) then
+				local key = row .. "," .. col
+				if state.destroyedTiles[key] then
+					state.destroyedTiles[key] = nil
+					Height.setHeight(state.heightMap, row, col, 0)
+				end
+			end
+		end
+	end
+
+	removePower(piece, "refurb_radial")
+
+	return state
+end
+
+--- Activate refurb_row - repair destroyed tiles in row
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateRefurbRow(state, piece)
+	if not state.destroyedTiles then
+		removePower(piece, "refurb_row")
+		return state
+	end
+
+	for col = 1, state.cols do
+		local key = piece.row .. "," .. col
+		if state.destroyedTiles[key] then
+			state.destroyedTiles[key] = nil
+			Height.setHeight(state.heightMap, piece.row, col, 0)
+		end
+	end
+
+	removePower(piece, "refurb_row")
+
+	return state
+end
+
+--- Activate refurb_column - repair destroyed tiles in column
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateRefurbColumn(state, piece)
+	if not state.destroyedTiles then
+		removePower(piece, "refurb_column")
+		return state
+	end
+
+	for row = 1, state.rows do
+		local key = row .. "," .. piece.col
+		if state.destroyedTiles[key] then
+			state.destroyedTiles[key] = nil
+			Height.setHeight(state.heightMap, row, piece.col, 0)
+		end
+	end
+
+	removePower(piece, "refurb_column")
 
 	return state
 end

@@ -477,6 +477,110 @@ Powers.definitions = {
 		description = "All allied pieces' powers transfer to this piece when they die",
 		targeting = "self",
 	},
+
+	-- Phase 9E: Movement & Control Powers
+
+	-- 9E.1 Special Movement
+	switcheroo = {
+		id = "switcheroo",
+		name = "Switcheroo",
+		category = "Movement",
+		duration = "single_use",
+		description = "Swap positions with an adjacent piece",
+		targeting = "adjacent",
+	},
+	scavenger = {
+		id = "scavenger",
+		name = "Scavenger",
+		category = "Strategic",
+		duration = "permanent",
+		description = "Inherit powers from captured enemies",
+		targeting = "self",
+	},
+	flat_to_sphere = {
+		id = "flat_to_sphere",
+		name = "Flat To Sphere",
+		category = "Movement",
+		duration = "permanent",
+		description = "Enable wraparound movement (edges connect)",
+		targeting = "self",
+	},
+
+	-- 9E.5 Intelligence Powers
+	spyware_radial = {
+		id = "spyware_radial",
+		name = "Spyware Radial",
+		category = "Intelligence",
+		duration = "single_use",
+		description = "Reveal powers of adjacent enemy pieces",
+		targeting = "area_3x3",
+	},
+	spyware_row = {
+		id = "spyware_row",
+		name = "Spyware Row",
+		category = "Intelligence",
+		duration = "single_use",
+		description = "Reveal powers of enemy pieces in row",
+		targeting = "self_row",
+	},
+	spyware_column = {
+		id = "spyware_column",
+		name = "Spyware Column",
+		category = "Intelligence",
+		duration = "single_use",
+		description = "Reveal powers of enemy pieces in column",
+		targeting = "self_column",
+	},
+	orb_spy_radial = {
+		id = "orb_spy_radial",
+		name = "Orb Spy Radial",
+		category = "Intelligence",
+		duration = "single_use",
+		description = "Reveal contents of adjacent orbs",
+		targeting = "area_3x3",
+	},
+	orb_spy_row = {
+		id = "orb_spy_row",
+		name = "Orb Spy Row",
+		category = "Intelligence",
+		duration = "single_use",
+		description = "Reveal contents of orbs in row",
+		targeting = "self_row",
+	},
+	orb_spy_column = {
+		id = "orb_spy_column",
+		name = "Orb Spy Column",
+		category = "Intelligence",
+		duration = "single_use",
+		description = "Reveal contents of orbs in column",
+		targeting = "self_column",
+	},
+
+	-- 9E.6 Restoration Powers
+	refurb_radial = {
+		id = "refurb_radial",
+		name = "Refurb Radial",
+		category = "Restoration",
+		duration = "single_use",
+		description = "Repair all destroyed tiles in 3x3 area",
+		targeting = "area_3x3",
+	},
+	refurb_row = {
+		id = "refurb_row",
+		name = "Refurb Row",
+		category = "Restoration",
+		duration = "single_use",
+		description = "Repair all destroyed tiles in row",
+		targeting = "self_row",
+	},
+	refurb_column = {
+		id = "refurb_column",
+		name = "Refurb Column",
+		category = "Restoration",
+		duration = "single_use",
+		description = "Repair all destroyed tiles in column",
+		targeting = "self_column",
+	},
 }
 
 -- List of power IDs for random selection

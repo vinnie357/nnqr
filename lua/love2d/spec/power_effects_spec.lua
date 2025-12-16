@@ -2229,6 +2229,349 @@ describe("PowerEffects", function()
 		end)
 	end)
 
+	-- Phase 9E: Movement & Control Powers
+
+	-- 9E.1 Special Movement
+	describe("switcheroo", function()
+		it("returns adjacent pieces as valid targets", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "switcheroo" } },
+				{ row = 3, col = 5, player = 2, powers = {} }, -- Adjacent enemy
+				{ row = 4, col = 6, player = 1, powers = {} }, -- Adjacent ally
+				{ row = 1, col = 1, player = 2, powers = {} }, -- Not adjacent
+			}
+			local piece = state.pieces[1]
+
+			local targets = PowerEffects.getSwitcherooTargets(state, piece)
+			assert.are.equal(2, #targets) -- Both adjacent pieces
+		end)
+
+		it("swaps positions with target piece", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "switcheroo" } },
+				{ row = 3, col = 5, player = 2, powers = {} },
+			}
+			local piece = state.pieces[1]
+			local target = state.pieces[2]
+
+			state = PowerEffects.activateSwitcheroo(state, piece, target)
+
+			assert.are.equal(3, piece.row)
+			assert.are.equal(5, piece.col)
+			assert.are.equal(4, target.row)
+			assert.are.equal(5, target.col)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "switcheroo" } },
+				{ row = 3, col = 5, player = 2, powers = {} },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateSwitcheroo(state, piece, state.pieces[2])
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("scavenger", function()
+		it("sets isScavenger flag on piece", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scavenger" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateScavenger(state, piece)
+
+			assert.is_true(piece.isScavenger)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "scavenger" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateScavenger(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("flat_to_sphere", function()
+		it("sets canWrap flag on piece", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "flat_to_sphere" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateFlatToSphere(state, piece)
+
+			assert.is_true(piece.canWrap)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "flat_to_sphere" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateFlatToSphere(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+
+		it("enables wraparound movement when flag is set", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 10, player = 1, powers = {}, canWrap = true }, -- Right edge
+			}
+			local piece = state.pieces[1]
+
+			local moves = PowerEffects.getValidMovesWithPowers(state, piece)
+			-- Should be able to wrap to column 1
+			local canWrap = false
+			for _, move in ipairs(moves) do
+				if move.col == 1 then
+					canWrap = true
+				end
+			end
+			assert.is_true(canWrap)
+		end)
+	end)
+
+	-- 9E.5 Intelligence Powers
+	describe("spyware_radial", function()
+		it("reveals powers of adjacent enemy pieces", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "spyware_radial" } },
+				{ row = 3, col = 5, player = 2, powers = { "bomb", "recruit" } },
+			}
+			local piece = state.pieces[1]
+			local enemy = state.pieces[2]
+
+			state = PowerEffects.activateSpywareRadial(state, piece)
+
+			assert.is_true(enemy.powersRevealed)
+		end)
+
+		it("does not reveal ally powers", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "spyware_radial" } },
+				{ row = 3, col = 5, player = 1, powers = { "bomb" } }, -- Ally
+			}
+			local piece = state.pieces[1]
+			local ally = state.pieces[2]
+
+			state = PowerEffects.activateSpywareRadial(state, piece)
+
+			assert.is_nil(ally.powersRevealed)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "spyware_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateSpywareRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("spyware_row", function()
+		it("reveals powers of enemy pieces in row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "spyware_row" } },
+				{ row = 4, col = 1, player = 2, powers = { "bomb" } },
+				{ row = 4, col = 10, player = 2, powers = { "recruit" } },
+				{ row = 5, col = 5, player = 2, powers = { "jump_proof" } }, -- Different row
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateSpywareRow(state, piece)
+
+			assert.is_true(state.pieces[2].powersRevealed)
+			assert.is_true(state.pieces[3].powersRevealed)
+			assert.is_nil(state.pieces[4].powersRevealed)
+		end)
+	end)
+
+	describe("spyware_column", function()
+		it("reveals powers of enemy pieces in column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "spyware_column" } },
+				{ row = 1, col = 5, player = 2, powers = { "bomb" } },
+				{ row = 8, col = 5, player = 2, powers = { "recruit" } },
+				{ row = 4, col = 6, player = 2, powers = { "jump_proof" } }, -- Different column
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateSpywareColumn(state, piece)
+
+			assert.is_true(state.pieces[2].powersRevealed)
+			assert.is_true(state.pieces[3].powersRevealed)
+			assert.is_nil(state.pieces[4].powersRevealed)
+		end)
+	end)
+
+	describe("orb_spy_radial", function()
+		it("reveals contents of adjacent orbs", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "orb_spy_radial" } },
+			}
+			local piece = state.pieces[1]
+			local orbs = {
+				{ row = 3, col = 5, powerId = "bomb", revealed = false },
+				{ row = 1, col = 1, powerId = "recruit", revealed = false }, -- Not adjacent
+			}
+
+			state, orbs = PowerEffects.activateOrbSpyRadial(state, piece, orbs)
+
+			assert.is_true(orbs[1].revealed)
+			assert.is_false(orbs[2].revealed)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "orb_spy_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state, _ = PowerEffects.activateOrbSpyRadial(state, piece, {})
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("orb_spy_row", function()
+		it("reveals contents of orbs in row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "orb_spy_row" } },
+			}
+			local piece = state.pieces[1]
+			local orbs = {
+				{ row = 4, col = 1, powerId = "bomb", revealed = false },
+				{ row = 4, col = 10, powerId = "recruit", revealed = false },
+				{ row = 5, col = 5, powerId = "jump_proof", revealed = false }, -- Different row
+			}
+
+			state, orbs = PowerEffects.activateOrbSpyRow(state, piece, orbs)
+
+			assert.is_true(orbs[1].revealed)
+			assert.is_true(orbs[2].revealed)
+			assert.is_false(orbs[3].revealed)
+		end)
+	end)
+
+	describe("orb_spy_column", function()
+		it("reveals contents of orbs in column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "orb_spy_column" } },
+			}
+			local piece = state.pieces[1]
+			local orbs = {
+				{ row = 1, col = 5, powerId = "bomb", revealed = false },
+				{ row = 8, col = 5, powerId = "recruit", revealed = false },
+				{ row = 4, col = 6, powerId = "jump_proof", revealed = false }, -- Different column
+			}
+
+			state, orbs = PowerEffects.activateOrbSpyColumn(state, piece, orbs)
+
+			assert.is_true(orbs[1].revealed)
+			assert.is_true(orbs[2].revealed)
+			assert.is_false(orbs[3].revealed)
+		end)
+	end)
+
+	-- 9E.6 Restoration Powers
+	describe("refurb_radial", function()
+		it("repairs all destroyed tiles in 3x3 area", function()
+			local state = GameLogic.createInitialState()
+			state.destroyedTiles = {
+				["3,5"] = true,
+				["4,4"] = true,
+				["1,1"] = true, -- Not adjacent
+			}
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "refurb_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateRefurbRadial(state, piece)
+
+			assert.is_nil(state.destroyedTiles["3,5"])
+			assert.is_nil(state.destroyedTiles["4,4"])
+			assert.is_true(state.destroyedTiles["1,1"]) -- Still destroyed
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "refurb_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateRefurbRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("refurb_row", function()
+		it("repairs all destroyed tiles in row", function()
+			local state = GameLogic.createInitialState()
+			state.destroyedTiles = {
+				["4,1"] = true,
+				["4,10"] = true,
+				["5,5"] = true, -- Different row
+			}
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "refurb_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateRefurbRow(state, piece)
+
+			assert.is_nil(state.destroyedTiles["4,1"])
+			assert.is_nil(state.destroyedTiles["4,10"])
+			assert.is_true(state.destroyedTiles["5,5"]) -- Still destroyed
+		end)
+	end)
+
+	describe("refurb_column", function()
+		it("repairs all destroyed tiles in column", function()
+			local state = GameLogic.createInitialState()
+			state.destroyedTiles = {
+				["1,5"] = true,
+				["8,5"] = true,
+				["4,6"] = true, -- Different column
+			}
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "refurb_column" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateRefurbColumn(state, piece)
+
+			assert.is_nil(state.destroyedTiles["1,5"])
+			assert.is_nil(state.destroyedTiles["8,5"])
+			assert.is_true(state.destroyedTiles["4,6"]) -- Still destroyed
+		end)
+	end)
+
 	describe("getValidMovesWithPowers with flags", function()
 		it("includes diagonal moves when canMoveDiagonally is true", function()
 			local state = GameLogic.createInitialState()
