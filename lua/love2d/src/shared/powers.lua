@@ -588,7 +588,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Reveal powers of enemy pieces in column",
 		targeting = "self_column",
-		blocking = false,
+		blocking = true,
 	},
 	orb_spy_radial = {
 		id = "orb_spy_radial",
@@ -615,7 +615,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Reveal contents of orbs in column",
 		targeting = "self_column",
-		blocking = false,
+		blocking = true,
 	},
 
 	-- 9E.6 Restoration Powers
@@ -731,7 +731,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Column enemies can't collect powers",
 		targeting = "self_column",
-		blocking = false,
+		blocking = true,
 	},
 
 	-- 9C.4 Parasite Powers (redirect power collection)
@@ -760,7 +760,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Column enemies' future collected powers go to you",
 		targeting = "self_column",
-		blocking = false,
+		blocking = true,
 	},
 
 	-- 9E.6 Purify Powers (remove debuffs)
@@ -789,7 +789,7 @@ Powers.definitions = {
 		duration = "single_use",
 		description = "Remove debuffs from allies in column",
 		targeting = "self_column",
-		blocking = false,
+		blocking = true,
 	},
 
 	-- 9E.1 Hotspot (teleport destination tile)

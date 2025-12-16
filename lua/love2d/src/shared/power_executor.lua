@@ -111,6 +111,68 @@ local DISPATCH = {
 	purify_row = function(state, piece)
 		return PowerEffects.activatePurifyRow(state, piece)
 	end,
+
+	-- Column-targeting powers (20)
+	destroy_column = function(state, piece)
+		return PowerEffects.activateDestroyColumn(state, piece)
+	end,
+	kamikaze_column = function(state, piece)
+		return PowerEffects.activateKamikazeColumn(state, piece)
+	end,
+	recruit_column = function(state, piece)
+		return PowerEffects.activateRecruitColumn(state, piece)
+	end,
+	acidic_column = function(state, piece)
+		return PowerEffects.activateAcidicColumn(state, piece)
+	end,
+	scramble_column = function(state, piece)
+		return PowerEffects.activateScrambleColumn(state, piece)
+	end,
+	trench_column = function(state, piece)
+		return PowerEffects.activateTrenchColumn(state, piece)
+	end,
+	wall_column = function(state, piece)
+		return PowerEffects.activateWallColumn(state, piece)
+	end,
+	invert_column = function(state, piece)
+		return PowerEffects.activateInvertColumn(state, piece)
+	end,
+	dredge_column = function(state, piece)
+		return PowerEffects.activateDredgeColumn(state, piece)
+	end,
+	teach_column = function(state, piece)
+		return PowerEffects.activateTeachColumn(state, piece)
+	end,
+	learn_column = function(state, piece)
+		return PowerEffects.activateLearnColumn(state, piece)
+	end,
+	pilfer_column = function(state, piece)
+		return PowerEffects.activatePilferColumn(state, piece)
+	end,
+	spyware_column = function(state, piece)
+		return PowerEffects.activateSpywareColumn(state, piece)
+	end,
+	orb_spy_column = function(state, piece)
+		return PowerEffects.activateOrbSpyColumn(state, piece, state.orbs)
+	end,
+	refurb_column = function(state, piece)
+		return PowerEffects.activateRefurbColumn(state, piece)
+	end,
+	bankrupt_column = function(state, piece)
+		return PowerEffects.activateBankruptColumn(state, piece)
+	end,
+	tripwire_column = function(state, piece)
+		return PowerEffects.activateTripwireColumn(state, piece)
+	end,
+	inhibit_column = function(state, piece)
+		return PowerEffects.activateInhibitColumn(state, piece)
+	end,
+	parasite_column = function(state, piece)
+		return PowerEffects.activateParasiteColumn(state, piece)
+	end,
+	purify_column = function(state, piece)
+		return PowerEffects.activatePurifyColumn(state, piece)
+	end,
 }
 
 --- Execute a power's game logic
