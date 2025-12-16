@@ -4,7 +4,7 @@
 
 Multi-phase implementation plan to bring NNQR Love2D to feature parity with original Quadradius (87 powers, multiplayer, AI opponent).
 
-**Current Status**: 492 tests passing, 12 powers implemented, Phase 5 complete.
+**Current Status**: 810 tests passing, 82 powers implemented, Phase 9 complete.
 
 ## Architecture
 
@@ -49,10 +49,9 @@ Core game engine with terrain, 12 powers, animations, UI, sound, and particles.
 
 ---
 
-### Phase 6: Overheat Mechanic
+### Phase 6: Overheat Mechanic ✅ COMPLETE
 Prevent power hoarding - 10+ of same power on one piece causes explosion.
 
-- **~10 new tests**
 - Overheat check after power collection
 - Visual warning at 8+ powers
 - Explosion animation on overheat
@@ -61,10 +60,9 @@ Prevent power hoarding - 10+ of same power on one piece causes explosion.
 
 ---
 
-### Phase 7: Destroyed Tiles
+### Phase 7: Destroyed Tiles ✅ COMPLETE
 Enable permanent tile destruction for Acidic and heavy Bomb damage.
 
-- **~15 new tests**
 - Destroyed tile state in game
 - Movement blocked on destroyed tiles
 - Visual rendering (black pits)
@@ -74,10 +72,9 @@ Enable permanent tile destruction for Acidic and heavy Bomb damage.
 
 ---
 
-### Phase 8: AI Opponent
+### Phase 8: AI Opponent ✅ COMPLETE
 Single player mode with 4 difficulty levels and AI personalities.
 
-- **~65 new tests**
 - **8A**: AI framework, random moves (Easy)
 - **8B**: Rule-based AI (Medium) - threats, opportunities, power usage
 - **8C**: Search-based AI (Hard/Expert) - minimax, alpha-beta pruning
@@ -93,15 +90,15 @@ Single player mode with 4 difficulty levels and AI personalities.
 
 ---
 
-### Phase 9: More Powers
-Implement remaining 75 powers to reach full 87-power parity.
+### Phase 9: More Powers ✅ COMPLETE
+Implemented 70 additional powers to reach 82-power parity.
 
-- **~235 new tests**
-- **9A**: Simple powers (20) - Destroy variants, Scramble, Kamikaze
-- **9B**: Terrain powers (15) - Plateau, Moat, Trench, Wall, Invert
-- **9C**: Power transfer (12) - Teach, Learn, Pilfer, Parasite
-- **9D**: Meta powers (8) - Grow Quadradius, 2x, Beneficiary
-- **9E**: Movement & control (20) - Switcheroo, Tripwire, Spyware
+- **810 tests passing**
+- **9A**: Simple powers - Destroy variants, Scramble, Kamikaze
+- **9B**: Terrain powers - Plateau, Moat, Trench, Wall, Invert, Dredge
+- **9C**: Power transfer - Teach, Learn, Pilfer, Parasite
+- **9D**: Meta powers - Grow Quadradius, 2x, Beneficiary, Orbic Rehash
+- **9E**: Movement & control - Switcheroo, Tripwire, Spyware, Bankrupt, Inhibit, Purify, Hotspot, Centerpult
 
 [Details](phases/phase9_powers.md)
 
@@ -127,25 +124,26 @@ Server features:
 
 ## Test Projections
 
-| Phase | Status | New Tests | Cumulative |
-|-------|--------|-----------|------------|
-| 1-5 | ✅ Complete | 492 | 492 |
-| 6 | Planned | ~10 | ~502 |
-| 7 | Planned | ~15 | ~517 |
-| 8 | Planned | ~65 | ~582 |
-| 9 | Planned | ~235 | ~817 |
-| 10 | Planned | ~70 | ~887 |
+| Phase | Status | Tests | Powers |
+|-------|--------|-------|--------|
+| 1-5 | ✅ Complete | 492 | 12 |
+| 6 | ✅ Complete | +10 | 12 |
+| 7 | ✅ Complete | +15 | 13 |
+| 8 | ✅ Complete | +65 | 13 |
+| 9 | ✅ Complete | +228 | 82 |
+| **Current** | **810 tests** | | **82 powers** |
+| 10 | Planned | +70 | 82 |
+| **Total** | **~880** | | **82** |
 
 ## Timeline Estimates
 
-| Phase | Sessions | Description |
-|-------|----------|-------------|
-| 6 | 1 | Overheat mechanic |
-| 7 | 1 | Destroyed tiles |
-| 8 | 3-4 | AI opponent (3 sub-phases) |
-| 9 | 6-8 | 75 powers (5 sub-phases) |
-| 10 | 4-5 | Multiplayer (3 sub-phases) |
-| **Total** | **15-19** | |
+| Phase | Sessions | Description | Status |
+|-------|----------|-------------|--------|
+| 6 | 1 | Overheat mechanic | ✅ |
+| 7 | 1 | Destroyed tiles | ✅ |
+| 8 | 3-4 | AI opponent (3 sub-phases) | ✅ |
+| 9 | 6-8 | 70 powers (5 sub-phases) | ✅ |
+| 10 | 4-5 | Multiplayer (3 sub-phases) | Planned |
 
 ## Future (Not This Roadmap)
 

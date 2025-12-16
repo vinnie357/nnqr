@@ -581,6 +581,156 @@ Powers.definitions = {
 		description = "Repair all destroyed tiles in column",
 		targeting = "self_column",
 	},
+
+	-- 9E.4 Bankrupt Powers (create power-draining trap tiles)
+	bankrupt_radial = {
+		id = "bankrupt_radial",
+		name = "Bankrupt Radial",
+		category = "Trap",
+		duration = "single_use",
+		description = "Create power-draining traps in 3x3 area",
+		targeting = "area_3x3",
+	},
+	bankrupt_row = {
+		id = "bankrupt_row",
+		name = "Bankrupt Row",
+		category = "Trap",
+		duration = "single_use",
+		description = "Create power-draining traps in entire row",
+		targeting = "self_row",
+	},
+	bankrupt_column = {
+		id = "bankrupt_column",
+		name = "Bankrupt Column",
+		category = "Trap",
+		duration = "single_use",
+		description = "Create power-draining traps in entire column",
+		targeting = "self_column",
+	},
+
+	-- 9E.2 Tripwire Powers (kill pieces that move)
+	tripwire_radial = {
+		id = "tripwire_radial",
+		name = "Tripwire Radial",
+		category = "Trap",
+		duration = "single_use",
+		description = "Adjacent enemies die if they move",
+		targeting = "area_3x3",
+	},
+	tripwire_row = {
+		id = "tripwire_row",
+		name = "Tripwire Row",
+		category = "Trap",
+		duration = "single_use",
+		description = "Row enemies die if they move",
+		targeting = "self_row",
+	},
+	tripwire_column = {
+		id = "tripwire_column",
+		name = "Tripwire Column",
+		category = "Trap",
+		duration = "single_use",
+		description = "Column enemies die if they move",
+		targeting = "self_column",
+	},
+
+	-- 9E.3 Inhibit Powers (block orb collection)
+	inhibit_radial = {
+		id = "inhibit_radial",
+		name = "Inhibit Radial",
+		category = "Control",
+		duration = "single_use",
+		description = "Adjacent enemies can't collect powers",
+		targeting = "area_3x3",
+	},
+	inhibit_row = {
+		id = "inhibit_row",
+		name = "Inhibit Row",
+		category = "Control",
+		duration = "single_use",
+		description = "Row enemies can't collect powers",
+		targeting = "self_row",
+	},
+	inhibit_column = {
+		id = "inhibit_column",
+		name = "Inhibit Column",
+		category = "Control",
+		duration = "single_use",
+		description = "Column enemies can't collect powers",
+		targeting = "self_column",
+	},
+
+	-- 9C.4 Parasite Powers (redirect power collection)
+	parasite_radial = {
+		id = "parasite_radial",
+		name = "Parasite Radial",
+		category = "Control",
+		duration = "single_use",
+		description = "Adjacent enemies' future collected powers go to you",
+		targeting = "area_3x3",
+	},
+	parasite_row = {
+		id = "parasite_row",
+		name = "Parasite Row",
+		category = "Control",
+		duration = "single_use",
+		description = "Row enemies' future collected powers go to you",
+		targeting = "self_row",
+	},
+	parasite_column = {
+		id = "parasite_column",
+		name = "Parasite Column",
+		category = "Control",
+		duration = "single_use",
+		description = "Column enemies' future collected powers go to you",
+		targeting = "self_column",
+	},
+
+	-- 9E.6 Purify Powers (remove debuffs)
+	purify_radial = {
+		id = "purify_radial",
+		name = "Purify Radial",
+		category = "Restoration",
+		duration = "single_use",
+		description = "Remove debuffs from adjacent allies",
+		targeting = "area_3x3",
+	},
+	purify_row = {
+		id = "purify_row",
+		name = "Purify Row",
+		category = "Restoration",
+		duration = "single_use",
+		description = "Remove debuffs from allies in row",
+		targeting = "self_row",
+	},
+	purify_column = {
+		id = "purify_column",
+		name = "Purify Column",
+		category = "Restoration",
+		duration = "single_use",
+		description = "Remove debuffs from allies in column",
+		targeting = "self_column",
+	},
+
+	-- 9E.1 Hotspot (teleport destination tile)
+	hotspot = {
+		id = "hotspot",
+		name = "Hotspot",
+		category = "Movement",
+		duration = "single_use",
+		description = "Create a teleport destination or teleport to existing hotspot",
+		targeting = "self",
+	},
+
+	-- 9E.1 Centerpult (jump to center of 4-piece square)
+	centerpult = {
+		id = "centerpult",
+		name = "Centerpult",
+		category = "Movement",
+		duration = "single_use",
+		description = "Jump to center of a 2x2 square formation",
+		targeting = "special",
+	},
 }
 
 -- List of power IDs for random selection

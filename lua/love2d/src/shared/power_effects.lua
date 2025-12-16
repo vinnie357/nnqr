@@ -1912,4 +1912,465 @@ function PowerEffects.activateRefurbColumn(state, piece)
 	return state
 end
 
+-- Phase 9 Remaining Powers
+
+-- 9E.4 Bankrupt Powers (power-draining trap tiles)
+
+--- Activate bankrupt_radial - create power-draining traps in 3x3 area
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateBankruptRadial(state, piece)
+	-- Initialize bankruptTiles if not present
+	if not state.bankruptTiles then
+		state.bankruptTiles = {}
+	end
+
+	for dr = -1, 1 do
+		for dc = -1, 1 do
+			-- Skip the piece's own position
+			if not (dr == 0 and dc == 0) then
+				local row = piece.row + dr
+				local col = piece.col + dc
+				if Logic.isValidPosition(row, col) then
+					state.bankruptTiles[row .. "," .. col] = true
+				end
+			end
+		end
+	end
+
+	removePower(piece, "bankrupt_radial")
+
+	return state
+end
+
+--- Activate bankrupt_row - create power-draining traps in entire row
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateBankruptRow(state, piece)
+	if not state.bankruptTiles then
+		state.bankruptTiles = {}
+	end
+
+	for col = 1, state.cols do
+		if col ~= piece.col then
+			state.bankruptTiles[piece.row .. "," .. col] = true
+		end
+	end
+
+	removePower(piece, "bankrupt_row")
+
+	return state
+end
+
+--- Activate bankrupt_column - create power-draining traps in entire column
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateBankruptColumn(state, piece)
+	if not state.bankruptTiles then
+		state.bankruptTiles = {}
+	end
+
+	for row = 1, state.rows do
+		if row ~= piece.row then
+			state.bankruptTiles[row .. "," .. piece.col] = true
+		end
+	end
+
+	removePower(piece, "bankrupt_column")
+
+	return state
+end
+
+--- Apply bankrupt tile effect when piece lands on it
+---@param state table Game state
+---@param piece table Piece landing on tile
+---@param row number Row position
+---@param col number Column position
+---@return boolean True if a power was lost
+function PowerEffects.applyBankruptTile(state, piece, row, col)
+	-- Check if tile is bankrupt
+	if not state.bankruptTiles then
+		return false
+	end
+
+	local key = row .. "," .. col
+	if not state.bankruptTiles[key] then
+		return false
+	end
+
+	-- Check if piece has powers to lose
+	if not piece.powers or #piece.powers == 0 then
+		return false
+	end
+
+	-- Remove a random power
+	local idx = math.random(#piece.powers)
+	table.remove(piece.powers, idx)
+
+	return true
+end
+
+-- 9E.2 Tripwire Powers
+
+--- Activate tripwire_radial - adjacent enemies die if they move
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateTripwireRadial(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player then
+			local dr = math.abs(p.row - piece.row)
+			local dc = math.abs(p.col - piece.col)
+			if dr <= 1 and dc <= 1 then
+				p.isTripwired = true
+				p.tripwireOwner = piece
+			end
+		end
+	end
+
+	removePower(piece, "tripwire_radial")
+
+	return state
+end
+
+--- Activate tripwire_row - row enemies die if they move
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateTripwireRow(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player and p.row == piece.row then
+			p.isTripwired = true
+			p.tripwireOwner = piece
+		end
+	end
+
+	removePower(piece, "tripwire_row")
+
+	return state
+end
+
+--- Activate tripwire_column - column enemies die if they move
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateTripwireColumn(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player and p.col == piece.col then
+			p.isTripwired = true
+			p.tripwireOwner = piece
+		end
+	end
+
+	removePower(piece, "tripwire_column")
+
+	return state
+end
+
+--- Check if a piece should die from tripwire when moving
+---@param piece table Piece attempting to move
+---@return boolean True if piece should die
+function PowerEffects.checkTripwire(piece)
+	return piece.isTripwired == true
+end
+
+-- 9E.3 Inhibit Powers
+
+--- Activate inhibit_radial - adjacent enemies can't collect powers
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateInhibitRadial(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player then
+			local dr = math.abs(p.row - piece.row)
+			local dc = math.abs(p.col - piece.col)
+			if dr <= 1 and dc <= 1 then
+				p.isInhibited = true
+			end
+		end
+	end
+
+	removePower(piece, "inhibit_radial")
+
+	return state
+end
+
+--- Activate inhibit_row - row enemies can't collect powers
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateInhibitRow(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player and p.row == piece.row then
+			p.isInhibited = true
+		end
+	end
+
+	removePower(piece, "inhibit_row")
+
+	return state
+end
+
+--- Activate inhibit_column - column enemies can't collect powers
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateInhibitColumn(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player and p.col == piece.col then
+			p.isInhibited = true
+		end
+	end
+
+	removePower(piece, "inhibit_column")
+
+	return state
+end
+
+--- Check if a piece can collect an orb
+---@param piece table Piece attempting to collect
+---@return boolean True if piece can collect orbs
+function PowerEffects.canCollectOrb(piece)
+	return not (piece.isInhibited == true)
+end
+
+-- 9C.4 Parasite Powers
+
+--- Activate parasite_radial - adjacent enemies' future powers go to you
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateParasiteRadial(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player then
+			local dr = math.abs(p.row - piece.row)
+			local dc = math.abs(p.col - piece.col)
+			if dr <= 1 and dc <= 1 then
+				p.parasitizedBy = piece
+			end
+		end
+	end
+
+	removePower(piece, "parasite_radial")
+
+	return state
+end
+
+--- Activate parasite_row - row enemies' future powers go to you
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateParasiteRow(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player and p.row == piece.row then
+			p.parasitizedBy = piece
+		end
+	end
+
+	removePower(piece, "parasite_row")
+
+	return state
+end
+
+--- Activate parasite_column - column enemies' future powers go to you
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateParasiteColumn(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player ~= piece.player and p.col == piece.col then
+			p.parasitizedBy = piece
+		end
+	end
+
+	removePower(piece, "parasite_column")
+
+	return state
+end
+
+--- Get the piece that should receive redirected powers (if parasitized)
+---@param piece table Piece that would normally receive a power
+---@return table|nil The parasite owner, or nil if not parasitized
+function PowerEffects.getParasiteRedirect(piece)
+	return piece.parasitizedBy
+end
+
+-- 9E.6 Purify Powers
+
+--- Helper to remove all debuffs from a piece
+---@param piece table Piece to purify
+local function removeDebuffs(piece)
+	piece.isTripwired = nil
+	piece.tripwireOwner = nil
+	piece.isInhibited = nil
+	piece.parasitizedBy = nil
+end
+
+--- Activate purify_radial - remove debuffs from adjacent allies
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activatePurifyRadial(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player == piece.player then
+			local dr = math.abs(p.row - piece.row)
+			local dc = math.abs(p.col - piece.col)
+			if dr <= 1 and dc <= 1 then
+				removeDebuffs(p)
+			end
+		end
+	end
+
+	removePower(piece, "purify_radial")
+
+	return state
+end
+
+--- Activate purify_row - remove debuffs from allies in row
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activatePurifyRow(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player == piece.player and p.row == piece.row then
+			removeDebuffs(p)
+		end
+	end
+
+	removePower(piece, "purify_row")
+
+	return state
+end
+
+--- Activate purify_column - remove debuffs from allies in column
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activatePurifyColumn(state, piece)
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece and p.player == piece.player and p.col == piece.col then
+			removeDebuffs(p)
+		end
+	end
+
+	removePower(piece, "purify_column")
+
+	return state
+end
+
+-- 9E.1 Hotspot Power
+
+--- Get hotspot targets for teleportation (existing hotspots owned by player)
+---@param state table Game state
+---@param piece table Piece with hotspot power
+---@return table Array of {row, col} hotspot positions
+function PowerEffects.getHotspotTargets(state, piece)
+	local targets = {}
+
+	if not state.hotspotTiles then
+		return targets
+	end
+
+	for key, owner in pairs(state.hotspotTiles) do
+		if owner == piece.player then
+			local row, col = key:match("(%d+),(%d+)")
+			table.insert(targets, { row = tonumber(row), col = tonumber(col) })
+		end
+	end
+
+	return targets
+end
+
+--- Activate hotspot - create a hotspot at piece position
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateHotspot(state, piece)
+	if not state.hotspotTiles then
+		state.hotspotTiles = {}
+	end
+
+	local key = piece.row .. "," .. piece.col
+	state.hotspotTiles[key] = piece.player
+
+	removePower(piece, "hotspot")
+
+	return state
+end
+
+--- Teleport piece to an existing hotspot
+---@param state table Game state
+---@param piece table Piece activating power
+---@param target table Target position {row, col}
+---@return table Updated game state
+function PowerEffects.activateHotspotTeleport(state, piece, target)
+	piece.row = target.row
+	piece.col = target.col
+
+	removePower(piece, "hotspot")
+
+	return state
+end
+
+-- 9E.1 Centerpult Power
+
+--- Find all 2x2 square formations on the board
+---@param state table Game state
+---@param piece table Piece with centerpult power
+---@return table Array of {row, col} top-left corners of 2x2 formations
+function PowerEffects.getCenterpultTargets(state, piece)
+	local targets = {}
+
+	-- Create occupancy map
+	local occupied = {}
+	for _, p in ipairs(state.pieces) do
+		occupied[p.row .. "," .. p.col] = true
+	end
+
+	-- Check every possible 2x2 square (top-left corner)
+	for row = 1, state.rows - 1 do
+		for col = 1, state.cols - 1 do
+			-- Check if all 4 positions are occupied
+			local topLeft = occupied[row .. "," .. col]
+			local topRight = occupied[row .. "," .. (col + 1)]
+			local bottomLeft = occupied[(row + 1) .. "," .. col]
+			local bottomRight = occupied[(row + 1) .. "," .. (col + 1)]
+
+			if topLeft and topRight and bottomLeft and bottomRight then
+				table.insert(targets, { row = row, col = col })
+			end
+		end
+	end
+
+	return targets
+end
+
+--- Activate centerpult - teleport to a 2x2 square formation
+---@param state table Game state
+---@param piece table Piece activating power
+---@param target table Target position {row, col} - top-left of 2x2
+---@return table Updated game state
+function PowerEffects.activateCenterpult(state, piece, target)
+	-- Move piece to the top-left corner of the 2x2
+	-- The piece at target gets displaced (destroyed)
+	for i = #state.pieces, 1, -1 do
+		local p = state.pieces[i]
+		if p.row == target.row and p.col == target.col and p ~= piece then
+			table.remove(state.pieces, i)
+			break
+		end
+	end
+
+	piece.row = target.row
+	piece.col = target.col
+
+	removePower(piece, "centerpult")
+
+	return state
+end
+
 return PowerEffects

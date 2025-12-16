@@ -2606,4 +2606,609 @@ describe("PowerEffects", function()
 			assert.is_false(canCapture)
 		end)
 	end)
+
+	-- Phase 9 Remaining Powers
+
+	-- 9E.4 Bankrupt Powers (power-draining trap tiles)
+	describe("bankrupt_radial", function()
+		it("creates bankrupt tiles in 3x3 area", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "bankrupt_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateBankruptRadial(state, piece)
+
+			-- Should create bankrupt tiles in 3x3 area (excluding piece position)
+			assert.is_true(state.bankruptTiles["3,4"])
+			assert.is_true(state.bankruptTiles["3,5"])
+			assert.is_true(state.bankruptTiles["3,6"])
+			assert.is_true(state.bankruptTiles["4,4"])
+			assert.is_true(state.bankruptTiles["4,6"])
+			assert.is_true(state.bankruptTiles["5,4"])
+			assert.is_true(state.bankruptTiles["5,5"])
+			assert.is_true(state.bankruptTiles["5,6"])
+			-- Piece's own tile should NOT be bankrupt
+			assert.is_nil(state.bankruptTiles["4,5"])
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "bankrupt_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateBankruptRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("bankrupt_row", function()
+		it("creates bankrupt tiles in entire row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "bankrupt_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateBankruptRow(state, piece)
+
+			-- All tiles in row 4 should be bankrupt except piece position
+			for col = 1, 10 do
+				if col ~= 5 then
+					assert.is_true(state.bankruptTiles["4," .. col])
+				end
+			end
+			assert.is_nil(state.bankruptTiles["4,5"])
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "bankrupt_row" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateBankruptRow(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("bankrupt_column", function()
+		it("creates bankrupt tiles in entire column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "bankrupt_column" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateBankruptColumn(state, piece)
+
+			-- All tiles in column 5 should be bankrupt except piece position
+			for row = 1, 8 do
+				if row ~= 4 then
+					assert.is_true(state.bankruptTiles[row .. ",5"])
+				end
+			end
+			assert.is_nil(state.bankruptTiles["4,5"])
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "bankrupt_column" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateBankruptColumn(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("bankrupt tile effect", function()
+		it("removes a random power when piece lands on bankrupt tile", function()
+			local state = GameLogic.createInitialState()
+			state.bankruptTiles = { ["4,5"] = true }
+			local piece = { row = 3, col = 5, player = 1, powers = { "bomb", "recruit" } }
+
+			-- Simulate landing on bankrupt tile
+			local powerLost = PowerEffects.applyBankruptTile(state, piece, 4, 5)
+
+			assert.is_true(powerLost)
+			assert.are.equal(1, #piece.powers)
+		end)
+
+		it("does nothing if piece has no powers", function()
+			local state = GameLogic.createInitialState()
+			state.bankruptTiles = { ["4,5"] = true }
+			local piece = { row = 3, col = 5, player = 1, powers = {} }
+
+			local powerLost = PowerEffects.applyBankruptTile(state, piece, 4, 5)
+
+			assert.is_false(powerLost)
+		end)
+
+		it("does nothing if tile is not bankrupt", function()
+			local state = GameLogic.createInitialState()
+			state.bankruptTiles = {}
+			local piece = { row = 3, col = 5, player = 1, powers = { "bomb" } }
+
+			local powerLost = PowerEffects.applyBankruptTile(state, piece, 4, 5)
+
+			assert.is_false(powerLost)
+			assert.are.equal(1, #piece.powers)
+		end)
+	end)
+
+	-- 9E.2 Tripwire Powers
+	describe("tripwire_radial", function()
+		it("sets isTripwired flag on adjacent enemies", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "tripwire_radial" } },
+				{ row = 3, col = 5, player = 2, powers = {} }, -- Adjacent enemy
+				{ row = 5, col = 5, player = 1, powers = {} }, -- Adjacent ally (should not be affected)
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTripwireRadial(state, piece)
+
+			assert.is_true(state.pieces[2].isTripwired)
+			assert.are.equal(piece, state.pieces[2].tripwireOwner)
+			assert.is_nil(state.pieces[3].isTripwired)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "tripwire_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTripwireRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("tripwire_row", function()
+		it("sets isTripwired flag on enemies in row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "tripwire_row" } },
+				{ row = 4, col = 1, player = 2, powers = {} }, -- Row enemy
+				{ row = 4, col = 10, player = 2, powers = {} }, -- Row enemy
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Different row
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTripwireRow(state, piece)
+
+			assert.is_true(state.pieces[2].isTripwired)
+			assert.is_true(state.pieces[3].isTripwired)
+			assert.is_nil(state.pieces[4].isTripwired)
+		end)
+	end)
+
+	describe("tripwire_column", function()
+		it("sets isTripwired flag on enemies in column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "tripwire_column" } },
+				{ row = 1, col = 5, player = 2, powers = {} }, -- Column enemy
+				{ row = 8, col = 5, player = 2, powers = {} }, -- Column enemy
+				{ row = 4, col = 6, player = 2, powers = {} }, -- Different column
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateTripwireColumn(state, piece)
+
+			assert.is_true(state.pieces[2].isTripwired)
+			assert.is_true(state.pieces[3].isTripwired)
+			assert.is_nil(state.pieces[4].isTripwired)
+		end)
+	end)
+
+	describe("tripwire effect", function()
+		it("kills piece when it tries to move", function()
+			local state = GameLogic.createInitialState()
+			local owner = { row = 4, col = 5, player = 1, powers = {} }
+			local tripwiredPiece =
+				{ row = 3, col = 5, player = 2, powers = {}, isTripwired = true, tripwireOwner = owner }
+			state.pieces = { owner, tripwiredPiece }
+
+			local shouldDie = PowerEffects.checkTripwire(tripwiredPiece)
+
+			assert.is_true(shouldDie)
+		end)
+
+		it("does not kill non-tripwired pieces", function()
+			local state = GameLogic.createInitialState()
+			local piece = { row = 3, col = 5, player = 2, powers = {} }
+
+			local shouldDie = PowerEffects.checkTripwire(piece)
+
+			assert.is_false(shouldDie)
+		end)
+	end)
+
+	-- 9E.3 Inhibit Powers
+	describe("inhibit_radial", function()
+		it("sets isInhibited flag on adjacent enemies", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "inhibit_radial" } },
+				{ row = 3, col = 5, player = 2, powers = {} }, -- Adjacent enemy
+				{ row = 5, col = 5, player = 1, powers = {} }, -- Adjacent ally
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateInhibitRadial(state, piece)
+
+			assert.is_true(state.pieces[2].isInhibited)
+			assert.is_nil(state.pieces[3].isInhibited)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "inhibit_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateInhibitRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("inhibit_row", function()
+		it("sets isInhibited flag on enemies in row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "inhibit_row" } },
+				{ row = 4, col = 1, player = 2, powers = {} },
+				{ row = 4, col = 10, player = 2, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Different row
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateInhibitRow(state, piece)
+
+			assert.is_true(state.pieces[2].isInhibited)
+			assert.is_true(state.pieces[3].isInhibited)
+			assert.is_nil(state.pieces[4].isInhibited)
+		end)
+	end)
+
+	describe("inhibit_column", function()
+		it("sets isInhibited flag on enemies in column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "inhibit_column" } },
+				{ row = 1, col = 5, player = 2, powers = {} },
+				{ row = 8, col = 5, player = 2, powers = {} },
+				{ row = 4, col = 6, player = 2, powers = {} }, -- Different column
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateInhibitColumn(state, piece)
+
+			assert.is_true(state.pieces[2].isInhibited)
+			assert.is_true(state.pieces[3].isInhibited)
+			assert.is_nil(state.pieces[4].isInhibited)
+		end)
+	end)
+
+	describe("inhibit effect", function()
+		it("prevents orb collection for inhibited pieces", function()
+			local piece = { row = 3, col = 5, player = 2, powers = {}, isInhibited = true }
+
+			local canCollect = PowerEffects.canCollectOrb(piece)
+
+			assert.is_false(canCollect)
+		end)
+
+		it("allows orb collection for non-inhibited pieces", function()
+			local piece = { row = 3, col = 5, player = 2, powers = {} }
+
+			local canCollect = PowerEffects.canCollectOrb(piece)
+
+			assert.is_true(canCollect)
+		end)
+	end)
+
+	-- 9C.4 Parasite Powers
+	describe("parasite_radial", function()
+		it("sets parasitizedBy on adjacent enemies", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "parasite_radial" } },
+				{ row = 3, col = 5, player = 2, powers = {} }, -- Adjacent enemy
+				{ row = 5, col = 5, player = 1, powers = {} }, -- Adjacent ally
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateParasiteRadial(state, piece)
+
+			assert.are.equal(piece, state.pieces[2].parasitizedBy)
+			assert.is_nil(state.pieces[3].parasitizedBy)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "parasite_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateParasiteRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("parasite_row", function()
+		it("sets parasitizedBy on enemies in row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "parasite_row" } },
+				{ row = 4, col = 1, player = 2, powers = {} },
+				{ row = 4, col = 10, player = 2, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} }, -- Different row
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateParasiteRow(state, piece)
+
+			assert.are.equal(piece, state.pieces[2].parasitizedBy)
+			assert.are.equal(piece, state.pieces[3].parasitizedBy)
+			assert.is_nil(state.pieces[4].parasitizedBy)
+		end)
+	end)
+
+	describe("parasite_column", function()
+		it("sets parasitizedBy on enemies in column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "parasite_column" } },
+				{ row = 1, col = 5, player = 2, powers = {} },
+				{ row = 8, col = 5, player = 2, powers = {} },
+				{ row = 4, col = 6, player = 2, powers = {} }, -- Different column
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateParasiteColumn(state, piece)
+
+			assert.are.equal(piece, state.pieces[2].parasitizedBy)
+			assert.are.equal(piece, state.pieces[3].parasitizedBy)
+			assert.is_nil(state.pieces[4].parasitizedBy)
+		end)
+	end)
+
+	describe("parasite effect", function()
+		it("redirects collected power to parasite owner", function()
+			local owner = { row = 4, col = 5, player = 1, powers = {} }
+			local victim = { row = 3, col = 5, player = 2, powers = {}, parasitizedBy = owner }
+
+			local redirectTo = PowerEffects.getParasiteRedirect(victim)
+
+			assert.are.equal(owner, redirectTo)
+		end)
+
+		it("returns nil for non-parasitized pieces", function()
+			local piece = { row = 3, col = 5, player = 2, powers = {} }
+
+			local redirectTo = PowerEffects.getParasiteRedirect(piece)
+
+			assert.is_nil(redirectTo)
+		end)
+	end)
+
+	-- 9E.6 Purify Powers
+	describe("purify_radial", function()
+		it("removes debuffs from adjacent allies", function()
+			local state = GameLogic.createInitialState()
+			local owner = { row = 1, col = 1, player = 1, powers = {} }
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "purify_radial" } },
+				{
+					row = 3,
+					col = 5,
+					player = 1,
+					powers = {},
+					isTripwired = true,
+					isInhibited = true,
+					parasitizedBy = owner,
+				},
+				{ row = 5, col = 5, player = 2, powers = {}, isTripwired = true }, -- Enemy (should not be purified)
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activatePurifyRadial(state, piece)
+
+			-- Ally debuffs removed
+			assert.is_nil(state.pieces[2].isTripwired)
+			assert.is_nil(state.pieces[2].isInhibited)
+			assert.is_nil(state.pieces[2].parasitizedBy)
+			-- Enemy debuffs remain
+			assert.is_true(state.pieces[3].isTripwired)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "purify_radial" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activatePurifyRadial(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("purify_row", function()
+		it("removes debuffs from allies in row", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "purify_row" } },
+				{ row = 4, col = 1, player = 1, powers = {}, isTripwired = true },
+				{ row = 4, col = 10, player = 1, powers = {}, isInhibited = true },
+				{ row = 5, col = 5, player = 1, powers = {}, isTripwired = true }, -- Different row
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activatePurifyRow(state, piece)
+
+			assert.is_nil(state.pieces[2].isTripwired)
+			assert.is_nil(state.pieces[3].isInhibited)
+			assert.is_true(state.pieces[4].isTripwired) -- Not in row
+		end)
+	end)
+
+	describe("purify_column", function()
+		it("removes debuffs from allies in column", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "purify_column" } },
+				{ row = 1, col = 5, player = 1, powers = {}, isTripwired = true },
+				{ row = 8, col = 5, player = 1, powers = {}, isInhibited = true },
+				{ row = 4, col = 6, player = 1, powers = {}, isTripwired = true }, -- Different column
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activatePurifyColumn(state, piece)
+
+			assert.is_nil(state.pieces[2].isTripwired)
+			assert.is_nil(state.pieces[3].isInhibited)
+			assert.is_true(state.pieces[4].isTripwired) -- Not in column
+		end)
+	end)
+
+	-- 9E.1 Hotspot
+	describe("hotspot", function()
+		it("creates a hotspot at piece position when none exist", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "hotspot" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateHotspot(state, piece)
+
+			-- Should create a hotspot (stores player number, not boolean)
+			assert.are.equal(piece.player, state.hotspotTiles["4,5"])
+		end)
+
+		it("returns hotspot targets when hotspots exist", function()
+			local state = GameLogic.createInitialState()
+			state.hotspotTiles = { ["2,3"] = 1 }
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "hotspot" } },
+			}
+			local piece = state.pieces[1]
+
+			local targets = PowerEffects.getHotspotTargets(state, piece)
+
+			assert.are.equal(1, #targets)
+			assert.are.equal(2, targets[1].row)
+			assert.are.equal(3, targets[1].col)
+		end)
+
+		it("teleports piece to hotspot when targeting existing hotspot", function()
+			local state = GameLogic.createInitialState()
+			state.hotspotTiles = { ["2,3"] = 1 }
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "hotspot" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateHotspotTeleport(state, piece, { row = 2, col = 3 })
+
+			assert.are.equal(2, piece.row)
+			assert.are.equal(3, piece.col)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "hotspot" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateHotspot(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	-- 9E.1 Centerpult
+	describe("centerpult", function()
+		it("finds valid 2x2 square formations", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "centerpult" } },
+				-- Create a 2x2 square: (2,2), (2,3), (3,2), (3,3)
+				{ row = 2, col = 2, player = 2, powers = {} },
+				{ row = 2, col = 3, player = 1, powers = {} },
+				{ row = 3, col = 2, player = 2, powers = {} },
+				{ row = 3, col = 3, player = 1, powers = {} },
+			}
+			local piece = state.pieces[1]
+
+			local targets = PowerEffects.getCenterpultTargets(state, piece)
+
+			-- Should find the center of the 2x2 square
+			assert.are.equal(1, #targets)
+			-- Center is between (2,2) and (3,3) - we'll use (2,2) as reference point
+		end)
+
+		it("returns empty if no 2x2 square exists", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "centerpult" } },
+				{ row = 2, col = 2, player = 2, powers = {} },
+				{ row = 2, col = 3, player = 1, powers = {} },
+				-- Missing pieces at (3,2) and (3,3)
+			}
+			local piece = state.pieces[1]
+
+			local targets = PowerEffects.getCenterpultTargets(state, piece)
+
+			assert.are.equal(0, #targets)
+		end)
+
+		it("teleports piece to center of 2x2 square", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "centerpult" } },
+				{ row = 2, col = 2, player = 2, powers = {} },
+				{ row = 2, col = 3, player = 1, powers = {} },
+				{ row = 3, col = 2, player = 2, powers = {} },
+				{ row = 3, col = 3, player = 1, powers = {} },
+			}
+			local piece = state.pieces[1]
+
+			-- The center position (top-left corner of 2x2)
+			state = PowerEffects.activateCenterpult(state, piece, { row = 2, col = 2 })
+
+			-- Piece should move to the top-left of the 2x2 formation, displacing pieces
+			-- For simplicity, we'll say piece teleports to the reference corner
+			assert.are.equal(2, piece.row)
+			assert.are.equal(2, piece.col)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "centerpult" } },
+				{ row = 2, col = 2, player = 2, powers = {} },
+				{ row = 2, col = 3, player = 1, powers = {} },
+				{ row = 3, col = 2, player = 2, powers = {} },
+				{ row = 3, col = 3, player = 1, powers = {} },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateCenterpult(state, piece, { row = 2, col = 2 })
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
 end)
