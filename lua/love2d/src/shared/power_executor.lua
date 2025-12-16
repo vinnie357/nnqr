@@ -288,6 +288,14 @@ local DISPATCH = {
 	cancel_multiply = function(state, piece)
 		return PowerEffects.activateCancelMultiply(state, piece)
 	end,
+
+	-- Special targeted powers (2)
+	hotspot_teleport = function(state, piece, target)
+		return PowerEffects.activateHotspotTeleport(state, piece, target)
+	end,
+	centerpult = function(state, piece, target)
+		return PowerEffects.activateCenterpult(state, piece, target)
+	end,
 }
 
 --- Execute a power's game logic
