@@ -238,6 +238,56 @@ local DISPATCH = {
 	purify_radial = function(state, piece)
 		return PowerEffects.activatePurifyRadial(state, piece)
 	end,
+
+	-- Targeted powers (6)
+	raise_tile = function(state, piece, target)
+		return PowerEffects.activateRaiseTile(state, piece, target)
+	end,
+	lower_tile = function(state, piece, target)
+		return PowerEffects.activateLowerTile(state, piece, target)
+	end,
+	recruit = function(state, piece, target)
+		-- Find piece at target position
+		local targetPiece = nil
+		for _, p in ipairs(state.pieces) do
+			if p.row == target.row and p.col == target.col then
+				targetPiece = p
+				break
+			end
+		end
+		if targetPiece then
+			return PowerEffects.activateRecruit(state, piece, targetPiece)
+		end
+		return state
+	end,
+	multiply = function(state, piece, target)
+		return PowerEffects.activateMultiply(state, piece, target)
+	end,
+	refurb = function(state, piece, target)
+		return PowerEffects.activateRefurb(state, piece, target)
+	end,
+	switcheroo = function(state, piece, target)
+		-- Find piece at target position
+		local targetPiece = nil
+		for _, p in ipairs(state.pieces) do
+			if p.row == target.row and p.col == target.col then
+				targetPiece = p
+				break
+			end
+		end
+		if targetPiece then
+			return PowerEffects.activateSwitcheroo(state, piece, targetPiece)
+		end
+		return state
+	end,
+
+	-- Global powers (2)
+	orbic_rehash = function(state, piece)
+		return PowerEffects.activateOrbicRehash(state, piece)
+	end,
+	cancel_multiply = function(state, piece)
+		return PowerEffects.activateCancelMultiply(state, piece)
+	end,
 }
 
 --- Execute a power's game logic

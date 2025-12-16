@@ -1609,23 +1609,16 @@ end
 function PowerEffects.activateCancelMultiply(state, piece)
 	removePower(piece, "cancel_multiply")
 
-	-- Check for multiplied pieces list
-	if not state.multipliedPieces or #state.multipliedPieces == 0 then
-		return state
+	-- Remove all pieces with isMultiplied flag
+	for i = #state.pieces, 1, -1 do
+		if state.pieces[i].isMultiplied then
+			table.remove(state.pieces, i)
+		end
 	end
 
-	-- Get the most recent multiplied piece
-	local targetPiece = state.multipliedPieces[#state.multipliedPieces]
-
-	-- Remove from multiplied pieces list
-	table.remove(state.multipliedPieces)
-
-	-- Remove from game pieces
-	for i = #state.pieces, 1, -1 do
-		if state.pieces[i] == targetPiece then
-			table.remove(state.pieces, i)
-			break
-		end
+	-- Also clear the multipliedPieces list if it exists
+	if state.multipliedPieces then
+		state.multipliedPieces = {}
 	end
 
 	return state
