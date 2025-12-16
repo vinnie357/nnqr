@@ -322,8 +322,15 @@ function PowerEffects.activateMultiply(state, piece, target)
 		row = target.row,
 		col = target.col,
 		powers = {},
+		isMultiplied = true, -- Track for cancel_multiply
 	}
 	table.insert(state.pieces, newPiece)
+
+	-- Track multiplied pieces for cancel_multiply
+	if not state.multipliedPieces then
+		state.multipliedPieces = {}
+	end
+	table.insert(state.multipliedPieces, newPiece)
 
 	removePower(piece, "multiply")
 
@@ -1474,6 +1481,153 @@ function PowerEffects.activatePilferColumn(state, piece)
 			stealRandomPower(p, piece)
 		end
 	end
+
+	return state
+end
+
+-- Phase 9D: Meta Powers
+
+--- Activate double_powers (2x) - doubles all powers on the piece
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateDoublePowers(state, piece)
+	-- Remove the 2x power first
+	removePower(piece, "double_powers")
+
+	-- Get current powers (after removing double_powers)
+	if not piece.powers then
+		piece.powers = {}
+		return state
+	end
+
+	-- Duplicate each remaining power
+	local currentPowers = {}
+	for _, p in ipairs(piece.powers) do
+		table.insert(currentPowers, p)
+	end
+
+	for _, p in ipairs(currentPowers) do
+		table.insert(piece.powers, p)
+	end
+
+	return state
+end
+
+--- Activate orbic_rehash - respawn all orbs at new random locations
+---@param state table Game state
+---@param piece table Piece activating power
+---@param orbs table Array of existing orbs
+---@return table Updated game state, table New orbs array
+function PowerEffects.activateOrbicRehash(state, piece, orbs)
+	removePower(piece, "orbic_rehash")
+
+	if not orbs or #orbs == 0 then
+		return state, orbs or {}
+	end
+
+	-- Collect all power IDs from existing orbs
+	local powerIds = {}
+	for _, orb in ipairs(orbs) do
+		table.insert(powerIds, orb.powerId)
+	end
+
+	-- Get empty tiles (excluding pieces and destroyed tiles)
+	local empty = {}
+	local occupied = {}
+	for _, p in ipairs(state.pieces) do
+		occupied[p.row .. "," .. p.col] = true
+	end
+
+	for row = 1, state.rows do
+		for col = 1, state.cols do
+			local key = row .. "," .. col
+			local isDestroyed = state.destroyedTiles and state.destroyedTiles[key]
+			if not occupied[key] and not isDestroyed then
+				table.insert(empty, { row = row, col = col })
+			end
+		end
+	end
+
+	-- Shuffle empty tiles
+	for i = #empty, 2, -1 do
+		local j = math.random(i)
+		empty[i], empty[j] = empty[j], empty[i]
+	end
+
+	-- Create new orbs at random positions
+	local newOrbs = {}
+	for i, powerId in ipairs(powerIds) do
+		if i <= #empty then
+			table.insert(newOrbs, {
+				row = empty[i].row,
+				col = empty[i].col,
+				powerId = powerId,
+			})
+		end
+	end
+
+	return state, newOrbs
+end
+
+--- Activate cancel_multiply - destroy the most recently multiplied piece
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateCancelMultiply(state, piece)
+	removePower(piece, "cancel_multiply")
+
+	-- Check for multiplied pieces list
+	if not state.multipliedPieces or #state.multipliedPieces == 0 then
+		return state
+	end
+
+	-- Get the most recent multiplied piece
+	local targetPiece = state.multipliedPieces[#state.multipliedPieces]
+
+	-- Remove from multiplied pieces list
+	table.remove(state.multipliedPieces)
+
+	-- Remove from game pieces
+	for i = #state.pieces, 1, -1 do
+		if state.pieces[i] == targetPiece then
+			table.remove(state.pieces, i)
+			break
+		end
+	end
+
+	return state
+end
+
+--- Activate grow_quadradius - extend power range by 1 (stacks up to 3)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateGrowQuadradius(state, piece)
+	removePower(piece, "grow_quadradius")
+
+	-- Initialize level if not present
+	if not piece.growQuadradiusLevel then
+		piece.growQuadradiusLevel = 0
+	end
+
+	-- Increase level, cap at 3
+	if piece.growQuadradiusLevel < 3 then
+		piece.growQuadradiusLevel = piece.growQuadradiusLevel + 1
+	end
+
+	return state
+end
+
+--- Activate beneficiary - all allied pieces' powers transfer to this piece when they die
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateBeneficiary(state, piece)
+	removePower(piece, "beneficiary")
+
+	-- Set the beneficiary flag
+	piece.isBeneficiary = true
 
 	return state
 end

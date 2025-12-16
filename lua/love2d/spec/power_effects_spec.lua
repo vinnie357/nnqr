@@ -1988,6 +1988,247 @@ describe("PowerEffects", function()
 		end)
 	end)
 
+	-- Phase 9D: Meta Powers
+
+	describe("double_powers (2x)", function()
+		it("doubles all powers on the piece", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "double_powers", "bomb", "recruit" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDoublePowers(state, piece)
+
+			-- Should have: bomb, bomb, recruit, recruit (2x consumed)
+			assert.are.equal(4, #piece.powers)
+			local bombCount = 0
+			local recruitCount = 0
+			for _, p in ipairs(piece.powers) do
+				if p == "bomb" then
+					bombCount = bombCount + 1
+				end
+				if p == "recruit" then
+					recruitCount = recruitCount + 1
+				end
+			end
+			assert.are.equal(2, bombCount)
+			assert.are.equal(2, recruitCount)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "double_powers" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDoublePowers(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+
+		it("works with empty inventory (just consumes)", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "double_powers" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateDoublePowers(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("orbic_rehash", function()
+		it("respawns all orbs at new random locations", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "orbic_rehash" } },
+			}
+			local piece = state.pieces[1]
+			local orbs = {
+				{ row = 3, col = 3, powerId = "bomb" },
+				{ row = 5, col = 7, powerId = "recruit" },
+			}
+
+			-- Record original positions
+			local originalPositions = {}
+			for _, orb in ipairs(orbs) do
+				originalPositions[orb.row .. "," .. orb.col] = true
+			end
+
+			state, orbs = PowerEffects.activateOrbicRehash(state, piece, orbs)
+
+			-- Same number of orbs
+			assert.are.equal(2, #orbs)
+			-- Powers preserved
+			local powers = {}
+			for _, orb in ipairs(orbs) do
+				powers[orb.powerId] = true
+			end
+			assert.is_true(powers["bomb"])
+			assert.is_true(powers["recruit"])
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "orbic_rehash" } },
+			}
+			local piece = state.pieces[1]
+			local orbs = {}
+
+			state, orbs = PowerEffects.activateOrbicRehash(state, piece, orbs)
+			assert.are.equal(0, #piece.powers)
+		end)
+
+		it("handles empty orbs array", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "orbic_rehash" } },
+			}
+			local piece = state.pieces[1]
+			local orbs = {}
+
+			state, orbs = PowerEffects.activateOrbicRehash(state, piece, orbs)
+			assert.are.equal(0, #orbs)
+		end)
+	end)
+
+	describe("cancel_multiply", function()
+		it("destroys the most recently multiplied piece", function()
+			local state = GameLogic.createInitialState()
+			-- Track multiplied pieces with a list
+			state.multipliedPieces = {}
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "cancel_multiply" } },
+				{ row = 3, col = 3, player = 2, powers = {} }, -- Normal piece
+				{ row = 6, col = 6, player = 2, powers = {}, isMultiplied = true }, -- Multiplied piece
+			}
+			-- Track the multiplied piece
+			table.insert(state.multipliedPieces, state.pieces[3])
+
+			local piece = state.pieces[1]
+			local initialCount = #state.pieces
+
+			state = PowerEffects.activateCancelMultiply(state, piece)
+
+			-- One piece destroyed
+			assert.are.equal(initialCount - 1, #state.pieces)
+			-- The multiplied piece should be gone
+			local found = false
+			for _, p in ipairs(state.pieces) do
+				if p.isMultiplied then
+					found = true
+				end
+			end
+			assert.is_false(found)
+		end)
+
+		it("does nothing if no multiplied pieces exist", function()
+			local state = GameLogic.createInitialState()
+			state.multipliedPieces = {}
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "cancel_multiply" } },
+				{ row = 3, col = 3, player = 2, powers = {} },
+			}
+			local piece = state.pieces[1]
+			local initialCount = #state.pieces
+
+			state = PowerEffects.activateCancelMultiply(state, piece)
+
+			assert.are.equal(initialCount, #state.pieces)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.multipliedPieces = {}
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "cancel_multiply" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateCancelMultiply(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("grow_quadradius", function()
+		it("increases piece growQuadradiusLevel", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "grow_quadradius" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateGrowQuadradius(state, piece)
+
+			assert.are.equal(1, piece.growQuadradiusLevel)
+		end)
+
+		it("stacks up to level 3", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{
+					row = 4,
+					col = 5,
+					player = 1,
+					powers = { "grow_quadradius", "grow_quadradius", "grow_quadradius", "grow_quadradius" },
+					growQuadradiusLevel = 0,
+				},
+			}
+			local piece = state.pieces[1]
+
+			-- Activate 4 times
+			state = PowerEffects.activateGrowQuadradius(state, piece)
+			assert.are.equal(1, piece.growQuadradiusLevel)
+			state = PowerEffects.activateGrowQuadradius(state, piece)
+			assert.are.equal(2, piece.growQuadradiusLevel)
+			state = PowerEffects.activateGrowQuadradius(state, piece)
+			assert.are.equal(3, piece.growQuadradiusLevel)
+			state = PowerEffects.activateGrowQuadradius(state, piece)
+			-- Should cap at 3
+			assert.are.equal(3, piece.growQuadradiusLevel)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "grow_quadradius" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateGrowQuadradius(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
+	describe("beneficiary", function()
+		it("transfers all ally powers to this piece when they die", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "beneficiary" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateBeneficiary(state, piece)
+
+			-- Sets the beneficiary flag
+			assert.is_true(piece.isBeneficiary)
+		end)
+
+		it("removes power after use", function()
+			local state = GameLogic.createInitialState()
+			state.pieces = {
+				{ row = 4, col = 5, player = 1, powers = { "beneficiary" } },
+			}
+			local piece = state.pieces[1]
+
+			state = PowerEffects.activateBeneficiary(state, piece)
+			assert.are.equal(0, #piece.powers)
+		end)
+	end)
+
 	describe("getValidMovesWithPowers with flags", function()
 		it("includes diagonal moves when canMoveDiagonally is true", function()
 			local state = GameLogic.createInitialState()

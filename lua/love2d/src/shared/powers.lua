@@ -435,6 +435,48 @@ Powers.definitions = {
 		description = "Steal one random power from each enemy in column",
 		targeting = "self_column",
 	},
+
+	-- Phase 9D: Meta Powers
+	double_powers = {
+		id = "double_powers",
+		name = "2x",
+		category = "Meta",
+		duration = "single_use",
+		description = "Double all powers on this piece",
+		targeting = "self",
+	},
+	orbic_rehash = {
+		id = "orbic_rehash",
+		name = "Orbic Rehash",
+		category = "Meta",
+		duration = "single_use",
+		description = "Respawn all orbs at new random locations",
+		targeting = "global",
+	},
+	cancel_multiply = {
+		id = "cancel_multiply",
+		name = "Cancel Multiply",
+		category = "Meta",
+		duration = "single_use",
+		description = "Destroy the most recently multiplied piece",
+		targeting = "global",
+	},
+	grow_quadradius = {
+		id = "grow_quadradius",
+		name = "Grow Quadradius",
+		category = "Meta",
+		duration = "permanent",
+		description = "Extend power range by 1 (stacks up to 3x)",
+		targeting = "self",
+	},
+	beneficiary = {
+		id = "beneficiary",
+		name = "Beneficiary",
+		category = "Meta",
+		duration = "permanent",
+		description = "All allied pieces' powers transfer to this piece when they die",
+		targeting = "self",
+	},
 }
 
 -- List of power IDs for random selection
