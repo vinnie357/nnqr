@@ -173,6 +173,71 @@ local DISPATCH = {
 	purify_column = function(state, piece)
 		return PowerEffects.activatePurifyColumn(state, piece)
 	end,
+
+	-- Radial/Area powers (21)
+	bomb = function(state, piece)
+		return PowerEffects.activateBomb(state, piece)
+	end,
+	destroy_radial = function(state, piece)
+		return PowerEffects.activateDestroyRadial(state, piece)
+	end,
+	kamikaze_radial = function(state, piece)
+		return PowerEffects.activateKamikazeRadial(state, piece)
+	end,
+	smart_bombs = function(state, piece)
+		return PowerEffects.activateSmartBombs(state, piece)
+	end,
+	scramble_radial = function(state, piece)
+		return PowerEffects.activateScrambleRadial(state, piece)
+	end,
+	acidic_radial = function(state, piece)
+		return PowerEffects.activateAcidicRadial(state, piece)
+	end,
+	plateau = function(state, piece)
+		return PowerEffects.activatePlateau(state, piece)
+	end,
+	moat = function(state, piece)
+		return PowerEffects.activateMoat(state, piece)
+	end,
+	invert_radial = function(state, piece)
+		return PowerEffects.activateInvertRadial(state, piece)
+	end,
+	dredge_radial = function(state, piece)
+		return PowerEffects.activateDredgeRadial(state, piece)
+	end,
+	refurb_radial = function(state, piece)
+		return PowerEffects.activateRefurbRadial(state, piece)
+	end,
+	bankrupt_radial = function(state, piece)
+		return PowerEffects.activateBankruptRadial(state, piece)
+	end,
+	teach_radial = function(state, piece)
+		return PowerEffects.activateTeachRadial(state, piece)
+	end,
+	learn_radial = function(state, piece)
+		return PowerEffects.activateLearnRadial(state, piece)
+	end,
+	pilfer_radial = function(state, piece)
+		return PowerEffects.activatePilferRadial(state, piece)
+	end,
+	spyware_radial = function(state, piece)
+		return PowerEffects.activateSpywareRadial(state, piece)
+	end,
+	orb_spy_radial = function(state, piece)
+		return PowerEffects.activateOrbSpyRadial(state, piece, state.orbs)
+	end,
+	tripwire_radial = function(state, piece)
+		return PowerEffects.activateTripwireRadial(state, piece)
+	end,
+	inhibit_radial = function(state, piece)
+		return PowerEffects.activateInhibitRadial(state, piece)
+	end,
+	parasite_radial = function(state, piece)
+		return PowerEffects.activateParasiteRadial(state, piece)
+	end,
+	purify_radial = function(state, piece)
+		return PowerEffects.activatePurifyRadial(state, piece)
+	end,
 }
 
 --- Execute a power's game logic
