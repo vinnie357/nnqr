@@ -12,6 +12,8 @@ UI.SCREENS = {
 	playing = true,
 	settings = true,
 	gameover = true,
+	paused = true,
+	confirm = true,
 }
 
 -- Menu items for each screen
@@ -22,6 +24,8 @@ UI.MENU_ITEMS = {
 	settings = { "Master Volume", "SFX Volume", "Music Volume", "Sound Enabled", "Back" },
 	gameover = { "Play Again", "Main Menu" },
 	playing = {},
+	paused = { "Continue", "New Game", "Settings", "Quit" },
+	confirm = { "Yes", "No" },
 }
 
 --- Create initial UI state
@@ -35,6 +39,7 @@ function UI.createState()
 		sfxVolume = 1.0,
 		musicVolume = 0.5,
 		muted = false,
+		confirmAction = nil,
 	}
 end
 
@@ -185,6 +190,26 @@ end
 ---@param state table UI state
 function UI.toggleMuted(state)
 	state.muted = not state.muted
+end
+
+--- Set confirm action type
+---@param state table UI state
+---@param action string Action to confirm (e.g., "new_game", "quit")
+function UI.setConfirmAction(state, action)
+	state.confirmAction = action
+end
+
+--- Get confirm action type
+---@param state table UI state
+---@return string|nil Action being confirmed or nil
+function UI.getConfirmAction(state)
+	return state.confirmAction
+end
+
+--- Clear confirm action
+---@param state table UI state
+function UI.clearConfirmAction(state)
+	state.confirmAction = nil
 end
 
 --- Adjust volume by delta

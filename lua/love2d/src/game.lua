@@ -359,6 +359,12 @@ function Game.draw()
 	elseif screen == "gameover" then
 		Game.drawPlayingScreen() -- Draw board in background
 		Game.drawGameOverScreen()
+	elseif screen == "paused" then
+		Game.drawPlayingScreen() -- Draw board in background
+		Game.drawPausedScreen()
+	elseif screen == "confirm" then
+		Game.drawPlayingScreen() -- Draw board in background
+		Game.drawConfirmScreen()
 	end
 end
 
@@ -1032,6 +1038,104 @@ function Game.drawGameOverScreen()
 			love.graphics.setColor(0.7, 0.7, 0.7)
 			love.graphics.print(item, (screenW - font:getWidth(item)) / 2, itemY)
 		end
+	end
+end
+
+function Game.drawPausedScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+
+	-- Dark overlay
+	love.graphics.setColor(0, 0, 0, 0.8)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Title
+	local titleY = screenH * 0.25
+	love.graphics.setColor(1, 1, 1)
+	local title = "PAUSED"
+	local font = love.graphics.getFont()
+	love.graphics.print(title, (screenW - font:getWidth(title)) / 2, titleY)
+
+	-- Menu items
+	local menuItems = UI.getMenuItems(Game.uiState)
+	local menuY = screenH * 0.4
+	local itemSpacing = 35
+
+	for i, item in ipairs(menuItems) do
+		local itemY = menuY + (i - 1) * itemSpacing
+		local isSelected = i == Game.uiState.selectedIndex
+
+		if isSelected then
+			love.graphics.setColor(0.3, 0.5, 0.8, 0.5)
+			love.graphics.rectangle("fill", screenW / 2 - 100, itemY - 5, 200, 30, 5, 5)
+			love.graphics.setColor(1, 1, 1)
+			love.graphics.print("> " .. item, (screenW - font:getWidth("> " .. item)) / 2, itemY)
+		else
+			love.graphics.setColor(0.7, 0.7, 0.7)
+			love.graphics.print(item, (screenW - font:getWidth(item)) / 2, itemY)
+		end
+	end
+
+	-- Controls hint
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	local hint = "Arrow Keys to navigate, Enter to select"
+	love.graphics.print(hint, (screenW - font:getWidth(hint)) / 2, screenH - 50)
+end
+
+function Game.drawConfirmScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+
+	-- Dark overlay
+	love.graphics.setColor(0, 0, 0, 0.85)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Confirm dialog box
+	local boxW, boxH = 400, 180
+	local boxX = (screenW - boxW) / 2
+	local boxY = (screenH - boxH) / 2
+
+	-- Box background
+	love.graphics.setColor(0.15, 0.17, 0.2)
+	love.graphics.rectangle("fill", boxX, boxY, boxW, boxH, 10, 10)
+	love.graphics.setColor(0.4, 0.5, 0.6)
+	love.graphics.rectangle("line", boxX, boxY, boxW, boxH, 10, 10)
+
+	-- Title
+	love.graphics.setColor(1, 0.8, 0.3)
+	local font = love.graphics.getFont()
+	local title = "Confirm"
+	love.graphics.print(title, boxX + (boxW - font:getWidth(title)) / 2, boxY + 20)
+
+	-- Message based on action
+	local action = UI.getConfirmAction(Game.uiState)
+	local message = "Are you sure?"
+	if action == "new_game" then
+		message = "Start a new game? Current progress will be lost."
+	elseif action == "quit" then
+		message = "Quit to desktop?"
+	end
+
+	love.graphics.setColor(0.9, 0.9, 0.9)
+	love.graphics.print(message, boxX + (boxW - font:getWidth(message)) / 2, boxY + 60)
+
+	-- Menu items (Yes/No)
+	local menuItems = UI.getMenuItems(Game.uiState)
+	local buttonY = boxY + 110
+	local buttonSpacing = 100
+
+	for i, item in ipairs(menuItems) do
+		local buttonX = boxX + boxW / 2 + (i - 1.5) * buttonSpacing
+		local isSelected = i == Game.uiState.selectedIndex
+
+		if isSelected then
+			love.graphics.setColor(0.3, 0.5, 0.8, 0.7)
+			love.graphics.rectangle("fill", buttonX - 40, buttonY - 5, 80, 30, 5, 5)
+			love.graphics.setColor(1, 1, 1)
+		else
+			love.graphics.setColor(0.6, 0.6, 0.6)
+		end
+		love.graphics.print(item, buttonX - font:getWidth(item) / 2, buttonY)
 	end
 end
 
@@ -1847,6 +1951,12 @@ function Game.keypressed(key)
 	elseif screen == "gameover" then
 		Game.handleGameOverInput(key)
 		return
+	elseif screen == "paused" then
+		Game.handlePausedInput(key)
+		return
+	elseif screen == "confirm" then
+		Game.handleConfirmInput(key)
+		return
 	end
 
 	-- Playing screen input
@@ -1856,8 +1966,8 @@ function Game.keypressed(key)
 			Game.powerMode = nil
 			Game.powerTargets = {}
 		else
-			-- Return to menu
-			UI.setScreen(Game.uiState, "menu")
+			-- Open pause menu
+			UI.setScreen(Game.uiState, "paused")
 		end
 		return
 	elseif key == "r" then
@@ -1911,6 +2021,7 @@ function Game.handleMenuInput(key)
 		if selected == "New Game" then
 			UI.setScreen(Game.uiState, "gamemode")
 		elseif selected == "Settings" then
+			Game.settingsReturnScreen = "menu"
 			UI.setScreen(Game.uiState, "settings")
 		elseif selected == "Quit" then
 			love.event.quit()
@@ -2005,10 +2116,14 @@ function Game.handleSettingsInput(key)
 			UI.toggleMuted(Game.uiState)
 			Game.syncSoundSettings()
 		elseif selected == "Back" then
-			UI.setScreen(Game.uiState, "menu")
+			local returnScreen = Game.settingsReturnScreen or "menu"
+			Game.settingsReturnScreen = nil
+			UI.setScreen(Game.uiState, returnScreen)
 		end
 	elseif key == "escape" then
-		UI.setScreen(Game.uiState, "menu")
+		local returnScreen = Game.settingsReturnScreen or "menu"
+		Game.settingsReturnScreen = nil
+		UI.setScreen(Game.uiState, returnScreen)
 	end
 end
 
@@ -2025,6 +2140,67 @@ function Game.handleGameOverInput(key)
 			Game.showTurnBanner(1)
 		elseif selected == "Main Menu" then
 			UI.setScreen(Game.uiState, "menu")
+		end
+	end
+end
+
+function Game.handlePausedInput(key)
+	if key == "up" then
+		UI.selectPrev(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "down" then
+		UI.selectNext(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "escape" then
+		-- Resume game
+		UI.setScreen(Game.uiState, "playing")
+	elseif key == "return" or key == "space" then
+		Game.playSoundForEvent("menu_confirm")
+		local selected = UI.getSelectedMenuItem(Game.uiState)
+		if selected == "Continue" then
+			UI.setScreen(Game.uiState, "playing")
+		elseif selected == "New Game" then
+			-- Show confirmation dialog
+			UI.setConfirmAction(Game.uiState, "new_game")
+			UI.setScreen(Game.uiState, "confirm")
+		elseif selected == "Settings" then
+			Game.settingsReturnScreen = "paused"
+			UI.setScreen(Game.uiState, "settings")
+		elseif selected == "Quit" then
+			love.event.quit()
+		end
+	end
+end
+
+function Game.handleConfirmInput(key)
+	if key == "left" then
+		UI.selectPrev(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "right" then
+		UI.selectNext(Game.uiState)
+		Game.playSoundForEvent("menu_move")
+	elseif key == "escape" then
+		-- Cancel and return to paused screen
+		UI.clearConfirmAction(Game.uiState)
+		UI.setScreen(Game.uiState, "paused")
+	elseif key == "return" or key == "space" then
+		local selected = UI.getSelectedMenuItem(Game.uiState)
+		local action = UI.getConfirmAction(Game.uiState)
+		
+		if selected == "Yes" then
+			Game.playSoundForEvent("menu_confirm")
+			if action == "new_game" then
+				Game.startNewGame()
+				UI.setScreen(Game.uiState, "playing")
+				Game.showTurnBanner(1)
+			elseif action == "quit" then
+				love.event.quit()
+			end
+			UI.clearConfirmAction(Game.uiState)
+		elseif selected == "No" then
+			Game.playSoundForEvent("menu_back")
+			UI.clearConfirmAction(Game.uiState)
+			UI.setScreen(Game.uiState, "paused")
 		end
 	end
 end
