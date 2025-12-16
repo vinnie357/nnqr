@@ -4,6 +4,7 @@
 
 local Animations = require("src.shared.animations")
 local PowerEffects = require("src.shared.power_effects")
+local Powers = require("src.shared.powers")
 
 local GameAnimations = {}
 
@@ -49,6 +50,7 @@ end
 ---@param onComplete function|nil Callback when animation completes
 ---@return table|nil Animation state or nil if no animation for this power
 function GameAnimations.createPowerAnimation(piece, powerId, onComplete)
+	-- Special cases with unique animations
 	if powerId == "destroy_row" then
 		return Animations.createDestroyRow(piece.row, piece.col, onComplete)
 	elseif powerId == "destroy_column" then
@@ -67,6 +69,22 @@ function GameAnimations.createPowerAnimation(piece, powerId, onComplete)
 		return Animations.createInvisible(piece.row, piece.col, onComplete)
 	elseif powerId == "move_again" then
 		return Animations.createMoveAgain(piece.row, piece.col, onComplete)
+	end
+
+	-- Generic animations based on power targeting type
+	local def = Powers.definitions[powerId]
+	if def then
+		if def.targeting == "self" then
+			return Animations.createPowerSelf(piece.row, piece.col, onComplete)
+		elseif def.targeting == "self_row" then
+			return Animations.createPowerRow(piece.row, piece.col, onComplete)
+		elseif def.targeting == "self_column" then
+			return Animations.createPowerColumn(piece.col, piece.row, onComplete)
+		elseif def.targeting == "area_3x3" then
+			return Animations.createPowerRadial(piece.row, piece.col, onComplete)
+		elseif def.targeting == "global" then
+			return Animations.createPowerGlobal(onComplete)
+		end
 	end
 
 	return nil

@@ -289,6 +289,65 @@ function Animations.createMoveAgain(row, col, onComplete)
 end
 
 -- =============================================================================
+-- Generic Power Animation Factories
+-- =============================================================================
+
+--- Create generic self power animation (glow effect at piece)
+---@param row number Piece row
+---@param col number Piece column
+---@param onComplete function|nil Callback when animation completes
+---@return table Animation state
+function Animations.createPowerSelf(row, col, onComplete)
+	return Animations.createAnimation("power_self", DURATION_PASSIVE, {
+		row = row,
+		col = col,
+	}, false, onComplete)
+end
+
+--- Create generic row power animation (sweep across row)
+---@param row number Row being affected
+---@param originCol number Column of piece activating power
+---@param onComplete function|nil Callback when animation completes
+---@return table Animation state
+function Animations.createPowerRow(row, originCol, onComplete)
+	return Animations.createAnimation("power_row", DURATION_DESTROY, {
+		row = row,
+		originCol = originCol,
+	}, true, onComplete)
+end
+
+--- Create generic column power animation (sweep across column)
+---@param col number Column being affected
+---@param originRow number Row of piece activating power
+---@param onComplete function|nil Callback when animation completes
+---@return table Animation state
+function Animations.createPowerColumn(col, originRow, onComplete)
+	return Animations.createAnimation("power_column", DURATION_DESTROY, {
+		col = col,
+		originRow = originRow,
+	}, true, onComplete)
+end
+
+--- Create generic radial power animation (pulse from center)
+---@param row number Center row
+---@param col number Center column
+---@param onComplete function|nil Callback when animation completes
+---@return table Animation state
+function Animations.createPowerRadial(row, col, onComplete)
+	return Animations.createAnimation("power_radial", DURATION_BOMB, {
+		row = row,
+		col = col,
+	}, true, onComplete)
+end
+
+--- Create generic global power animation (screen flash)
+---@param onComplete function|nil Callback when animation completes
+---@return table Animation state
+function Animations.createPowerGlobal(onComplete)
+	return Animations.createAnimation("power_global", DURATION_DESTROY, {}, true, onComplete)
+end
+
+-- =============================================================================
 -- Interpolation Helpers
 -- =============================================================================
 
