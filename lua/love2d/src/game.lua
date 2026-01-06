@@ -2233,6 +2233,7 @@ function Game.activatePower(piece, powerId)
 	local needsTarget = def.targeting == "adjacent"
 		or def.targeting == "adjacent_enemy"
 		or def.targeting == "adjacent_empty"
+		or def.targeting == "adjacent_destroyed"
 
 	if needsTarget then
 		-- Enter power targeting mode
@@ -2251,6 +2252,10 @@ function Game.getPowerTargets(piece, powerId)
 		return PowerEffects.getRecruitTargets(Game.state, piece)
 	elseif powerId == "multiply" then
 		return PowerEffects.getMultiplyTargets(Game.state, piece)
+	elseif powerId == "refurb" then
+		return PowerEffects.getRefurbTargets(Game.state, piece)
+	elseif powerId == "switcheroo" then
+		return PowerEffects.getSwitcherooTargets(Game.state, piece)
 	end
 	return {}
 end
@@ -2292,6 +2297,20 @@ function Game.executepower(piece, powerId, target)
 		-- Apply immediately to get new position, then animate
 		local oldRow, oldCol = piece.row, piece.col
 		Game.state = PowerExecutor.execute(Game.state, piece, powerId, target)
+		anim = Animations.createRelocate(oldRow, oldCol, piece.row, piece.col, function()
+			Game.refreshSelection()
+		end)
+	elseif powerId == "refurb" and target then
+		-- Refurb restores a destroyed tile - use a raise animation to show restoration
+		anim = Animations.createRaiseTile(target.row, target.col, -1, 0, function()
+			Game.state = PowerExecutor.execute(Game.state, piece, powerId, target)
+			Game.refreshSelection()
+		end)
+	elseif powerId == "switcheroo" and target then
+		-- Switcheroo swaps positions - use relocate animation for visual swap
+		local oldRow, oldCol = piece.row, piece.col
+		Game.state = PowerExecutor.execute(Game.state, piece, powerId, target)
+		-- Animate piece moving to target position
 		anim = Animations.createRelocate(oldRow, oldCol, piece.row, piece.col, function()
 			Game.refreshSelection()
 		end)
