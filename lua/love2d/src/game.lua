@@ -2028,6 +2028,11 @@ function Game.mousemoved(x, y, dx, dy)
 	Game.mouseX = x
 	Game.mouseY = y
 
+	-- Guard against nil uiState (e.g. during tests)
+	if not Game.uiState then
+		return
+	end
+
 	-- Check for power menu hover (only on playing screen with selected piece)
 	local screen = UI.getScreen(Game.uiState)
 	if screen == "playing" then

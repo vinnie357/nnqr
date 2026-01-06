@@ -88,14 +88,14 @@ All 83 powers are now wired up through PowerExecutor. Manual testing is needed t
 ---
 
 ### Power Visual Feedback
-**Status:** PARTIALLY RESOLVED (commit c440b4c)
+**Status:** RESOLVED (commits c440b4c, f1e3b77)
 
 Visual status indicators added for:
 - climb_tile, flat_to_sphere, beneficiary, scavenger, tripwire, inhibited, multiplied
 
-Still needed:
-- Terrain modification animations (raise/lower tile feedback)
-- Piece conversion effects (recruit animations)
+Enhanced animations:
+- Terrain modification (raise/lower): ground cracks, dust clouds, directional arrows
+- Recruit conversion: color transitions, conversion flash, two-color spiraling particles
 
 ### Sound Effects  
 **Status:** MAPPINGS COMPLETE (sound files needed)
