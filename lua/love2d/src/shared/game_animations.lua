@@ -4,6 +4,7 @@
 
 local Animations = require("src.shared.animations")
 local PowerEffects = require("src.shared.power_effects")
+local PowerExecutor = require("src.shared.power_executor")
 local Powers = require("src.shared.powers")
 
 local GameAnimations = {}
@@ -94,24 +95,10 @@ end
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@param powerId string Power ID
-function GameAnimations.applyPowerEffect(state, piece, powerId)
-	if powerId == "destroy_row" then
-		PowerEffects.activateDestroyRow(state, piece)
-	elseif powerId == "destroy_column" then
-		PowerEffects.activateDestroyColumn(state, piece)
-	elseif powerId == "bomb" then
-		PowerEffects.activateBomb(state, piece)
-	elseif powerId == "relocate" then
-		PowerEffects.activateRelocate(state, piece)
-	elseif powerId == "move_diagonal" then
-		PowerEffects.activateMoveDiagonal(state, piece)
-	elseif powerId == "jump_proof" then
-		PowerEffects.activateJumpProof(state, piece)
-	elseif powerId == "invisible" then
-		PowerEffects.activateInvisible(state, piece)
-	elseif powerId == "move_again" then
-		PowerEffects.activateMoveAgain(state, piece)
-	end
+---@param target table|nil Optional target for targeted powers
+---@return table Updated game state
+function GameAnimations.applyPowerEffect(state, piece, powerId, target)
+	return PowerExecutor.execute(state, piece, powerId, target)
 end
 
 --- Check if any blocking animation is active

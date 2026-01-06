@@ -6,6 +6,7 @@ local Rendering = require("src.shared.rendering")
 local Height = require("src.shared.height")
 local Powers = require("src.shared.powers")
 local PowerEffects = require("src.shared.power_effects")
+local PowerExecutor = require("src.shared.power_executor")
 local GameAnimations = require("src.shared.game_animations")
 local Animations = require("src.shared.animations")
 local Indicators = require("src.shared.indicators")
@@ -2263,70 +2264,41 @@ function Game.executepower(piece, powerId, target)
 
 	local anim = nil
 
-	-- Create animation with onComplete callback to apply effect
-	if powerId == "destroy_row" then
-		anim = Animations.createDestroyRow(piece.row, piece.col, function()
-			Game.state = PowerEffects.activateDestroyRow(Game.state, piece)
-			Game.refreshSelection()
-		end)
-	elseif powerId == "destroy_column" then
-		anim = Animations.createDestroyColumn(piece.col, piece.row, function()
-			Game.state = PowerEffects.activateDestroyColumn(Game.state, piece)
-			Game.refreshSelection()
-		end)
-	elseif powerId == "raise_tile" and target then
+	-- Handle special animation cases that need target or position data
+	if powerId == "raise_tile" and target then
 		local fromHeight = GameLogic.getHeight(Game.state, target.row, target.col)
 		anim = Animations.createRaiseTile(target.row, target.col, fromHeight, fromHeight + 1, function()
-			Game.state = PowerEffects.activateRaiseTile(Game.state, piece, target)
+			Game.state = PowerExecutor.execute(Game.state, piece, powerId, target)
 			Game.refreshSelection()
 		end)
 	elseif powerId == "lower_tile" and target then
 		local fromHeight = GameLogic.getHeight(Game.state, target.row, target.col)
 		anim = Animations.createLowerTile(target.row, target.col, fromHeight, fromHeight - 1, function()
-			Game.state = PowerEffects.activateLowerTile(Game.state, piece, target)
+			Game.state = PowerExecutor.execute(Game.state, piece, powerId, target)
 			Game.refreshSelection()
 		end)
 	elseif powerId == "recruit" and target then
 		anim = Animations.createRecruit(target.row, target.col, target.player, piece.player, function()
-			Game.state = PowerEffects.activateRecruit(Game.state, piece, target)
+			Game.state = PowerExecutor.execute(Game.state, piece, powerId, target)
 			Game.refreshSelection()
 		end)
 	elseif powerId == "multiply" and target then
 		anim = Animations.createMultiply(piece.row, piece.col, target.row, target.col, function()
-			Game.state = PowerEffects.activateMultiply(Game.state, piece, target)
-			Game.refreshSelection()
-		end)
-	elseif powerId == "bomb" then
-		anim = Animations.createBomb(piece.row, piece.col, function()
-			Game.state = PowerEffects.activateBomb(Game.state, piece)
+			Game.state = PowerExecutor.execute(Game.state, piece, powerId, target)
 			Game.refreshSelection()
 		end)
 	elseif powerId == "relocate" then
 		-- For relocate, we need to calculate destination first for animation
-		-- For now, apply immediately and animate at new position
+		-- Apply immediately to get new position, then animate
 		local oldRow, oldCol = piece.row, piece.col
-		Game.state = PowerEffects.activateRelocate(Game.state, piece)
+		Game.state = PowerExecutor.execute(Game.state, piece, powerId, target)
 		anim = Animations.createRelocate(oldRow, oldCol, piece.row, piece.col, function()
 			Game.refreshSelection()
 		end)
-	elseif powerId == "move_again" then
-		anim = Animations.createMoveAgain(piece.row, piece.col, function()
-			Game.state = PowerEffects.activateMoveAgain(Game.state, piece)
-			Game.refreshSelection()
-		end)
-	elseif powerId == "move_diagonal" then
-		anim = Animations.createMoveDiagonal(piece.row, piece.col, function()
-			Game.state = PowerEffects.activateMoveDiagonal(Game.state, piece)
-			Game.refreshSelection()
-		end)
-	elseif powerId == "jump_proof" then
-		anim = Animations.createJumpProof(piece.row, piece.col, function()
-			Game.state = PowerEffects.activateJumpProof(Game.state, piece)
-			Game.refreshSelection()
-		end)
-	elseif powerId == "invisible" then
-		anim = Animations.createInvisible(piece.row, piece.col, function()
-			Game.state = PowerEffects.activateInvisible(Game.state, piece)
+	else
+		-- Use generic animation system for all other powers
+		anim = GameAnimations.createPowerAnimation(piece, powerId, function()
+			Game.state = PowerExecutor.execute(Game.state, piece, powerId, target)
 			Game.refreshSelection()
 		end)
 	end
@@ -2334,6 +2306,10 @@ function Game.executepower(piece, powerId, target)
 	-- Queue animation if created
 	if anim and Game.animations then
 		Animations.AnimationQueue.add(Game.animations.queue, anim)
+	elseif not anim then
+		-- No animation - execute power immediately
+		Game.state = PowerExecutor.execute(Game.state, piece, powerId, target)
+		Game.refreshSelection()
 	end
 
 	-- Clear power mode
