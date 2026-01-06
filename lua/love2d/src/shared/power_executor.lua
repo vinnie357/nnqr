@@ -91,7 +91,9 @@ local DISPATCH = {
 		return PowerEffects.activateSpywareRow(state, piece)
 	end,
 	orb_spy_row = function(state, piece)
-		return PowerEffects.activateOrbSpyRow(state, piece, state.orbs)
+		local newState, newOrbs = PowerEffects.activateOrbSpyRow(state, piece, state.orbs)
+		newState.orbs = newOrbs
+		return newState
 	end,
 	refurb_row = function(state, piece)
 		return PowerEffects.activateRefurbRow(state, piece)
@@ -153,7 +155,9 @@ local DISPATCH = {
 		return PowerEffects.activateSpywareColumn(state, piece)
 	end,
 	orb_spy_column = function(state, piece)
-		return PowerEffects.activateOrbSpyColumn(state, piece, state.orbs)
+		local newState, newOrbs = PowerEffects.activateOrbSpyColumn(state, piece, state.orbs)
+		newState.orbs = newOrbs
+		return newState
 	end,
 	refurb_column = function(state, piece)
 		return PowerEffects.activateRefurbColumn(state, piece)
@@ -224,7 +228,9 @@ local DISPATCH = {
 		return PowerEffects.activateSpywareRadial(state, piece)
 	end,
 	orb_spy_radial = function(state, piece)
-		return PowerEffects.activateOrbSpyRadial(state, piece, state.orbs)
+		local newState, newOrbs = PowerEffects.activateOrbSpyRadial(state, piece, state.orbs)
+		newState.orbs = newOrbs
+		return newState
 	end,
 	tripwire_radial = function(state, piece)
 		return PowerEffects.activateTripwireRadial(state, piece)
