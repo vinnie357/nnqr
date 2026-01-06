@@ -283,7 +283,9 @@ local DISPATCH = {
 
 	-- Global powers (2)
 	orbic_rehash = function(state, piece)
-		return PowerEffects.activateOrbicRehash(state, piece)
+		local newState, newOrbs = PowerEffects.activateOrbicRehash(state, piece, state.orbs)
+		newState.orbs = newOrbs
+		return newState
 	end,
 	cancel_multiply = function(state, piece)
 		return PowerEffects.activateCancelMultiply(state, piece)

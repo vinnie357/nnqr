@@ -30,6 +30,38 @@ describe("PowerExecutor - Global Powers", function()
 			assert.are.equal("power_global", animType)
 			assert.is_true(blocking)
 		end)
+
+		it("actually moves orbs to new positions", function()
+			local state = H.state.createEmptyState()
+			local piece = H.pieces.addPiece(state, 5, 5, 1)
+			H.powers.givePower(piece, "orbic_rehash")
+
+			-- Add orbs at known positions in a cluster
+			H.orbs.addOrb(state, 1, 1, "bomb")
+			H.orbs.addOrb(state, 1, 2, "recruit")
+			H.orbs.addOrb(state, 1, 3, "multiply")
+
+			-- Record original positions
+			local originalPositions = {}
+			for _, orb in ipairs(state.orbs) do
+				originalPositions[orb.row .. "," .. orb.col] = true
+			end
+
+			-- Execute power
+			state = PowerExecutor.execute(state, piece, "orbic_rehash")
+
+			-- Count how many orbs are still in original positions
+			local samePositionCount = 0
+			for _, orb in ipairs(state.orbs) do
+				if originalPositions[orb.row .. "," .. orb.col] then
+					samePositionCount = samePositionCount + 1
+				end
+			end
+
+			-- With 80 empty tiles and 3 orbs, probability all 3 land in same spots is tiny
+			-- At least one orb should have moved (statistically near-certain)
+			assert.is_true(samePositionCount < 3, "Expected at least one orb to move to a new position")
+		end)
 	end)
 
 	describe("cancel_multiply", function()
