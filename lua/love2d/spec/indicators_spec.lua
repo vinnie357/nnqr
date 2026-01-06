@@ -63,5 +63,54 @@ describe("Indicators", function()
 			assert.is_true(hasJumpProof)
 			assert.is_true(hasMoveDiagonal)
 		end)
+
+		it("returns climb_tile when piece.canClimbAny is true", function()
+			local piece = { row = 1, col = 1, player = 1, canClimbAny = true }
+			local indicators = Indicators.getPieceIndicators(piece)
+			assert.are.equal(1, #indicators)
+			assert.are.equal("climb_tile", indicators[1])
+		end)
+
+		it("returns flat_to_sphere when piece.canWrap is true", function()
+			local piece = { row = 1, col = 1, player = 1, canWrap = true }
+			local indicators = Indicators.getPieceIndicators(piece)
+			assert.are.equal(1, #indicators)
+			assert.are.equal("flat_to_sphere", indicators[1])
+		end)
+
+		it("returns beneficiary when piece.isBeneficiary is true", function()
+			local piece = { row = 1, col = 1, player = 1, isBeneficiary = true }
+			local indicators = Indicators.getPieceIndicators(piece)
+			assert.are.equal(1, #indicators)
+			assert.are.equal("beneficiary", indicators[1])
+		end)
+
+		it("returns scavenger when piece.isScavenger is true", function()
+			local piece = { row = 1, col = 1, player = 1, isScavenger = true }
+			local indicators = Indicators.getPieceIndicators(piece)
+			assert.are.equal(1, #indicators)
+			assert.are.equal("scavenger", indicators[1])
+		end)
+
+		it("returns tripwire when piece.isTripwired is true", function()
+			local piece = { row = 1, col = 1, player = 1, isTripwired = true }
+			local indicators = Indicators.getPieceIndicators(piece)
+			assert.are.equal(1, #indicators)
+			assert.are.equal("tripwire", indicators[1])
+		end)
+
+		it("returns inhibited when piece.isInhibited is true", function()
+			local piece = { row = 1, col = 1, player = 1, isInhibited = true }
+			local indicators = Indicators.getPieceIndicators(piece)
+			assert.are.equal(1, #indicators)
+			assert.are.equal("inhibited", indicators[1])
+		end)
+
+		it("returns multiplied when piece.isMultiplied is true", function()
+			local piece = { row = 1, col = 1, player = 1, isMultiplied = true }
+			local indicators = Indicators.getPieceIndicators(piece)
+			assert.are.equal(1, #indicators)
+			assert.are.equal("multiplied", indicators[1])
+		end)
 	end)
 end)

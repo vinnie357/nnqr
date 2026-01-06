@@ -741,6 +741,59 @@ function Game.drawPieces()
 				-- Invisible: Subtle shimmer effect (piece is semi-transparent)
 				love.graphics.setColor(0.7, 0.7, 0.9, 0.3)
 				love.graphics.ellipse("fill", x, y - 10, 24, 12)
+			elseif indicator == "climb_tile" then
+				-- Climb Tile: Upward arrows around piece
+				love.graphics.setColor(0.9, 0.7, 0.3, 0.8)
+				love.graphics.setLineWidth(2)
+				local cx, cy = x, y - 10
+				-- Draw small upward arrows
+				for _, dx in ipairs({ -12, 12 }) do
+					love.graphics.line(cx + dx, cy + 5, cx + dx, cy - 8)
+					love.graphics.line(cx + dx - 4, cy - 4, cx + dx, cy - 8)
+					love.graphics.line(cx + dx + 4, cy - 4, cx + dx, cy - 8)
+				end
+				love.graphics.setLineWidth(1)
+			elseif indicator == "flat_to_sphere" then
+				-- Flat to Sphere: Circular wrap indicator
+				love.graphics.setColor(0.8, 0.4, 0.9, 0.7)
+				love.graphics.setLineWidth(2)
+				love.graphics.arc("line", "open", x, y - 10, 26, 0, math.pi * 2)
+				-- Small arrows showing wrap direction
+				love.graphics.setLineWidth(1)
+			elseif indicator == "beneficiary" then
+				-- Beneficiary: Blue plus sign (receives from allies)
+				love.graphics.setColor(0.3, 0.6, 1, 0.9)
+				love.graphics.setLineWidth(3)
+				love.graphics.line(x - 6, y - 24, x + 6, y - 24)
+				love.graphics.line(x, y - 30, x, y - 18)
+				love.graphics.setLineWidth(1)
+			elseif indicator == "scavenger" then
+				-- Scavenger: Red X (receives from enemies)
+				love.graphics.setColor(1, 0.3, 0.3, 0.9)
+				love.graphics.setLineWidth(3)
+				love.graphics.line(x - 5, y - 28, x + 5, y - 20)
+				love.graphics.line(x + 5, y - 28, x - 5, y - 20)
+				love.graphics.setLineWidth(1)
+			elseif indicator == "tripwire" then
+				-- Tripwire: Yellow warning triangle
+				love.graphics.setColor(1, 0.9, 0.2, 0.9)
+				love.graphics.setLineWidth(2)
+				love.graphics.polygon("line", x, y - 30, x - 8, y - 18, x + 8, y - 18)
+				love.graphics.setLineWidth(1)
+			elseif indicator == "inhibited" then
+				-- Inhibited: Red circle with slash (disabled)
+				love.graphics.setColor(1, 0.2, 0.2, 0.8)
+				love.graphics.setLineWidth(2)
+				love.graphics.circle("line", x, y - 24, 8)
+				love.graphics.line(x - 6, y - 18, x + 6, y - 30)
+				love.graphics.setLineWidth(1)
+			elseif indicator == "multiplied" then
+				-- Multiplied: Small "x2" indicator
+				love.graphics.setColor(0.5, 1, 0.5, 0.9)
+				love.graphics.setLineWidth(1)
+				-- Draw a small clone/copy icon
+				love.graphics.rectangle("line", x + 10, y - 28, 8, 8)
+				love.graphics.rectangle("line", x + 13, y - 31, 8, 8)
 			end
 		end
 
