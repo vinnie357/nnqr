@@ -88,12 +88,30 @@ All 83 powers are now wired up through PowerExecutor. Manual testing is needed t
 ---
 
 ### Power Visual Feedback
-Some powers may need custom visual effects beyond the generic animations. Consider adding:
+**Status:** PARTIALLY RESOLVED (commit c440b4c)
+
+Visual status indicators added for:
+- climb_tile, flat_to_sphere, beneficiary, scavenger, tripwire, inhibited, multiplied
+
+Still needed:
 - Terrain modification animations (raise/lower tile feedback)
 - Piece conversion effects (recruit animations)
-- Status effect indicators (invisible, jump_proof, etc.)
 
-### Sound Effects
-Powers currently use generic sound. Consider:
-- Category-specific sounds (offensive, defensive, terrain)
-- Power-specific sounds for dramatic powers (bomb, destroy_row)
+### Sound Effects  
+**Status:** MAPPINGS COMPLETE (sound files needed)
+
+All 83 powers now have category-based sound mappings in `sound_manager.lua`:
+- Destruction: explosion.ogg
+- Teleportation: teleport.ogg
+- Defensive: shield.ogg
+- Recruitment: recruit.ogg
+- Movement: power_up.ogg
+- Terrain: terrain.ogg
+- Power manipulation: magic.ogg
+- Debuffs: debuff.ogg, acid.ogg
+- Information: scan.ogg
+- Traps: trap.ogg
+- Chaos: scramble.ogg
+- Healing: heal.ogg
+
+**TODO:** Create actual .ogg sound files in `assets/sounds/`

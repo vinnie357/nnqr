@@ -13,15 +13,119 @@ SoundManager.EVENT_SOUNDS = {
 	menu_confirm = "menu_confirm.ogg",
 }
 
--- Power to sound file mapping
+-- Power to sound file mapping (category-based)
 SoundManager.POWER_SOUNDS = {
+	-- Destruction powers (explosion sound)
 	bomb = "explosion.ogg",
 	destroy_row = "explosion.ogg",
 	destroy_column = "explosion.ogg",
+	destroy_radial = "explosion.ogg",
+	kamikaze_row = "explosion.ogg",
+	kamikaze_column = "explosion.ogg",
+	kamikaze_radial = "explosion.ogg",
+
+	-- Teleportation powers
 	relocate = "teleport.ogg",
+	hotspot_teleport = "teleport.ogg",
+	centerpult = "teleport.ogg",
+	switcheroo = "teleport.ogg",
+
+	-- Defensive powers (shield sound)
 	jump_proof = "shield.ogg",
+	invisible = "shield.ogg",
+	climb_tile = "shield.ogg",
+
+	-- Recruitment/conversion powers
 	recruit = "recruit.ogg",
+	recruit_row = "recruit.ogg",
+	recruit_column = "recruit.ogg",
+	recruit_radial = "recruit.ogg",
+
+	-- Multiplication/cloning
 	multiply = "multiply.ogg",
+	cancel_multiply = "multiply.ogg",
+
+	-- Movement enhancement
+	move_diagonal = "power_up.ogg",
+	move_again = "power_up.ogg",
+	flat_to_sphere = "power_up.ogg",
+
+	-- Terrain modification
+	raise_tile = "terrain.ogg",
+	lower_tile = "terrain.ogg",
+	trench_row = "terrain.ogg",
+	trench_column = "terrain.ogg",
+	wall_row = "terrain.ogg",
+	wall_column = "terrain.ogg",
+	plateau = "terrain.ogg",
+	moat = "terrain.ogg",
+	refurb = "terrain.ogg",
+
+	-- Power manipulation (magic/mystical sound)
+	double_powers = "magic.ogg",
+	pilfer_row = "magic.ogg",
+	pilfer_column = "magic.ogg",
+	pilfer_radial = "magic.ogg",
+	teach_row = "magic.ogg",
+	teach_column = "magic.ogg",
+	teach_radial = "magic.ogg",
+	learn_row = "magic.ogg",
+	learn_column = "magic.ogg",
+	learn_radial = "magic.ogg",
+	beneficiary = "magic.ogg",
+	scavenger = "magic.ogg",
+	orbic_rehash = "magic.ogg",
+
+	-- Debuff/negative effects
+	acidic_row = "acid.ogg",
+	acidic_column = "acid.ogg",
+	acidic_radial = "acid.ogg",
+	bankrupt_row = "debuff.ogg",
+	bankrupt_column = "debuff.ogg",
+	bankrupt_radial = "debuff.ogg",
+	inhibit_row = "debuff.ogg",
+	inhibit_column = "debuff.ogg",
+	inhibit_radial = "debuff.ogg",
+	parasite_row = "debuff.ogg",
+	parasite_column = "debuff.ogg",
+	parasite_radial = "debuff.ogg",
+
+	-- Information/spy powers
+	spyware_row = "scan.ogg",
+	spyware_column = "scan.ogg",
+	spyware_radial = "scan.ogg",
+	orb_spy_row = "scan.ogg",
+	orb_spy_column = "scan.ogg",
+	orb_spy_radial = "scan.ogg",
+
+	-- Trap powers
+	tripwire_row = "trap.ogg",
+	tripwire_column = "trap.ogg",
+	tripwire_radial = "trap.ogg",
+	smart_bombs = "trap.ogg",
+	hotspot = "trap.ogg",
+
+	-- Scramble/chaos
+	scramble_row = "scramble.ogg",
+	scramble_column = "scramble.ogg",
+	scramble_radial = "scramble.ogg",
+	invert_row = "scramble.ogg",
+	invert_column = "scramble.ogg",
+	invert_radial = "scramble.ogg",
+
+	-- Healing/restoration
+	purify_row = "heal.ogg",
+	purify_column = "heal.ogg",
+	purify_radial = "heal.ogg",
+	refurb_row = "heal.ogg",
+	refurb_column = "heal.ogg",
+	refurb_radial = "heal.ogg",
+	dredge_row = "heal.ogg",
+	dredge_column = "heal.ogg",
+	dredge_radial = "heal.ogg",
+
+	-- Growth/enhancement
+	grow_quadradius = "power_up.ogg",
 }
 
 -- Default sound for powers not in the mapping
