@@ -1616,16 +1616,48 @@ function Game.drawTileHeightAnimation(anim, progress)
 	local verts = Rendering.getTileVertices(x, y)
 	love.graphics.polygon("fill", verts)
 
-	-- Rising/falling particles
-	for i = 1, 6 do
-		local angle = (i / 6) * math.pi * 2
-		local dist = 20
+	-- Ground crack/rumble effect at start of animation
+	if progress < 0.3 then
+		local crackAlpha = (0.3 - progress) / 0.3
+		love.graphics.setColor(0.4, 0.3, 0.2, crackAlpha * 0.8)
+		love.graphics.setLineWidth(2)
+		-- Draw crack lines radiating from center
+		for i = 1, 4 do
+			local angle = (i / 4) * math.pi * 2 + 0.4
+			local len = 15 + math.random() * 10
+			love.graphics.line(x, y, x + math.cos(angle) * len, y + math.sin(angle) * len * 0.5)
+		end
+		love.graphics.setLineWidth(1)
+	end
+
+	-- Rising/falling particles (more particles, varied sizes)
+	for i = 1, 8 do
+		local angle = (i / 8) * math.pi * 2
+		local dist = 18 + (i % 3) * 4
 		local px = x + math.cos(angle) * dist
 		local baseY = y + math.sin(angle) * dist * 0.5
-		local particleOffset = isRaising and (-20 * progress) or (20 * progress)
+		local particleOffset = isRaising and (-25 * progress) or (25 * progress)
+		local size = 2 + (i % 2)
 
 		love.graphics.setColor(isRaising and 0.5 or 1, isRaising and 1 or 0.5, 0.3, 1 - progress)
-		love.graphics.circle("fill", px, baseY + particleOffset, 2)
+		love.graphics.circle("fill", px, baseY + particleOffset, size)
+	end
+
+	-- Dust cloud at base
+	if progress > 0.2 and progress < 0.8 then
+		local dustAlpha = math.sin((progress - 0.2) / 0.6 * math.pi) * 0.4
+		love.graphics.setColor(0.6, 0.5, 0.4, dustAlpha)
+		love.graphics.ellipse("fill", x, y + 5, 25, 8)
+	end
+
+	-- Height indicator arrow
+	local arrowAlpha = 0.8 * (1 - progress)
+	if isRaising then
+		love.graphics.setColor(0.3, 1, 0.5, arrowAlpha)
+		love.graphics.polygon("fill", x, y - 30, x - 8, y - 20, x + 8, y - 20)
+	else
+		love.graphics.setColor(1, 0.5, 0.3, arrowAlpha)
+		love.graphics.polygon("fill", x, y + 10, x - 8, y, x + 8, y)
 	end
 end
 
@@ -1637,22 +1669,61 @@ function Game.drawRecruitAnimation(anim, progress)
 	y = y + Rendering.getHeightOffset(height)
 
 	local r, g, b = Animations.getRecruitColor(anim, progress)
+	local fromPlayer = anim.data.fromPlayer
+	local toPlayer = anim.data.toPlayer
 
-	-- Conversion glow ring
-	love.graphics.setColor(r, g, b, 0.6)
+	-- Get player colors
+	local fromColor = fromPlayer == 1 and Game.colors.player1 or Game.colors.player2
+	local toColor = toPlayer == 1 and Game.colors.player1 or Game.colors.player2
+
+	-- Pulsing conversion aura
+	local pulseScale = 1 + math.sin(progress * math.pi * 6) * 0.1
+	love.graphics.setColor(r, g, b, 0.3 * (1 - progress))
+	love.graphics.ellipse("fill", x, y - 10, 35 * pulseScale, 18 * pulseScale)
+
+	-- Conversion glow ring (shrinking)
+	love.graphics.setColor(r, g, b, 0.8)
 	love.graphics.setLineWidth(3)
-	love.graphics.ellipse("line", x, y - 10, 30 - 5 * progress, 15 - 2.5 * progress)
+	love.graphics.ellipse("line", x, y - 10, 30 - 10 * progress, 15 - 5 * progress)
 	love.graphics.setLineWidth(1)
 
-	-- Spiraling particles
-	for i = 1, 8 do
-		local angle = (i / 8) * math.pi * 2 + progress * math.pi * 4
-		local dist = 25 * (1 - progress * 0.5)
+	-- Color transition effect - old color fading out
+	if progress < 0.5 then
+		local fadeOut = 1 - progress * 2
+		love.graphics.setColor(fromColor[1], fromColor[2], fromColor[3], fadeOut * 0.5)
+		love.graphics.ellipse("fill", x, y - 10 - 15 * progress, 12, 6)
+	end
+
+	-- Color transition effect - new color fading in
+	if progress > 0.3 then
+		local fadeIn = (progress - 0.3) / 0.7
+		love.graphics.setColor(toColor[1], toColor[2], toColor[3], fadeIn * 0.7)
+		love.graphics.ellipse("fill", x, y - 10 + 15 * (1 - progress), 12, 6)
+	end
+
+	-- Spiraling particles (two colors interleaved)
+	for i = 1, 12 do
+		local angle = (i / 12) * math.pi * 2 + progress * math.pi * 6
+		local dist = 28 * (1 - progress * 0.6)
 		local px = x + math.cos(angle) * dist
 		local py = y - 10 + math.sin(angle) * dist * 0.5
 
-		love.graphics.setColor(r, g, b, 1 - progress * 0.5)
+		-- Alternate between old and new color
+		if i % 2 == 0 then
+			local alpha = math.max(0, 1 - progress * 1.5)
+			love.graphics.setColor(fromColor[1], fromColor[2], fromColor[3], alpha)
+		else
+			local alpha = math.min(1, progress * 1.5)
+			love.graphics.setColor(toColor[1], toColor[2], toColor[3], alpha)
+		end
 		love.graphics.circle("fill", px, py, 3)
+	end
+
+	-- Conversion flash at midpoint
+	if progress > 0.4 and progress < 0.6 then
+		local flashAlpha = 1 - math.abs(progress - 0.5) * 10
+		love.graphics.setColor(1, 1, 1, flashAlpha * 0.6)
+		love.graphics.ellipse("fill", x, y - 10, 40, 20)
 	end
 end
 
