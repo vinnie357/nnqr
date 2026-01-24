@@ -25,67 +25,16 @@ description = "Check Lua code formatting"
 run = "stylua --check --glob '**/*.lua' --glob '!lib/**' --glob '!test/**' ."
 
 [tasks.setup]
-description = "Install luarocks and busted (platform-aware)"
+description = "Install busted test framework"
 run = """
 #!/usr/bin/env nu
 
-let luarocks_version = "3.12.2"
-let install_dir = $"($env.HOME)/.local/bin"
-
-# Check if luarocks already installed
-if (which luarocks | is-not-empty) {
-    print "✅ luarocks already installed"
-} else {
-    print "📦 Installing luarocks..."
-    mkdir $install_dir
-
-    if $nu.os-info.name == "linux" {
-        # Linux: use prebuilt binary
-        let url = $"https://github.com/luarocks/luarocks/releases/download/v($luarocks_version)/luarocks-($luarocks_version)-linux-x86_64.zip"
-        let tmp_dir = (mktemp -d)
-
-        print $"Downloading binary from ($url)..."
-        http get $url | save $"($tmp_dir)/luarocks.zip"
-
-        cd $tmp_dir
-        unzip -q luarocks.zip
-        cp $"luarocks-($luarocks_version)-linux-x86_64/luarocks" $install_dir
-        chmod +x $"($install_dir)/luarocks"
-
-        cd ~
-        rm -rf $tmp_dir
-        print $"✅ luarocks binary installed to ($install_dir)"
-    } else {
-        # macOS: build from source (no binary available)
-        print "No macOS binary available, building from source..."
-
-        let url = $"https://luarocks.org/releases/luarocks-($luarocks_version).tar.gz"
-        let tmp_dir = (mktemp -d)
-
-        http get $url | save $"($tmp_dir)/luarocks.tar.gz"
-
-        cd $tmp_dir
-        tar -xzf luarocks.tar.gz
-        cd $"luarocks-($luarocks_version)"
-
-        let lua_path = (which lua | get 0.path | path dirname | path dirname)
-        ./configure --prefix=($env.HOME)/.local --with-lua-include=($lua_path)/include
-        make
-        make install
-
-        cd ~
-        rm -rf $tmp_dir
-        print $"✅ luarocks built and installed to ($install_dir)"
-    }
-}
-
-# Install busted (use mise exec to ensure Lua is in PATH)
 print "📦 Installing busted..."
-# Use --tree for root (Docker), --local for regular users
+# Use --tree for root (CI/Docker), --local for regular users
 if (id -u | into int) == 0 {
-    mise exec -- luarocks install busted --tree ~/.luarocks
+    luarocks install busted --tree ~/.luarocks
 } else {
-    mise exec -- luarocks install busted --local
+    luarocks install busted --local
 }
 print "✅ busted installed"
 """

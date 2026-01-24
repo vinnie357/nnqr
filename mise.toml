@@ -252,6 +252,14 @@ description = "Test GitHub action for pull_request workflow"
 run = """
 #!/usr/bin/env nu
 
+let colima_socket = $"($env.HOME)/.colima/docker.sock"
+let use_colima = ($colima_socket | path exists)
+
+# Set DOCKER_HOST for colima
+if $use_colima {
+    $env.DOCKER_HOST = $"unix://($colima_socket)"
+}
+
 let act_flags = if $nu.os-info.name == "macos" {
     [
         "--container-architecture" "linux/amd64"
@@ -271,6 +279,14 @@ act pull_request ...$act_flags
 description = "Test GitHub action for push to main workflow"
 run = """
 #!/usr/bin/env nu
+
+let colima_socket = $"($env.HOME)/.colima/docker.sock"
+let use_colima = ($colima_socket | path exists)
+
+# Set DOCKER_HOST for colima
+if $use_colima {
+    $env.DOCKER_HOST = $"unix://($colima_socket)"
+}
 
 let act_flags = if $nu.os-info.name == "macos" {
     [
