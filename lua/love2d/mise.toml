@@ -97,7 +97,7 @@ description = "Run Lua unit tests with busted"
 depends = ["setup"]
 run = """
 export PATH="$HOME/.luarocks/bin:$PATH"
-export LUA_PATH="$HOME/.luarocks/share/lua/5.1/?.lua;$HOME/.luarocks/share/lua/5.1/?/init.lua;./?.lua;./src/?.lua;;"
+export LUA_PATH="$HOME/.luarocks/share/lua/5.1/?.lua;$HOME/.luarocks/share/lua/5.1/?/init.lua;./?.lua;./src/?.lua;./src/client/?.lua;./server/?.lua;;"
 export LUA_CPATH="$HOME/.luarocks/lib/lua/5.1/?.so;;"
 busted spec/
 """
@@ -109,3 +109,13 @@ depends = ["check", "test-busted"]
 [tasks.precommit]
 description = "Alias for ci task"
 depends = ["ci"]
+
+[tasks.server]
+description = "Run NNQR multiplayer server (headless)"
+dir = "server"
+run = "love ."
+
+[tasks.server-gui]
+description = "Run NNQR multiplayer server with GUI"
+dir = "server"
+run = "love . --gui"
