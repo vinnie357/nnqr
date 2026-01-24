@@ -52,6 +52,7 @@ if (which luarocks | is-not-empty) {
         cp $"luarocks-($luarocks_version)-linux-x86_64/luarocks" $install_dir
         chmod +x $"($install_dir)/luarocks"
 
+        cd ~
         rm -rf $tmp_dir
         print $"✅ luarocks binary installed to ($install_dir)"
     } else {
@@ -72,6 +73,7 @@ if (which luarocks | is-not-empty) {
         make
         make install
 
+        cd ~
         rm -rf $tmp_dir
         print $"✅ luarocks built and installed to ($install_dir)"
     }
