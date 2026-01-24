@@ -31,10 +31,11 @@ run = """
 
 print "📦 Installing busted..."
 # Use --tree for root (CI/Docker), --local for regular users
+# Use mise exec to ensure luarocks (bundled with lua) is in PATH
 if (id -u | into int) == 0 {
-    luarocks install busted --tree ~/.luarocks
+    mise exec -- luarocks install busted --tree ~/.luarocks
 } else {
-    luarocks install busted --local
+    mise exec -- luarocks install busted --local
 }
 print "✅ busted installed"
 """
