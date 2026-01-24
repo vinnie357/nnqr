@@ -17,6 +17,12 @@ local Particles = require("src.shared.particles")
 local ParticleConfig = require("src.shared.particle_config")
 local AI = require("src.shared.ai.ai")
 
+-- Multiplayer modules (optional - may not have luasocket)
+local Multiplayer
+local hasMultiplayer = pcall(function()
+	Multiplayer = require("src.client.multiplayer")
+end)
+
 local Game = {}
 
 -- Game state (managed by GameLogic)
@@ -56,6 +62,9 @@ Game.particles = nil
 Game.ai = nil -- AI state (nil for 2-player, or AI.create() for vs AI)
 Game.aiThinkingTimer = 0 -- Delay before AI moves
 Game.aiThinkingDelay = 0.8 -- Seconds to wait before AI makes move
+
+-- Multiplayer state
+Game.multiplayer = nil -- Multiplayer state (nil for local games)
 
 -- Turn banner state
 Game.turnBanner = {
@@ -119,6 +128,9 @@ function Game.init()
 	-- Reset AI state
 	Game.ai = nil
 	Game.aiThinkingTimer = 0
+
+	-- Reset multiplayer state
+	Game.multiplayer = nil
 end
 
 --- Start a new game against AI
@@ -134,6 +146,30 @@ function Game.startTwoPlayer()
 	Game.init()
 	Game.ai = nil
 	UI.setScreen(Game.uiState, "playing")
+end
+
+--- Start multiplayer mode (go to connect screen)
+function Game.startMultiplayer()
+	if not hasMultiplayer then
+		-- Multiplayer not available
+		return false
+	end
+	Game.multiplayer = Multiplayer.create()
+	Multiplayer.init(Game.multiplayer, "Player")
+	UI.setScreen(Game.uiState, "mpconnect")
+	return true
+end
+
+--- Check if in multiplayer mode
+---@return boolean
+function Game.isMultiplayer()
+	return Game.multiplayer ~= nil and Multiplayer.isConnected(Game.multiplayer)
+end
+
+--- Check if multiplayer is available
+---@return boolean
+function Game.hasMultiplayerSupport()
+	return hasMultiplayer
 end
 
 --- Check if current game is against AI
@@ -243,6 +279,14 @@ function Game.update(dt)
 		Game.turnBanner.timer = Game.turnBanner.timer + dt
 		if Game.turnBanner.timer >= Game.turnBanner.duration then
 			Game.turnBanner.active = false
+		end
+	end
+
+	-- Update multiplayer networking
+	if Game.multiplayer and Multiplayer.isConnected(Game.multiplayer) then
+		local event = Multiplayer.update(Game.multiplayer)
+		if event then
+			Game.handleMultiplayerEvent(event)
 		end
 	end
 
@@ -366,6 +410,14 @@ function Game.draw()
 	elseif screen == "confirm" then
 		Game.drawPlayingScreen() -- Draw board in background
 		Game.drawConfirmScreen()
+	elseif screen == "mpconnect" then
+		Game.drawMPConnectScreen()
+	elseif screen == "mplobby" then
+		Game.drawMPLobbyScreen()
+	elseif screen == "mpwaiting" then
+		Game.drawMPWaitingScreen()
+	elseif screen == "mpopponent" then
+		Game.drawMPOpponentScreen()
 	end
 end
 
@@ -1957,6 +2009,19 @@ function Game.mousepressed(x, y, button)
 
 				if isValid then
 					local movingPiece = Game.state.selectedPiece
+
+					-- Server-side AI game: send move to server instead of local execution
+					if Game.serverAIGame and Game.multiplayer then
+						local from = { col = movingPiece.col, row = movingPiece.row }
+						local to = { col = col, row = row }
+						Multiplayer.sendMove(Game.multiplayer, from, to)
+						-- Clear selection - server will respond with updated GAME_STATE
+						Game.state.selectedPiece = nil
+						Game.state.validMoves = {}
+						return
+					end
+
+					-- Local game: execute move directly
 					local targetPiece = GameLogic.getPieceAt(Game.state, row, col)
 					Game.state = GameLogic.movePiece(Game.state, movingPiece, row, col)
 
@@ -2087,6 +2152,18 @@ function Game.keypressed(key)
 	elseif screen == "confirm" then
 		Game.handleConfirmInput(key)
 		return
+	elseif screen == "mpconnect" then
+		Game.handleMPConnectInput(key)
+		return
+	elseif screen == "mplobby" then
+		Game.handleMPLobbyInput(key)
+		return
+	elseif screen == "mpwaiting" then
+		Game.handleMPWaitingInput(key)
+		return
+	elseif screen == "mpopponent" then
+		Game.handleMPOpponentInput(key)
+		return
 	end
 
 	-- Playing screen input
@@ -2178,6 +2255,16 @@ function Game.handleGameModeInput(key)
 			Game.showTurnBanner(1)
 		elseif selected == "VS AI" then
 			UI.setScreen(Game.uiState, "aiselect")
+		elseif selected == "Multiplayer" then
+			if Game.startMultiplayer() then
+				-- Multiplayer started successfully
+			else
+				-- Show error - multiplayer not available
+				Game.multiplayer = Game.multiplayer or {}
+				if Game.multiplayer then
+					Game.multiplayer.errorMessage = "Multiplayer requires luasocket"
+				end
+			end
 		elseif selected == "Back" then
 			UI.setScreen(Game.uiState, "menu")
 		end
@@ -2554,5 +2641,695 @@ function Game.getMaxPowerCount(piece)
 end
 
 function Game.wheelmoved(x, y) end
+
+-- Multiplayer Connect Screen
+function Game.drawMPConnectScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+	local font = love.graphics.getFont()
+
+	-- Dark background
+	love.graphics.setColor(0.1, 0.12, 0.15)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Title
+	local titleY = screenH * 0.12
+	love.graphics.setColor(1, 1, 1)
+	local title = "MULTIPLAYER"
+	love.graphics.print(title, (screenW - font:getWidth(title)) / 2, titleY)
+
+	-- Connection form
+	local formY = screenH * 0.25
+	local formX = screenW * 0.3
+	local labelWidth = 120
+	local fieldWidth = 200
+	local fieldHeight = 28
+	local spacing = 45
+
+	-- Field indices for navigation
+	local fields = { "name", "host", "port" }
+	local fieldIndex = 1
+	for i, f in ipairs(fields) do
+		if Game.multiplayer and Game.multiplayer.inputField == f then
+			fieldIndex = i
+			break
+		end
+	end
+
+	-- Player Name field
+	local y = formY
+	love.graphics.setColor(0.8, 0.8, 0.8)
+	love.graphics.print("Player Name:", formX, y + 5)
+	Game.drawInputField(
+		formX + labelWidth,
+		y,
+		fieldWidth,
+		fieldHeight,
+		Game.multiplayer and Game.multiplayer.playerName or "Player",
+		fieldIndex == 1
+	)
+
+	-- Server Host field
+	y = y + spacing
+	love.graphics.setColor(0.8, 0.8, 0.8)
+	love.graphics.print("Server:", formX, y + 5)
+	Game.drawInputField(
+		formX + labelWidth,
+		y,
+		fieldWidth,
+		fieldHeight,
+		Game.multiplayer and Game.multiplayer.serverHost or "localhost",
+		fieldIndex == 2
+	)
+
+	-- Port field
+	y = y + spacing
+	love.graphics.setColor(0.8, 0.8, 0.8)
+	love.graphics.print("Port:", formX, y + 5)
+	Game.drawInputField(
+		formX + labelWidth,
+		y,
+		fieldWidth,
+		fieldHeight,
+		Game.multiplayer and tostring(Game.multiplayer.serverPort) or "7777",
+		fieldIndex == 3
+	)
+
+	-- Status/Error messages
+	y = y + spacing + 20
+	if Game.multiplayer and Game.multiplayer.errorMessage and #Game.multiplayer.errorMessage > 0 then
+		love.graphics.setColor(1, 0.4, 0.4)
+		love.graphics.print(Game.multiplayer.errorMessage, (screenW - font:getWidth(Game.multiplayer.errorMessage)) / 2, y)
+	elseif Game.multiplayer and Game.multiplayer.statusMessage and #Game.multiplayer.statusMessage > 0 then
+		love.graphics.setColor(0.4, 0.8, 0.4)
+		love.graphics.print(Game.multiplayer.statusMessage, (screenW - font:getWidth(Game.multiplayer.statusMessage)) / 2, y)
+	end
+
+	-- Buttons
+	local buttonY = screenH * 0.65
+	local buttonW = 120
+	local buttonH = 35
+	local buttonSpacing = 30
+
+	-- Connect button
+	local connectX = screenW / 2 - buttonW - buttonSpacing / 2
+	Game.drawButton(connectX, buttonY, buttonW, buttonH, "Connect", fieldIndex == 4)
+
+	-- Back button
+	local backX = screenW / 2 + buttonSpacing / 2
+	Game.drawButton(backX, buttonY, buttonW, buttonH, "Back", fieldIndex == 5)
+
+	-- Controls hint
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	local hint = "Tab/Arrow keys to navigate, Enter to connect/select, Escape to go back"
+	love.graphics.print(hint, (screenW - font:getWidth(hint)) / 2, screenH - 50)
+end
+
+-- Multiplayer Lobby Screen
+function Game.drawMPLobbyScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+	local font = love.graphics.getFont()
+
+	-- Dark background
+	love.graphics.setColor(0.1, 0.12, 0.15)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Title
+	local titleY = screenH * 0.08
+	love.graphics.setColor(1, 1, 1)
+	local title = "GAME LOBBY"
+	love.graphics.print(title, (screenW - font:getWidth(title)) / 2, titleY)
+
+	-- Connection status
+	local statusY = titleY + 30
+	love.graphics.setColor(0.4, 0.8, 0.4)
+	local status = "Connected as: " .. (Game.multiplayer and Game.multiplayer.playerName or "Player")
+	love.graphics.print(status, (screenW - font:getWidth(status)) / 2, statusY)
+
+	-- Game list panel
+	local listX = screenW * 0.15
+	local listY = screenH * 0.2
+	local listW = screenW * 0.7
+	local listH = screenH * 0.45
+	local itemH = 35
+
+	-- Panel background
+	love.graphics.setColor(0.15, 0.17, 0.2)
+	love.graphics.rectangle("fill", listX, listY, listW, listH, 8, 8)
+	love.graphics.setColor(0.3, 0.3, 0.35)
+	love.graphics.rectangle("line", listX, listY, listW, listH, 8, 8)
+
+	-- Header
+	love.graphics.setColor(0.6, 0.6, 0.7)
+	love.graphics.print("Available Games", listX + 10, listY + 10)
+
+	-- Game list
+	local games = Game.multiplayer and Multiplayer.getWaitingGames(Game.multiplayer) or {}
+	local selectedIndex = Game.multiplayer and Game.multiplayer.selectedGameIndex or 1
+
+	if #games == 0 then
+		love.graphics.setColor(0.5, 0.5, 0.5)
+		love.graphics.print("No games available. Create one!", listX + 10, listY + 50)
+	else
+		for i, game in ipairs(games) do
+			local itemY = listY + 40 + (i - 1) * itemH
+			if itemY + itemH > listY + listH - 10 then
+				break -- Don't draw beyond panel
+			end
+
+			-- Selection highlight
+			if i == selectedIndex then
+				love.graphics.setColor(0.3, 0.5, 0.8, 0.5)
+				love.graphics.rectangle("fill", listX + 5, itemY, listW - 10, itemH - 5, 4, 4)
+			end
+
+			-- Game info
+			love.graphics.setColor(1, 1, 1)
+			local gameText = game.name or ("Game " .. (game.id or "?"))
+			if game.host then
+				gameText = gameText .. " (by " .. game.host .. ")"
+			end
+			love.graphics.print(gameText, listX + 15, itemY + 8)
+		end
+	end
+
+	-- Error message
+	if Game.multiplayer and Game.multiplayer.errorMessage and #Game.multiplayer.errorMessage > 0 then
+		love.graphics.setColor(1, 0.4, 0.4)
+		local errY = listY + listH + 10
+		love.graphics.print(Game.multiplayer.errorMessage, (screenW - font:getWidth(Game.multiplayer.errorMessage)) / 2, errY)
+	end
+
+	-- Buttons
+	local buttonY = screenH * 0.72
+	local buttonW = 100
+	local buttonH = 32
+	local buttonSpacing = 15
+	local totalButtonW = buttonW * 4 + buttonSpacing * 3
+	local buttonStartX = (screenW - totalButtonW) / 2
+
+	Game.drawButton(buttonStartX, buttonY, buttonW, buttonH, "Create", false)
+	Game.drawButton(buttonStartX + buttonW + buttonSpacing, buttonY, buttonW, buttonH, "Join", false)
+	Game.drawButton(buttonStartX + (buttonW + buttonSpacing) * 2, buttonY, buttonW, buttonH, "Refresh", false)
+	Game.drawButton(buttonStartX + (buttonW + buttonSpacing) * 3, buttonY, buttonW, buttonH, "Disconnect", false)
+
+	-- Controls hint
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	local hint = "Up/Down to select, C=Create, J=Join, R=Refresh, Escape=Disconnect"
+	love.graphics.print(hint, (screenW - font:getWidth(hint)) / 2, screenH - 50)
+end
+
+-- Multiplayer Waiting Screen
+function Game.drawMPWaitingScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+	local font = love.graphics.getFont()
+
+	-- Dark background
+	love.graphics.setColor(0.1, 0.12, 0.15)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Title
+	local titleY = screenH * 0.25
+	love.graphics.setColor(1, 1, 1)
+	local title = "WAITING FOR OPPONENT"
+	love.graphics.print(title, (screenW - font:getWidth(title)) / 2, titleY)
+
+	-- Animated dots
+	local dots = string.rep(".", math.floor(love.timer.getTime() * 2) % 4)
+	love.graphics.setColor(0.7, 0.7, 0.7)
+	love.graphics.print(dots, (screenW - font:getWidth("...")) / 2, titleY + 30)
+
+	-- Available players count
+	local availableY = screenH * 0.4
+	local availablePlayers = 0
+	if Game.multiplayer then
+		availablePlayers = Multiplayer.getAvailablePlayerCount(Game.multiplayer)
+	end
+	if availablePlayers > 0 then
+		love.graphics.setColor(0.4, 0.8, 0.4)
+		local availableText = string.format("%d player%s available", availablePlayers, availablePlayers == 1 and "" or "s")
+		love.graphics.print(availableText, (screenW - font:getWidth(availableText)) / 2, availableY)
+	else
+		love.graphics.setColor(0.8, 0.5, 0.3)
+		local noPlayersText = "No other players available"
+		love.graphics.print(noPlayersText, (screenW - font:getWidth(noPlayersText)) / 2, availableY)
+	end
+
+	-- Game info
+	local infoY = screenH * 0.5
+	love.graphics.setColor(0.6, 0.6, 0.7)
+	local infoText = "You created a game. Waiting for someone to join..."
+	love.graphics.print(infoText, (screenW - font:getWidth(infoText)) / 2, infoY)
+
+	-- AI option hint
+	local aiHintY = screenH * 0.6
+	love.graphics.setColor(0.5, 0.8, 0.5)
+	local aiHint = "Press A to play vs AI instead"
+	love.graphics.print(aiHint, (screenW - font:getWidth(aiHint)) / 2, aiHintY)
+
+	-- Cancel button hint
+	local hintY = screenH * 0.75
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	local hint = "Press Escape to cancel and return to lobby"
+	love.graphics.print(hint, (screenW - font:getWidth(hint)) / 2, hintY)
+end
+
+-- Helper: Draw input field
+function Game.drawInputField(x, y, w, h, text, selected)
+	-- Background
+	if selected then
+		love.graphics.setColor(0.25, 0.27, 0.32)
+	else
+		love.graphics.setColor(0.18, 0.2, 0.24)
+	end
+	love.graphics.rectangle("fill", x, y, w, h, 4, 4)
+
+	-- Border
+	if selected then
+		love.graphics.setColor(0.4, 0.6, 0.9)
+	else
+		love.graphics.setColor(0.35, 0.35, 0.4)
+	end
+	love.graphics.rectangle("line", x, y, w, h, 4, 4)
+
+	-- Text
+	love.graphics.setColor(1, 1, 1)
+	love.graphics.print(text, x + 8, y + 6)
+
+	-- Cursor for selected field
+	if selected then
+		local cursorX = x + 8 + love.graphics.getFont():getWidth(text)
+		local blink = math.floor(love.timer.getTime() * 2) % 2 == 0
+		if blink then
+			love.graphics.setColor(1, 1, 1)
+			love.graphics.rectangle("fill", cursorX, y + 5, 2, h - 10)
+		end
+	end
+end
+
+-- Helper: Draw button
+function Game.drawButton(x, y, w, h, text, selected)
+	-- Background
+	if selected then
+		love.graphics.setColor(0.3, 0.5, 0.8)
+	else
+		love.graphics.setColor(0.25, 0.27, 0.32)
+	end
+	love.graphics.rectangle("fill", x, y, w, h, 5, 5)
+
+	-- Border
+	love.graphics.setColor(0.4, 0.4, 0.45)
+	love.graphics.rectangle("line", x, y, w, h, 5, 5)
+
+	-- Text
+	love.graphics.setColor(1, 1, 1)
+	local font = love.graphics.getFont()
+	local textW = font:getWidth(text)
+	local textH = font:getHeight()
+	love.graphics.print(text, x + (w - textW) / 2, y + (h - textH) / 2)
+end
+
+-- Multiplayer Connect Input Handler
+function Game.handleMPConnectInput(key)
+	if not Game.multiplayer then
+		return
+	end
+
+	local fields = { "name", "host", "port" }
+	local currentIndex = 1
+	for i, f in ipairs(fields) do
+		if Game.multiplayer.inputField == f then
+			currentIndex = i
+			break
+		end
+	end
+
+	if key == "tab" or key == "down" then
+		-- Cycle through fields
+		currentIndex = currentIndex + 1
+		if currentIndex > #fields then
+			currentIndex = 1
+		end
+		Multiplayer.setInputField(Game.multiplayer, fields[currentIndex])
+	elseif key == "up" then
+		currentIndex = currentIndex - 1
+		if currentIndex < 1 then
+			currentIndex = #fields
+		end
+		Multiplayer.setInputField(Game.multiplayer, fields[currentIndex])
+	elseif key == "backspace" then
+		Multiplayer.backspace(Game.multiplayer)
+	elseif key == "return" then
+		-- Connect to server
+		Multiplayer.clearError(Game.multiplayer)
+		local success = Multiplayer.connect(Game.multiplayer)
+		if success then
+			-- Request lobby state
+			Multiplayer.requestLobby(Game.multiplayer)
+			UI.setScreen(Game.uiState, "mplobby")
+		end
+	elseif key == "escape" then
+		-- Go back to game mode selection
+		Game.multiplayer = nil
+		UI.setScreen(Game.uiState, "gamemode")
+	end
+end
+
+-- Multiplayer Lobby Input Handler
+function Game.handleMPLobbyInput(key)
+	if not Game.multiplayer then
+		return
+	end
+
+	if key == "up" then
+		Multiplayer.selectPrevGame(Game.multiplayer)
+	elseif key == "down" then
+		Multiplayer.selectNextGame(Game.multiplayer)
+	elseif key == "c" then
+		-- Go to opponent selection screen
+		UI.setScreen(Game.uiState, "mpopponent")
+	elseif key == "j" or key == "return" then
+		-- Join selected game
+		local game = Multiplayer.getSelectedGame(Game.multiplayer)
+		if game and game.id then
+			Multiplayer.clearError(Game.multiplayer)
+			Multiplayer.joinGame(Game.multiplayer, game.id)
+		end
+	elseif key == "r" then
+		-- Refresh lobby
+		Multiplayer.requestLobby(Game.multiplayer)
+	elseif key == "escape" then
+		-- Disconnect and go back
+		Multiplayer.disconnect(Game.multiplayer)
+		Game.multiplayer = nil
+		UI.setScreen(Game.uiState, "gamemode")
+	end
+end
+
+-- Multiplayer Waiting Input Handler
+function Game.handleMPWaitingInput(key)
+	if not Game.multiplayer then
+		return
+	end
+
+	if key == "escape" then
+		-- Cancel waiting - leave game and return to lobby
+		Multiplayer.leaveGame(Game.multiplayer)
+		UI.setScreen(Game.uiState, "mplobby")
+	elseif key == "a" then
+		-- Switch to local AI game instead of waiting
+		Multiplayer.leaveGame(Game.multiplayer)
+		Multiplayer.disconnect(Game.multiplayer)
+		Game.multiplayer = nil
+		-- Start with medium difficulty by default
+		Game.startVsAI("medium")
+		UI.setScreen(Game.uiState, "playing")
+		Game.showTurnBanner(1)
+	end
+end
+
+-- Text input handler for multiplayer fields
+function Game.textinput(text)
+	local screen = UI.getScreen(Game.uiState)
+
+	if screen == "mpconnect" and Game.multiplayer then
+		Multiplayer.textInput(Game.multiplayer, text)
+	end
+end
+
+-- Handle multiplayer events from network
+function Game.handleMultiplayerEvent(event)
+	if not Game.multiplayer then
+		return
+	end
+
+	local screen = UI.getScreen(Game.uiState)
+
+	if event == "game_started" then
+		-- Game started! Initialize game state and switch to playing
+		Game.init()
+		Game.ai = nil -- Not vs AI
+		-- Sync game state from server if available
+		if Game.multiplayer.gameState then
+			Game.applyServerGameState(Game.multiplayer.gameState)
+		end
+		UI.setScreen(Game.uiState, "playing")
+		Game.showTurnBanner(1)
+	elseif event == "game_state_updated" then
+		-- Game state updated (e.g., after our move or AI move)
+		if Game.multiplayer.gameState then
+			local previousPlayer = Game.state.currentPlayer
+			Game.applyServerGameState(Game.multiplayer.gameState)
+			-- Show turn banner if player changed
+			if Game.state.currentPlayer ~= previousPlayer then
+				Game.showTurnBanner(Game.state.currentPlayer)
+			end
+			-- Check for game over
+			if Game.state.gameState == "gameover" then
+				UI.setScreen(Game.uiState, "gameover")
+			end
+		end
+	elseif event == "ai_game_created" then
+		-- AI game created on server - initialize and sync with server state
+		Game.init()
+		Game.ai = nil -- AI is on server, not local
+		-- Mark this as a server-side AI game
+		Game.serverAIGame = true
+
+		-- Apply server game state (surgically update deltas)
+		if Game.multiplayer.gameState then
+			Game.applyServerGameState(Game.multiplayer.gameState)
+		end
+
+		UI.setScreen(Game.uiState, "playing")
+		Game.showTurnBanner(1)
+	elseif event == "game_joined" then
+		-- We joined a game, wait for game state
+		if screen == "mplobby" then
+			UI.setScreen(Game.uiState, "mpwaiting")
+		end
+	elseif event == "game_over" then
+		-- Game ended
+		if Game.multiplayer.gameState then
+			Game.state.gameState = "gameover"
+			Game.state.winner = Game.multiplayer.gameState.winner
+		end
+		UI.setScreen(Game.uiState, "gameover")
+	elseif event == "disconnected" then
+		-- Lost connection to server
+		if screen == "mplobby" or screen == "mpwaiting" or screen == "playing" or screen == "mpopponent" then
+			UI.setScreen(Game.uiState, "mpconnect")
+		end
+	elseif event == "lobby_updated" then
+		-- Lobby state refreshed - nothing special needed
+	elseif event == "error" then
+		-- Error occurred - message is already set in multiplayer.errorMessage
+	end
+end
+
+-- Multiplayer Opponent Selection Screen (Phase 4: AI Practice)
+function Game.drawMPOpponentScreen()
+	local screenW = love.graphics.getWidth()
+	local screenH = love.graphics.getHeight()
+	local font = love.graphics.getFont()
+
+	-- Dark background
+	love.graphics.setColor(0.1, 0.12, 0.15)
+	love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+	-- Title
+	local titleY = screenH * 0.12
+	love.graphics.setColor(1, 1, 1)
+	local title = "CREATE GAME"
+	love.graphics.print(title, (screenW - font:getWidth(title)) / 2, titleY)
+
+	-- Subtitle
+	love.graphics.setColor(0.7, 0.7, 0.7)
+	local subtitle = "Select opponent type"
+	love.graphics.print(subtitle, (screenW - font:getWidth(subtitle)) / 2, titleY + 25)
+
+	-- Menu items
+	local menuItems = UI.getMenuItems(Game.uiState)
+	local menuY = screenH * 0.28
+	local itemSpacing = 38
+
+	for i, item in ipairs(menuItems) do
+		local itemY = menuY + (i - 1) * itemSpacing
+		local isSelected = i == Game.uiState.selectedIndex
+
+		-- Draw separator before AI Practice options
+		if i == 2 then
+			love.graphics.setColor(0.3, 0.3, 0.35)
+			love.graphics.line(screenW / 2 - 100, itemY - 10, screenW / 2 + 100, itemY - 10)
+		end
+
+		-- Draw separator before Cancel
+		if i == #menuItems then
+			love.graphics.setColor(0.3, 0.3, 0.35)
+			love.graphics.line(screenW / 2 - 100, itemY - 10, screenW / 2 + 100, itemY - 10)
+		end
+
+		if isSelected then
+			-- Highlight background
+			love.graphics.setColor(0.3, 0.5, 0.8, 0.5)
+			love.graphics.rectangle("fill", screenW / 2 - 120, itemY - 5, 240, 32, 5, 5)
+			love.graphics.setColor(1, 1, 1)
+			love.graphics.print("> " .. item, (screenW - font:getWidth("> " .. item)) / 2, itemY)
+		else
+			-- Color AI Practice items differently
+			if item:match("^AI Practice") then
+				love.graphics.setColor(0.6, 0.8, 0.6)
+			else
+				love.graphics.setColor(0.7, 0.7, 0.7)
+			end
+			love.graphics.print(item, (screenW - font:getWidth(item)) / 2, itemY)
+		end
+	end
+
+	-- Available players info
+	local availableY = screenH * 0.78
+	local availablePlayers = 0
+	if Game.multiplayer then
+		availablePlayers = Multiplayer.getAvailablePlayerCount and Multiplayer.getAvailablePlayerCount(Game.multiplayer) or 0
+	end
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	local availableText = string.format("%d player%s available", availablePlayers, availablePlayers == 1 and "" or "s")
+	love.graphics.print(availableText, (screenW - font:getWidth(availableText)) / 2, availableY)
+
+	-- Controls hint
+	love.graphics.setColor(0.5, 0.5, 0.5)
+	local hint = "Up/Down to navigate, Enter to select, Escape to cancel"
+	love.graphics.print(hint, (screenW - font:getWidth(hint)) / 2, screenH - 50)
+end
+
+-- Multiplayer Opponent Selection Input Handler
+function Game.handleMPOpponentInput(key)
+	if not Game.multiplayer then
+		return
+	end
+
+	if key == "up" then
+		UI.selectPrev(Game.uiState)
+	elseif key == "down" then
+		UI.selectNext(Game.uiState)
+	elseif key == "return" or key == "space" then
+		local selected = UI.getSelectedMenuItem(Game.uiState)
+		if selected == "Wait for Player" then
+			-- Create game and wait for human opponent
+			Multiplayer.clearError(Game.multiplayer)
+			local gameName = Game.multiplayer.playerName .. "'s Game"
+			Multiplayer.createGame(Game.multiplayer, gameName)
+			UI.setScreen(Game.uiState, "mpwaiting")
+		elseif selected == "AI Practice - Easy" then
+			Game.startMultiplayerAIGame("easy")
+		elseif selected == "AI Practice - Medium" then
+			Game.startMultiplayerAIGame("medium")
+		elseif selected == "AI Practice - Hard" then
+			Game.startMultiplayerAIGame("hard")
+		elseif selected == "AI Practice - Expert" then
+			Game.startMultiplayerAIGame("expert")
+		elseif selected == "Cancel" then
+			UI.setScreen(Game.uiState, "mplobby")
+		end
+	elseif key == "escape" then
+		UI.setScreen(Game.uiState, "mplobby")
+	end
+end
+
+-- Start multiplayer AI practice game
+function Game.startMultiplayerAIGame(difficulty)
+	if not Game.multiplayer then
+		return
+	end
+
+	-- TODO: Send CREATE_AI_GAME to server and handle response
+	-- For now, fall back to local AI game with multiplayer context
+	Multiplayer.clearError(Game.multiplayer)
+
+	-- Check if multiplayer module supports AI games
+	if Multiplayer.createAIGame then
+		Multiplayer.createAIGame(Game.multiplayer, difficulty)
+		-- Server will respond with AI_GAME_CREATED, then GAME_STATE
+	else
+		-- Fallback: disconnect and play local AI game
+		Multiplayer.disconnect(Game.multiplayer)
+		Game.multiplayer = nil
+		Game.startVsAI(difficulty)
+		UI.setScreen(Game.uiState, "playing")
+		Game.showTurnBanner(1)
+	end
+end
+
+--- Apply server game state to local state (surgical delta update)
+---@param serverState table Server game state
+function Game.applyServerGameState(serverState)
+	if not serverState then
+		return
+	end
+
+	-- Track game ID for future server communication
+	Game.serverGameId = serverState.game_id
+
+	-- Update turn info
+	if serverState.turn then
+		Game.state.turn = serverState.turn
+	end
+	if serverState.current_player then
+		Game.state.currentPlayer = serverState.current_player
+	end
+
+	-- Update winner/game over state
+	if serverState.winner then
+		Game.state.winner = serverState.winner
+	end
+	if serverState.game_over then
+		Game.state.gameState = "gameover"
+	end
+
+	-- Update board heights from tiles
+	if serverState.board and serverState.board.tiles then
+		for _, tile in ipairs(serverState.board.tiles) do
+			if tile.height then
+				GameLogic.setHeight(Game.state, tile.row, tile.col, tile.height)
+			end
+			if tile.destroyed then
+				Game.state.destroyedTiles[tile.row .. "," .. tile.col] = true
+			end
+		end
+	end
+
+	-- Update pieces
+	if serverState.pieces then
+		Game.state.pieces = {}
+		for _, sp in ipairs(serverState.pieces) do
+			local piece = {
+				col = sp.col,
+				row = sp.row,
+				player = sp.player,
+				powers = sp.powers or {},
+				canMoveDiagonally = sp.canMoveDiagonally,
+				isJumpProof = sp.isJumpProof,
+				isInvisible = not sp.visible,
+			}
+			table.insert(Game.state.pieces, piece)
+		end
+	end
+
+	-- Update orbs if present in tile data
+	if serverState.board and serverState.board.tiles then
+		Game.orbs = {}
+		for _, tile in ipairs(serverState.board.tiles) do
+			if tile.orb then
+				table.insert(Game.orbs, {
+					row = tile.row,
+					col = tile.col,
+					power_id = tile.orb,
+				})
+			end
+		end
+	end
+end
 
 return Game
