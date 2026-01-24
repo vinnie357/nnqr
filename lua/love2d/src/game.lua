@@ -2403,7 +2403,7 @@ function Game.handleConfirmInput(key)
 	elseif key == "return" or key == "space" then
 		local selected = UI.getSelectedMenuItem(Game.uiState)
 		local action = UI.getConfirmAction(Game.uiState)
-		
+
 		if selected == "Yes" then
 			Game.playSoundForEvent("menu_confirm")
 			if action == "new_game" then
@@ -2719,10 +2719,18 @@ function Game.drawMPConnectScreen()
 	y = y + spacing + 20
 	if Game.multiplayer and Game.multiplayer.errorMessage and #Game.multiplayer.errorMessage > 0 then
 		love.graphics.setColor(1, 0.4, 0.4)
-		love.graphics.print(Game.multiplayer.errorMessage, (screenW - font:getWidth(Game.multiplayer.errorMessage)) / 2, y)
+		love.graphics.print(
+			Game.multiplayer.errorMessage,
+			(screenW - font:getWidth(Game.multiplayer.errorMessage)) / 2,
+			y
+		)
 	elseif Game.multiplayer and Game.multiplayer.statusMessage and #Game.multiplayer.statusMessage > 0 then
 		love.graphics.setColor(0.4, 0.8, 0.4)
-		love.graphics.print(Game.multiplayer.statusMessage, (screenW - font:getWidth(Game.multiplayer.statusMessage)) / 2, y)
+		love.graphics.print(
+			Game.multiplayer.statusMessage,
+			(screenW - font:getWidth(Game.multiplayer.statusMessage)) / 2,
+			y
+		)
 	end
 
 	-- Buttons
@@ -2818,7 +2826,11 @@ function Game.drawMPLobbyScreen()
 	if Game.multiplayer and Game.multiplayer.errorMessage and #Game.multiplayer.errorMessage > 0 then
 		love.graphics.setColor(1, 0.4, 0.4)
 		local errY = listY + listH + 10
-		love.graphics.print(Game.multiplayer.errorMessage, (screenW - font:getWidth(Game.multiplayer.errorMessage)) / 2, errY)
+		love.graphics.print(
+			Game.multiplayer.errorMessage,
+			(screenW - font:getWidth(Game.multiplayer.errorMessage)) / 2,
+			errY
+		)
 	end
 
 	-- Buttons
@@ -2869,7 +2881,8 @@ function Game.drawMPWaitingScreen()
 	end
 	if availablePlayers > 0 then
 		love.graphics.setColor(0.4, 0.8, 0.4)
-		local availableText = string.format("%d player%s available", availablePlayers, availablePlayers == 1 and "" or "s")
+		local availableText =
+			string.format("%d player%s available", availablePlayers, availablePlayers == 1 and "" or "s")
 		love.graphics.print(availableText, (screenW - font:getWidth(availableText)) / 2, availableY)
 	else
 		love.graphics.setColor(0.8, 0.5, 0.3)
@@ -3192,7 +3205,8 @@ function Game.drawMPOpponentScreen()
 	local availableY = screenH * 0.78
 	local availablePlayers = 0
 	if Game.multiplayer then
-		availablePlayers = Multiplayer.getAvailablePlayerCount and Multiplayer.getAvailablePlayerCount(Game.multiplayer) or 0
+		availablePlayers = Multiplayer.getAvailablePlayerCount and Multiplayer.getAvailablePlayerCount(Game.multiplayer)
+			or 0
 	end
 	love.graphics.setColor(0.5, 0.5, 0.5)
 	local availableText = string.format("%d player%s available", availablePlayers, availablePlayers == 1 and "" or "s")

@@ -9,11 +9,16 @@ local info = debug.getinfo(1, "S")
 local scriptDir = info.source:match("@(.*/)")
 if scriptDir then
 	local parentDir = scriptDir:gsub("/server/$", "/")
-	package.path = parentDir .. "?.lua;"
-		.. parentDir .. "?/init.lua;"
-		.. parentDir .. "src/?.lua;"
-		.. parentDir .. "src/?/init.lua;"
-		.. parentDir .. "server/?.lua;"
+	package.path = parentDir
+		.. "?.lua;"
+		.. parentDir
+		.. "?/init.lua;"
+		.. parentDir
+		.. "src/?.lua;"
+		.. parentDir
+		.. "src/?/init.lua;"
+		.. parentDir
+		.. "server/?.lua;"
 		.. package.path
 end
 
@@ -264,12 +269,12 @@ end
 --- Update AI games and broadcast state changes
 local function updateAIGames(dt)
 	local moves = Server.updateAIGames(server, dt)
-	
+
 	-- Broadcast game state to clients for each AI move
 	for _, moveInfo in ipairs(moves) do
 		local gameId = moveInfo.gameId
 		local session = server.gameSessions[gameId]
-		
+
 		if session then
 			-- Find the human player's client
 			local clientId = Server.findClientByPlayerId(server, session.player1Id)

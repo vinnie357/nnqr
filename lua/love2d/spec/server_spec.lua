@@ -282,7 +282,11 @@ describe("Server", function()
 				local clientId = Server.addClient(server, { id = "sock1" })
 				Server.handleMessage(server, clientId, Protocol.connectMessage("Alice", "0.1.0"))
 				Server.handleMessage(server, clientId, Protocol.createMessage("CREATE_GAME", { game_name = "Game 1" }))
-				local response = Server.handleMessage(server, clientId, Protocol.createMessage("CREATE_GAME", { game_name = "Game 2" }))
+				local response = Server.handleMessage(
+					server,
+					clientId,
+					Protocol.createMessage("CREATE_GAME", { game_name = "Game 2" })
+				)
 				assert.are.equal("ERROR", response.type)
 			end)
 		end)
@@ -293,7 +297,11 @@ describe("Server", function()
 				-- Player 1 creates game
 				local clientId1 = Server.addClient(server, { id = "sock1" })
 				Server.handleMessage(server, clientId1, Protocol.connectMessage("Alice", "0.1.0"))
-				local createResp = Server.handleMessage(server, clientId1, Protocol.createMessage("CREATE_GAME", { game_name = "Test Game" }))
+				local createResp = Server.handleMessage(
+					server,
+					clientId1,
+					Protocol.createMessage("CREATE_GAME", { game_name = "Test Game" })
+				)
 				local gameId = createResp.payload.game_id
 				-- Player 2 joins
 				local clientId2 = Server.addClient(server, { id = "sock2" })
@@ -319,7 +327,11 @@ describe("Server", function()
 				-- Create game with 2 players
 				local clientId1 = Server.addClient(server, { id = "sock1" })
 				Server.handleMessage(server, clientId1, Protocol.connectMessage("Alice", "0.1.0"))
-				local createResp = Server.handleMessage(server, clientId1, Protocol.createMessage("CREATE_GAME", { game_name = "Test Game" }))
+				local createResp = Server.handleMessage(
+					server,
+					clientId1,
+					Protocol.createMessage("CREATE_GAME", { game_name = "Test Game" })
+				)
 				local gameId = createResp.payload.game_id
 				local clientId2 = Server.addClient(server, { id = "sock2" })
 				Server.handleMessage(server, clientId2, Protocol.connectMessage("Bob", "0.1.0"))
@@ -327,7 +339,8 @@ describe("Server", function()
 				-- Third player tries to join
 				local clientId3 = Server.addClient(server, { id = "sock3" })
 				Server.handleMessage(server, clientId3, Protocol.connectMessage("Charlie", "0.1.0"))
-				local response = Server.handleMessage(server, clientId3, Protocol.createMessage("JOIN_GAME", { game_id = gameId }))
+				local response =
+					Server.handleMessage(server, clientId3, Protocol.createMessage("JOIN_GAME", { game_id = gameId }))
 				assert.are.equal("ERROR", response.type)
 			end)
 		end)
@@ -337,7 +350,11 @@ describe("Server", function()
 				local server = Server.create({})
 				local clientId = Server.addClient(server, { id = "sock1" })
 				Server.handleMessage(server, clientId, Protocol.connectMessage("Alice", "0.1.0"))
-				Server.handleMessage(server, clientId, Protocol.createMessage("CREATE_GAME", { game_name = "Test Game" }))
+				Server.handleMessage(
+					server,
+					clientId,
+					Protocol.createMessage("CREATE_GAME", { game_name = "Test Game" })
+				)
 				local msg = Protocol.createMessage("LEAVE_GAME", {})
 				local response = Server.handleMessage(server, clientId, msg)
 				assert.are.equal("LOBBY_STATE", response.type)
@@ -395,7 +412,11 @@ describe("Server", function()
 			-- Setup two players in a game
 			local clientId1 = Server.addClient(server, { id = "sock1" })
 			Server.handleMessage(server, clientId1, Protocol.connectMessage("Alice", "0.1.0"))
-			local createResp = Server.handleMessage(server, clientId1, Protocol.createMessage("CREATE_GAME", { game_name = "Test Game" }))
+			local createResp = Server.handleMessage(
+				server,
+				clientId1,
+				Protocol.createMessage("CREATE_GAME", { game_name = "Test Game" })
+			)
 			local gameId = createResp.payload.game_id
 			local clientId2 = Server.addClient(server, { id = "sock2" })
 			Server.handleMessage(server, clientId2, Protocol.connectMessage("Bob", "0.1.0"))
