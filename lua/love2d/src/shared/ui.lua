@@ -14,18 +14,35 @@ UI.SCREENS = {
 	gameover = true,
 	paused = true,
 	confirm = true,
+	-- Multiplayer screens
+	mpconnect = true, -- Enter server address
+	mplobby = true, -- Browse/create games
+	mpwaiting = true, -- Waiting for opponent
+	mpopponent = true, -- Select opponent type (human/AI) - Phase 4
 }
 
 -- Menu items for each screen
 UI.MENU_ITEMS = {
 	menu = { "New Game", "Settings", "Quit" },
-	gamemode = { "Local 2-Player", "VS AI", "Back" },
+	gamemode = { "Local 2-Player", "VS AI", "Multiplayer", "Back" },
 	aiselect = { "Easy", "Medium", "Hard", "Expert", "Back" },
 	settings = { "Master Volume", "SFX Volume", "Music Volume", "Sound Enabled", "Back" },
 	gameover = { "Play Again", "Main Menu" },
 	playing = {},
 	paused = { "Continue", "New Game", "Settings", "Quit" },
 	confirm = { "Yes", "No" },
+	-- Multiplayer menus
+	mpconnect = { "Connect", "Back" },
+	mplobby = { "Create Game", "Refresh", "Disconnect" },
+	mpwaiting = { "Cancel" },
+	mpopponent = { -- Phase 4: Opponent selection for AI Practice
+		"Wait for Player",
+		"AI Practice - Easy",
+		"AI Practice - Medium",
+		"AI Practice - Hard",
+		"AI Practice - Expert",
+		"Cancel",
+	},
 }
 
 --- Create initial UI state
