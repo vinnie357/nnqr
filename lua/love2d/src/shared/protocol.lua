@@ -217,6 +217,7 @@ Protocol.Types = {
 	CONNECT = "CONNECT",
 	JOIN_LOBBY = "JOIN_LOBBY",
 	CREATE_GAME = "CREATE_GAME",
+	CREATE_AI_GAME = "CREATE_AI_GAME", -- Phase 3: AI Practice
 	JOIN_GAME = "JOIN_GAME",
 	LEAVE_GAME = "LEAVE_GAME",
 	MOVE = "MOVE",
@@ -228,6 +229,7 @@ Protocol.Types = {
 	ERROR = "ERROR",
 	LOBBY_STATE = "LOBBY_STATE",
 	GAME_CREATED = "GAME_CREATED",
+	AI_GAME_CREATED = "AI_GAME_CREATED", -- Phase 3: AI Practice
 	GAME_STATE = "GAME_STATE",
 	MOVE_RESULT = "MOVE_RESULT",
 	POWER_RESULT = "POWER_RESULT",
@@ -332,6 +334,19 @@ function Protocol.gameStateMessage(state)
 	return Protocol.createMessage(Protocol.Types.GAME_STATE, state)
 end
 
+--- Create GAME_OVER message
+---@param gameId string Game ID
+---@param winner number Winning player number (1 or 2)
+---@param reason string|nil Optional reason for game end
+---@return table Message object
+function Protocol.gameOverMessage(gameId, winner, reason)
+	return Protocol.createMessage(Protocol.Types.GAME_OVER, {
+		game_id = gameId,
+		winner = winner,
+		reason = reason,
+	})
+end
+
 -- Validation functions
 
 --- Check if a message object is valid
@@ -367,6 +382,58 @@ function Protocol.isValidMovePayload(payload)
 		return false
 	end
 	if not payload.to.col or not payload.to.row then
+		return false
+	end
+	return true
+end
+
+-- AI Game message builders and validators (Phase 3)
+
+-- Valid AI difficulties
+Protocol.AI_DIFFICULTIES = {
+	easy = true,
+	medium = true,
+	hard = true,
+	expert = true,
+}
+
+--- Create CREATE_AI_GAME message
+---@param difficulty string AI difficulty (easy/medium/hard/expert)
+---@param gameName string|nil Optional game name
+---@return table Message object
+function Protocol.createAIGameMessage(difficulty, gameName)
+	return Protocol.createMessage(Protocol.Types.CREATE_AI_GAME, {
+		difficulty = difficulty,
+		game_name = gameName,
+	})
+end
+
+--- Create AI_GAME_CREATED message
+---@param gameId string Game ID
+---@param difficulty string AI difficulty
+---@param playerNumber number Human player number (always 1)
+---@param gameState table|nil Optional initial game state
+---@return table Message object
+function Protocol.aiGameCreatedMessage(gameId, difficulty, playerNumber, gameState)
+	return Protocol.createMessage(Protocol.Types.AI_GAME_CREATED, {
+		game_id = gameId,
+		difficulty = difficulty,
+		player_number = playerNumber,
+		game_state = gameState,
+	})
+end
+
+--- Validate CREATE_AI_GAME message payload
+---@param payload table Payload to validate
+---@return boolean True if valid
+function Protocol.isValidAIGamePayload(payload)
+	if type(payload) ~= "table" then
+		return false
+	end
+	if not payload.difficulty then
+		return false
+	end
+	if not Protocol.AI_DIFFICULTIES[payload.difficulty] then
 		return false
 	end
 	return true

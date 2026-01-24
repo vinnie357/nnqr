@@ -203,4 +203,83 @@ describe("Protocol", function()
 			end)
 		end)
 	end)
+
+	-- Phase 3: AI Game Protocol Support
+	describe("AI game messages", function()
+		it("has CREATE_AI_GAME message type", function()
+			assert.are.equal("CREATE_AI_GAME", Protocol.Types.CREATE_AI_GAME)
+		end)
+
+		it("has AI_GAME_CREATED message type", function()
+			assert.are.equal("AI_GAME_CREATED", Protocol.Types.AI_GAME_CREATED)
+		end)
+
+		describe("createAIGameMessage", function()
+			it("creates a CREATE_AI_GAME message", function()
+				local msg = Protocol.createAIGameMessage("medium")
+				assert.are.equal("CREATE_AI_GAME", msg.type)
+				assert.are.equal("medium", msg.payload.difficulty)
+			end)
+
+			it("includes game name when provided", function()
+				local msg = Protocol.createAIGameMessage("hard", "My AI Game")
+				assert.are.equal("My AI Game", msg.payload.game_name)
+			end)
+		end)
+
+		describe("aiGameCreatedMessage", function()
+			it("creates an AI_GAME_CREATED message", function()
+				local msg = Protocol.aiGameCreatedMessage("game_123", "easy", 1)
+				assert.are.equal("AI_GAME_CREATED", msg.type)
+				assert.are.equal("game_123", msg.payload.game_id)
+				assert.are.equal("easy", msg.payload.difficulty)
+				assert.are.equal(1, msg.payload.player_number)
+			end)
+
+			it("includes game_state when provided", function()
+				local gameState = {
+					game_id = "game_123",
+					turn = 1,
+					current_player = 1,
+					board = { cols = 10, rows = 8, tiles = {} },
+					pieces = { { col = 1, row = 1, player = 1 } },
+				}
+				local msg = Protocol.aiGameCreatedMessage("game_123", "easy", 1, gameState)
+				assert.are.equal("AI_GAME_CREATED", msg.type)
+				assert.is_not_nil(msg.payload.game_state)
+				assert.are.equal(1, msg.payload.game_state.turn)
+				assert.are.equal(1, msg.payload.game_state.current_player)
+			end)
+
+			it("works without game_state for backward compatibility", function()
+				local msg = Protocol.aiGameCreatedMessage("game_123", "easy", 1)
+				assert.are.equal("AI_GAME_CREATED", msg.type)
+				assert.is_nil(msg.payload.game_state)
+			end)
+		end)
+
+		describe("isValidAIGamePayload", function()
+			it("accepts valid AI game payload", function()
+				local payload = { difficulty = "medium" }
+				assert.is_true(Protocol.isValidAIGamePayload(payload))
+			end)
+
+			it("rejects missing difficulty", function()
+				local payload = {}
+				assert.is_false(Protocol.isValidAIGamePayload(payload))
+			end)
+
+			it("rejects invalid difficulty", function()
+				local payload = { difficulty = "impossible" }
+				assert.is_false(Protocol.isValidAIGamePayload(payload))
+			end)
+
+			it("accepts all valid difficulties", function()
+				assert.is_true(Protocol.isValidAIGamePayload({ difficulty = "easy" }))
+				assert.is_true(Protocol.isValidAIGamePayload({ difficulty = "medium" }))
+				assert.is_true(Protocol.isValidAIGamePayload({ difficulty = "hard" }))
+				assert.is_true(Protocol.isValidAIGamePayload({ difficulty = "expert" }))
+			end)
+		end)
+	end)
 end)
