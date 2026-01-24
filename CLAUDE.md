@@ -11,7 +11,7 @@ NNQR (Not Not Quadradius) is a multi-implementation recreation of Quadradius, th
 
 ## Implementations
 
-### Rust/Bevy (Production)
+### Rust/Bevy (Development)
 **Path**: `rust/bevy/`
 **Status**: v0.2.0 deployed with 38+ powers
 
