@@ -3,6 +3,7 @@ lua = '5.1'
 stylua = 'latest'
 "ubi:nushell/nushell" = { version = "latest", exe = "nu" }
 "ubi:love2d/love" = { version = "11.5", matching = "macos", extract_all = true, bin_path = "Contents/MacOS" }
+"github:luarocks/luarocks" = "3.12.2"
 
 [env]
 # Love2D uses bundled LuaJIT - no separate lua needed for runtime
@@ -31,11 +32,11 @@ run = """
 
 print "📦 Installing busted..."
 # Use --tree for root (CI/Docker), --local for regular users
-# Use mise exec to ensure luarocks (bundled with lua) is in PATH
+# Use mise exec to ensure luarocks is in PATH, --lua-version 5.1 for prebuilt binary
 if (id -u | into int) == 0 {
-    mise exec -- luarocks install busted --tree ~/.luarocks
+    mise exec -- luarocks --lua-version 5.1 install busted --tree ~/.luarocks
 } else {
-    mise exec -- luarocks install busted --local
+    mise exec -- luarocks --lua-version 5.1 install busted --local
 }
 print "✅ busted installed"
 """
