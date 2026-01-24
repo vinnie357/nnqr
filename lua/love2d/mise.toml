@@ -79,13 +79,13 @@ if (which luarocks | is-not-empty) {
     }
 }
 
-# Install busted
+# Install busted (use mise exec to ensure Lua is in PATH)
 print "📦 Installing busted..."
 # Use --tree for root (Docker), --local for regular users
 if (id -u | into int) == 0 {
-    luarocks install busted --tree ~/.luarocks
+    mise exec -- luarocks install busted --tree ~/.luarocks
 } else {
-    luarocks install busted --local
+    mise exec -- luarocks install busted --local
 }
 print "✅ busted installed"
 """
