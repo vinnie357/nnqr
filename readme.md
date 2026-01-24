@@ -12,12 +12,12 @@ This project explores how Claude AI can assist in recreating a classic game acro
 
 | Implementation | Status | Description |
 |----------------|--------|-------------|
-| [Rust/Bevy](rust/bevy/) | Production | Advanced 3D isometric with 38+ powers |
+| [Rust/Bevy](rust/bevy/) | In Development | Advanced 3D isometric with 38+ powers |
 | [Lua/Love2D](lua/love2d/) | In Development | Lightweight 2D/isometric version |
 
 ## Quick Start
 
-### Rust/Bevy (Production Ready)
+### Rust/Bevy (Development)
 ```bash
 cd rust/bevy
 cargo run --release
@@ -112,7 +112,7 @@ See implementation-specific README files for detailed contribution guidelines:
 - **v0.1.0**: Basic board and movement
 
 ### Lua/Love2D
-- **v0.1.0** *(In Progress)*: Basic isometric board scaffold
+- **v0.9.0** *(In Development)*: 83 powers, 980+ tests, multiplayer in progress
 
 ## License
 

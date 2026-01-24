@@ -11,7 +11,7 @@ NNQR (Not Not Quadradius) is a multi-implementation recreation of Quadradius, th
 
 ## Implementations
 
-### Rust/Bevy (Production)
+### Rust/Bevy (Development)
 **Path**: `rust/bevy/`
 **Status**: v0.2.0 deployed with 38+ powers
 
@@ -23,10 +23,12 @@ mise run rust-test            # Run tests
 
 ### Lua/Love2D (Development)
 **Path**: `lua/love2d/`
-**Status**: Initial scaffold
+**Status**: Phase 9B complete, 83 powers implemented, multiplayer in progress
 
 ```bash
 mise run love-start      # Run game
+mise run love-test-busted # Run unit tests
+mise run love-server     # Run multiplayer server
 mise run love-fmt        # Format code
 ```
 
@@ -75,6 +77,8 @@ mise run stats                # Project statistics
 mise run love-start      # Run game
 mise run love-debug      # With debug console
 mise run love-fmt        # Format with stylua
+mise run love-test-busted # Unit tests with busted
+mise run love-ci         # Format check + tests
 mise run love-check      # Check formatting
 ```
 
@@ -121,6 +125,33 @@ cd rust/bevy
 - **LuaPill**: For isometric maps
 - **HUMP**: Helper utilities
 
+## Development Rules
+
+### Tool Execution with mise
+All project tools are managed via mise. Always use:
+- `mise run <task>` for defined tasks (see `mise tasks`)
+- `mise exec -- <command>` for tools managed by mise (love, stylua, cargo, etc.)
+
+Never run tools directly without mise - they may not be in PATH or may be wrong versions.
+
+### Factual Accuracy (Anti-Fabrication)
+Execute tools to verify before making claims. Never assume.
+
+**Prohibited language:**
+- ❌ Superlatives: "excellent", "comprehensive", "robust", "production-ready", "feature-complete"
+- ❌ Unverified metrics: "improves by 30%", "989 tests passing" (without running them)
+- ❌ Assumed capabilities: "handles edge cases", "supports X" (without checking)
+
+**Required approach:**
+- ✅ Run `mise run love-test-busted` before claiming test counts
+- ✅ Run `mise run love-start` before claiming the game works
+- ✅ Use Read/Grep to verify features exist before describing them
+- ✅ Mark uncertainty: "Docs claim X, requires verification" or "Unable to confirm without running tests"
+
+**Example:**
+- ❌ "989 tests passing, production-ready game engine"
+- ✅ "Docs claim 989 tests. Ran `mise run love-test-busted`: 987 passed, 2 failed. Game launches but multiplayer untested."
+
 ## Development Philosophy
 
 ### Test-Driven Development
@@ -146,9 +177,10 @@ cd rust/bevy
 - Meta powers (power-on-power)
 
 ### Lua/Love2D
-- Basic board rendering
-- Piece movement
-- 3DreamEngine integration
+- 83 powers implemented
+- AI opponent (4 difficulty levels)
+- Multiplayer server/client infrastructure
+- See `lua/love2d/docs/roadmap_progress.md` for current status
 
 ## Resources
 
