@@ -336,7 +336,10 @@ local function checkDisconnectTimeouts()
 		if timeout.winnerClientId then
 			local msg = Protocol.gameOverMessage(timeout.gameId, timeout.winnerNumber, "opponent_disconnect")
 			sendToClient(timeout.winnerClientId, msg)
-			log(LOG_INFO, "Game " .. timeout.gameId .. " ended due to disconnect timeout. Winner: Player " .. timeout.winnerNumber)
+			log(
+				LOG_INFO,
+				"Game " .. timeout.gameId .. " ended due to disconnect timeout. Winner: Player " .. timeout.winnerNumber
+			)
 		end
 	end
 end

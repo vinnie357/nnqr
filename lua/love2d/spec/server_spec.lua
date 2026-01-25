@@ -878,7 +878,11 @@ describe("Server", function()
 			Server.handleMessage(server, clientId2, Protocol.createMessage("JOIN_GAME", { game_id = gameId }))
 
 			-- Force game to have a session (in real code, game session would be created)
-			server.gameSessions[gameId] = GameSession.createPvPGame(gameId, server.clients[clientId1].playerId, server.clients[clientId2].playerId)
+			server.gameSessions[gameId] = GameSession.createPvPGame(
+				gameId,
+				server.clients[clientId1].playerId,
+				server.clients[clientId2].playerId
+			)
 
 			-- Remove player 1
 			local success, notification = Server.removeClient(server, clientId1)
@@ -921,11 +925,8 @@ describe("Server", function()
 			local clientId2 = Server.addClient(server, { id = "sock2" })
 			Server.handleMessage(server, clientId2, Protocol.connectMessage("Bob", "0.1.0"))
 
-			local createResp = Server.handleMessage(
-				server,
-				clientId1,
-				Protocol.createMessage("CREATE_GAME", { game_name = "Test" })
-			)
+			local createResp =
+				Server.handleMessage(server, clientId1, Protocol.createMessage("CREATE_GAME", { game_name = "Test" }))
 			local gameId = createResp.payload.game_id
 			Server.handleMessage(server, clientId2, Protocol.createMessage("JOIN_GAME", { game_id = gameId }))
 
@@ -955,11 +956,8 @@ describe("Server", function()
 			local clientId2 = Server.addClient(server, { id = "sock2" })
 			Server.handleMessage(server, clientId2, Protocol.connectMessage("Bob", "0.1.0"))
 
-			local createResp = Server.handleMessage(
-				server,
-				clientId1,
-				Protocol.createMessage("CREATE_GAME", { game_name = "Test" })
-			)
+			local createResp =
+				Server.handleMessage(server, clientId1, Protocol.createMessage("CREATE_GAME", { game_name = "Test" }))
 			local gameId = createResp.payload.game_id
 			Server.handleMessage(server, clientId2, Protocol.createMessage("JOIN_GAME", { game_id = gameId }))
 
