@@ -175,6 +175,25 @@ bd update <id> --status in_progress  # Claim it
 
 See `AGENTS.md` for full work loop and session completion protocols.
 
+### Pull Requests
+
+Keep PR descriptions minimal - the title and bullets are the summary:
+
+```bash
+gh pr create --title "feat(scope): description" --body "- Change one
+- Change two
+- Change three"
+```
+
+No headings, tables, test plans, or attribution needed.
+
+**Workflow:**
+1. Create PR and notify user
+2. Wait for CI to pass and user to merge
+3. Check status: `gh pr view --json state -q '.state'`
+4. Once merged: `git checkout main && git pull && git branch -d <branch>`
+5. Continue to next task
+
 ## Development Rules
 
 ### Tool Execution with mise
