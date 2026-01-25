@@ -33,6 +33,16 @@ function GameSession.create(gameId, player1Id, player2Id, settings)
 	}
 end
 
+--- Create a PvP game session (alias for create)
+---@param gameId string Game ID
+---@param player1Id string Player 1 ID
+---@param player2Id string Player 2 ID
+---@param settings table|nil Optional game settings
+---@return table GameSession state
+function GameSession.createPvPGame(gameId, player1Id, player2Id, settings)
+	return GameSession.create(gameId, player1Id, player2Id, settings)
+end
+
 --- Get player number (1 or 2) for a player ID
 ---@param session table GameSession state
 ---@param playerId string Player ID

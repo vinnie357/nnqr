@@ -852,4 +852,128 @@ describe("Server", function()
 			assert.is_not_nil(stats.rating)
 		end)
 	end)
+
+	-- 13. Disconnect Handling (Phase 10C)
+	describe("Disconnect Handling", function()
+		local GameSession
+
+		setup(function()
+			GameSession = require("server.game_session")
+		end)
+
+		it("removeClient returns notification when player disconnects from PvP game", function()
+			local server = Server.create({})
+			-- Setup two players in a game
+			local clientId1 = Server.addClient(server, { id = "sock1" })
+			Server.handleMessage(server, clientId1, Protocol.connectMessage("Alice", "0.1.0"))
+			local createResp = Server.handleMessage(
+				server,
+				clientId1,
+				Protocol.createMessage("CREATE_GAME", { game_name = "Test Game" })
+			)
+			local gameId = createResp.payload.game_id
+
+			local clientId2 = Server.addClient(server, { id = "sock2" })
+			Server.handleMessage(server, clientId2, Protocol.connectMessage("Bob", "0.1.0"))
+			Server.handleMessage(server, clientId2, Protocol.createMessage("JOIN_GAME", { game_id = gameId }))
+
+			-- Force game to have a session (in real code, game session would be created)
+			server.gameSessions[gameId] = GameSession.createPvPGame(
+				gameId,
+				server.clients[clientId1].playerId,
+				server.clients[clientId2].playerId
+			)
+
+			-- Remove player 1
+			local success, notification = Server.removeClient(server, clientId1)
+
+			assert.is_true(success)
+			assert.is_not_nil(notification)
+			assert.are.equal("opponent_disconnected", notification.type)
+			assert.are.equal(clientId2, notification.opponentClientId)
+			assert.are.equal(gameId, notification.gameId)
+			assert.are.equal("Alice", notification.opponentName)
+		end)
+
+		it("removeClient returns no notification for AI game disconnect", function()
+			local server = Server.create({})
+			local clientId = Server.addClient(server, { id = "sock1" })
+			Server.handleMessage(server, clientId, Protocol.connectMessage("Alice", "0.1.0"))
+
+			-- Create AI game
+			local response = Server.handleMessage(server, clientId, Protocol.createAIGameMessage("easy"))
+			assert.are.equal("AI_GAME_CREATED", response.type)
+
+			-- Remove client
+			local success, notification = Server.removeClient(server, clientId)
+
+			assert.is_true(success)
+			assert.is_nil(notification) -- No notification for AI games
+		end)
+
+		it("checkDisconnectTimeouts returns empty when no disconnected players", function()
+			local server = Server.create({})
+			local timeouts = Server.checkDisconnectTimeouts(server)
+			assert.are.equal(0, #timeouts)
+		end)
+
+		it("checkDisconnectTimeouts awards win after timeout", function()
+			local server = Server.create({})
+			-- Setup two players in a game
+			local clientId1 = Server.addClient(server, { id = "sock1" })
+			Server.handleMessage(server, clientId1, Protocol.connectMessage("Alice", "0.1.0"))
+			local clientId2 = Server.addClient(server, { id = "sock2" })
+			Server.handleMessage(server, clientId2, Protocol.connectMessage("Bob", "0.1.0"))
+
+			local createResp =
+				Server.handleMessage(server, clientId1, Protocol.createMessage("CREATE_GAME", { game_name = "Test" }))
+			local gameId = createResp.payload.game_id
+			Server.handleMessage(server, clientId2, Protocol.createMessage("JOIN_GAME", { game_id = gameId }))
+
+			-- Create game session
+			server.gameSessions[gameId] = GameSession.createPvPGame(
+				gameId,
+				server.clients[clientId1].playerId,
+				server.clients[clientId2].playerId
+			)
+
+			-- Simulate disconnect
+			local session = server.gameSessions[gameId]
+			session.disconnectedPlayer = 1
+			session.disconnectTime = os.time() - 61 -- Over 60 second timeout
+
+			local timeouts = Server.checkDisconnectTimeouts(server)
+
+			assert.are.equal(1, #timeouts)
+			assert.are.equal(gameId, timeouts[1].gameId)
+			assert.are.equal(2, timeouts[1].winnerNumber) -- Player 2 wins
+		end)
+
+		it("checkDisconnectTimeouts does not trigger before timeout", function()
+			local server = Server.create({})
+			local clientId1 = Server.addClient(server, { id = "sock1" })
+			Server.handleMessage(server, clientId1, Protocol.connectMessage("Alice", "0.1.0"))
+			local clientId2 = Server.addClient(server, { id = "sock2" })
+			Server.handleMessage(server, clientId2, Protocol.connectMessage("Bob", "0.1.0"))
+
+			local createResp =
+				Server.handleMessage(server, clientId1, Protocol.createMessage("CREATE_GAME", { game_name = "Test" }))
+			local gameId = createResp.payload.game_id
+			Server.handleMessage(server, clientId2, Protocol.createMessage("JOIN_GAME", { game_id = gameId }))
+
+			server.gameSessions[gameId] = GameSession.createPvPGame(
+				gameId,
+				server.clients[clientId1].playerId,
+				server.clients[clientId2].playerId
+			)
+
+			-- Simulate recent disconnect (only 30 seconds ago)
+			local session = server.gameSessions[gameId]
+			session.disconnectedPlayer = 1
+			session.disconnectTime = os.time() - 30
+
+			local timeouts = Server.checkDisconnectTimeouts(server)
+			assert.are.equal(0, #timeouts)
+		end)
+	end)
 end)

@@ -9,6 +9,9 @@ local Stats = require("server.stats")
 
 local Server = {}
 
+-- Forward declarations
+local findPlayerGameSession
+
 -- Client ID counter for unique IDs
 local clientIdCounter = 0
 
@@ -57,23 +60,66 @@ function Server.addClient(server, socket)
 	return clientId
 end
 
+-- Disconnect timeout constant
+local DISCONNECT_TIMEOUT = 60
+
 --- Remove a client connection
 ---@param server table Server state
 ---@param clientId string Client ID to remove
 ---@return boolean success
+---@return table|nil notification {type, opponentClientId, gameId, opponentName, timeout}
 function Server.removeClient(server, clientId)
 	local client = server.clients[clientId]
 	if not client then
-		return false
+		return false, nil
 	end
 
-	-- If client was authenticated, remove from lobby
+	local notification = nil
+
+	-- Check if player was in an active game
 	if client.playerId then
+		local session, gameId = findPlayerGameSession(server, client.playerId)
+		if session and session.status == "playing" then
+			-- Find opponent
+			local opponentId = nil
+			local playerNumber = nil
+			if session.player1Id == client.playerId then
+				opponentId = session.player2Id
+				playerNumber = 1
+			elseif session.player2Id == client.playerId then
+				opponentId = session.player1Id
+				playerNumber = 2
+			end
+
+			-- Only notify for PvP games (not AI games)
+			if opponentId and not GameSession.isAIGame(session) then
+				local opponentClientId = Server.findClientByPlayerId(server, opponentId)
+				if opponentClientId then
+					-- Get disconnecting player's name
+					local player = server.lobby.players[client.playerId]
+					local playerName = player and player.name or "Opponent"
+
+					-- Mark player as disconnected in session
+					session.disconnectedPlayer = playerNumber
+					session.disconnectTime = os.time()
+
+					notification = {
+						type = "opponent_disconnected",
+						opponentClientId = opponentClientId,
+						gameId = gameId,
+						opponentName = playerName,
+						timeout = DISCONNECT_TIMEOUT,
+					}
+				end
+			end
+		end
+
+		-- Remove from lobby
 		Lobby.removePlayer(server.lobby, client.playerId)
 	end
 
 	server.clients[clientId] = nil
-	return true
+	return true, notification
 end
 
 --- Get a client by ID
@@ -359,7 +405,7 @@ end
 ---@param server table Server state
 ---@param playerId string Player ID
 ---@return table|nil session, string|nil gameId
-local function findPlayerGameSession(server, playerId)
+function findPlayerGameSession(server, playerId)
 	for gameId, session in pairs(server.gameSessions) do
 		if session.player1Id == playerId or session.player2Id == playerId then
 			return session, gameId
@@ -613,6 +659,102 @@ function Server.stop(server)
 	-- Close server socket (when implemented)
 	server.running = false
 	return true
+end
+
+--- Check for disconnect timeouts and return games that should end
+---@param server table Server state
+---@return table Array of {gameId, winnerClientId, winnerId} for games that timed out
+function Server.checkDisconnectTimeouts(server)
+	local timeouts = {}
+	local currentTime = os.time()
+
+	for gameId, session in pairs(server.gameSessions) do
+		if session.disconnectedPlayer and session.disconnectTime then
+			local elapsed = currentTime - session.disconnectTime
+			if elapsed >= DISCONNECT_TIMEOUT then
+				-- Determine winner (opponent of disconnected player)
+				local winnerId = nil
+				local winnerNumber = nil
+				if session.disconnectedPlayer == 1 then
+					winnerId = session.player2Id
+					winnerNumber = 2
+				else
+					winnerId = session.player1Id
+					winnerNumber = 1
+				end
+
+				local winnerClientId = Server.findClientByPlayerId(server, winnerId)
+
+				-- End the game
+				session.status = "finished"
+				session.state.winner = winnerNumber
+				session.state.gameOver = true
+
+				-- Clear disconnect state
+				session.disconnectedPlayer = nil
+				session.disconnectTime = nil
+
+				-- Record stats
+				Server.recordGameResult(server, gameId)
+
+				table.insert(timeouts, {
+					gameId = gameId,
+					winnerClientId = winnerClientId,
+					winnerId = winnerId,
+					winnerNumber = winnerNumber,
+				})
+			end
+		end
+	end
+
+	return timeouts
+end
+
+--- Handle player reconnection
+---@param server table Server state
+---@param clientId string Client ID of reconnecting player
+---@param playerId string Player ID
+---@return table|nil notification {type, opponentClientId, gameId, opponentName}
+function Server.handleReconnection(server, clientId, playerId)
+	local session, gameId = findPlayerGameSession(server, playerId)
+	if not session then
+		return nil
+	end
+
+	-- Check if this player was marked as disconnected
+	local playerNumber = nil
+	if session.player1Id == playerId then
+		playerNumber = 1
+	elseif session.player2Id == playerId then
+		playerNumber = 2
+	end
+
+	if not playerNumber or session.disconnectedPlayer ~= playerNumber then
+		return nil
+	end
+
+	-- Player reconnected - clear disconnect state
+	session.disconnectedPlayer = nil
+	session.disconnectTime = nil
+
+	-- Find opponent to notify
+	local opponentId = playerNumber == 1 and session.player2Id or session.player1Id
+	local opponentClientId = Server.findClientByPlayerId(server, opponentId)
+
+	if not opponentClientId then
+		return nil
+	end
+
+	-- Get reconnecting player's name
+	local player = server.lobby.players[playerId]
+	local playerName = player and player.name or "Opponent"
+
+	return {
+		type = "opponent_reconnected",
+		opponentClientId = opponentClientId,
+		gameId = gameId,
+		opponentName = playerName,
+	}
 end
 
 return Server
