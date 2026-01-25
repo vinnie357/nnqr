@@ -236,6 +236,8 @@ Protocol.Types = {
 	GAME_OVER = "GAME_OVER",
 	CHAT_MESSAGE = "CHAT_MESSAGE",
 	ORB_SPAWN = "ORB_SPAWN",
+	OPPONENT_DISCONNECTED = "OPPONENT_DISCONNECTED", -- Phase 10C: Disconnect handling
+	OPPONENT_RECONNECTED = "OPPONENT_RECONNECTED", -- Phase 10C: Disconnect handling
 }
 
 -- Error codes
@@ -437,6 +439,32 @@ function Protocol.isValidAIGamePayload(payload)
 		return false
 	end
 	return true
+end
+
+-- Disconnect handling messages (Phase 10C)
+
+--- Create OPPONENT_DISCONNECTED message
+---@param gameId string Game ID
+---@param opponentName string Disconnected opponent's name
+---@param reconnectTimeout number Seconds before auto-win
+---@return table Message object
+function Protocol.opponentDisconnectedMessage(gameId, opponentName, reconnectTimeout)
+	return Protocol.createMessage(Protocol.Types.OPPONENT_DISCONNECTED, {
+		game_id = gameId,
+		opponent_name = opponentName,
+		reconnect_timeout = reconnectTimeout,
+	})
+end
+
+--- Create OPPONENT_RECONNECTED message
+---@param gameId string Game ID
+---@param opponentName string Reconnected opponent's name
+---@return table Message object
+function Protocol.opponentReconnectedMessage(gameId, opponentName)
+	return Protocol.createMessage(Protocol.Types.OPPONENT_RECONNECTED, {
+		game_id = gameId,
+		opponent_name = opponentName,
+	})
 end
 
 return Protocol

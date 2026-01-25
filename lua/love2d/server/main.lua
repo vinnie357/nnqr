@@ -120,7 +120,19 @@ local function handleDisconnect(clientSocket)
 	local clientId = clients[clientSocket]
 	if clientId then
 		log(LOG_INFO, "Client disconnected: " .. clientId)
-		Server.removeClient(server, clientId)
+		local success, notification = Server.removeClient(server, clientId)
+
+		-- Send opponent disconnected notification if needed
+		if notification and notification.type == "opponent_disconnected" then
+			local msg = Protocol.opponentDisconnectedMessage(
+				notification.gameId,
+				notification.opponentName,
+				notification.timeout
+			)
+			sendToClient(notification.opponentClientId, msg)
+			log(LOG_INFO, "Notified opponent of disconnect in game " .. notification.gameId)
+		end
+
 		clients[clientSocket] = nil
 		clientSockets[clientId] = nil
 	end
@@ -317,11 +329,24 @@ local function updateAIGames(dt)
 	end
 end
 
+--- Check for disconnect timeouts and award wins
+local function checkDisconnectTimeouts()
+	local timeouts = Server.checkDisconnectTimeouts(server)
+	for _, timeout in ipairs(timeouts) do
+		if timeout.winnerClientId then
+			local msg = Protocol.gameOverMessage(timeout.gameId, timeout.winnerNumber, "opponent_disconnect")
+			sendToClient(timeout.winnerClientId, msg)
+			log(LOG_INFO, "Game " .. timeout.gameId .. " ended due to disconnect timeout. Winner: Player " .. timeout.winnerNumber)
+		end
+	end
+end
+
 --- Love2D update callback
 function love.update(dt)
 	if running then
 		pollClients()
 		updateAIGames(dt)
+		checkDisconnectTimeouts()
 		autoSave()
 	end
 end

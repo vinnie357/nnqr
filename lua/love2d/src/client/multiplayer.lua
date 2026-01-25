@@ -11,6 +11,9 @@ local Multiplayer = {}
 
 --- Create multiplayer state
 ---@return table Multiplayer state
+-- Disconnect timeout constant (should match server)
+local OPPONENT_RECONNECT_TIMEOUT = 60
+
 function Multiplayer.create()
 	return {
 		network = Network.create(),
@@ -30,6 +33,11 @@ function Multiplayer.create()
 		errorMessage = "",
 		-- Game list selection
 		selectedGameIndex = 1,
+		-- Opponent disconnect state (Phase 10C)
+		opponentDisconnected = false,
+		opponentName = nil,
+		disconnectTime = nil,
+		reconnectTimeout = OPPONENT_RECONNECT_TIMEOUT,
 	}
 end
 
@@ -253,6 +261,17 @@ function Multiplayer.processMessage(mp, msg)
 		LobbyClient.handleError(mp.lobby, msg)
 		mp.errorMessage = msg.payload.message or msg.payload.code or "Error"
 		return "error"
+	elseif msgType == "OPPONENT_DISCONNECTED" then
+		mp.opponentDisconnected = true
+		mp.opponentName = msg.payload.opponent_name
+		mp.disconnectTime = os.time()
+		mp.reconnectTimeout = msg.payload.reconnect_timeout or OPPONENT_RECONNECT_TIMEOUT
+		return "opponent_disconnected"
+	elseif msgType == "OPPONENT_RECONNECTED" then
+		mp.opponentDisconnected = false
+		mp.opponentName = msg.payload.opponent_name
+		mp.disconnectTime = nil
+		return "opponent_reconnected"
 	end
 
 	return nil
@@ -403,6 +422,47 @@ function Multiplayer.createAIGame(mp, difficulty)
 	end
 	local gameName = mp.playerName .. "'s AI Game"
 	Network.send(mp.network, Protocol.createAIGameMessage(difficulty, gameName))
+end
+
+-- Disconnect handling (Phase 10C)
+
+--- Check if opponent is disconnected
+---@param mp table Multiplayer state
+---@return boolean True if opponent is disconnected
+function Multiplayer.isOpponentDisconnected(mp)
+	return mp.opponentDisconnected == true
+end
+
+--- Get opponent disconnect status for UI
+---@param mp table Multiplayer state
+---@return table Status {disconnected, opponentName, timeRemaining, canReturnToLobby}
+function Multiplayer.getDisconnectStatus(mp)
+	if not mp.opponentDisconnected then
+		return {
+			disconnected = false,
+			opponentName = nil,
+			timeRemaining = 0,
+			canReturnToLobby = false,
+		}
+	end
+
+	local elapsed = os.time() - (mp.disconnectTime or os.time())
+	local remaining = math.max(0, mp.reconnectTimeout - elapsed)
+
+	return {
+		disconnected = true,
+		opponentName = mp.opponentName,
+		timeRemaining = remaining,
+		canReturnToLobby = true,
+	}
+end
+
+--- Clear opponent disconnect state (when returning to lobby or game ends)
+---@param mp table Multiplayer state
+function Multiplayer.clearDisconnectState(mp)
+	mp.opponentDisconnected = false
+	mp.opponentName = nil
+	mp.disconnectTime = nil
 end
 
 return Multiplayer
