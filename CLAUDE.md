@@ -36,6 +36,7 @@ mise run love-fmt        # Format code
 
 ```
 nnqr/
+├── .beads/              # Beads issue tracker database
 ├── rust/bevy/           # Rust/Bevy implementation
 │   ├── src/             # Source code
 │   │   ├── components/  # ECS components
@@ -125,6 +126,55 @@ cd rust/bevy
 - **LuaPill**: For isometric maps
 - **HUMP**: Helper utilities
 
+## Beads Issue Tracking
+
+This project uses **Beads** (`bd`) for git-backed issue tracking, designed for AI agent workflows.
+
+### Quick Reference
+```bash
+bd ready                 # Show tasks with no blockers (pick next task)
+bd ready --json          # JSON output for programmatic access
+bd list                  # List all open tasks
+bd list -l lua           # Filter by label
+bd list -l lua -l phase10  # Filter by multiple labels (AND)
+bd show <id>             # Show task details (use first 4+ chars of ID)
+bd create "title"        # Create new task
+bd close <id>            # Mark task complete
+bd sync                  # Sync with git remote
+```
+
+### Agent Workflow
+1. Run `bd ready` to find available tasks
+2. Pick a task and work on it
+3. Run `bd close <id>` when done
+4. Run `bd sync` to push changes
+
+### Task Dependencies
+```bash
+bd dep add <child> <parent>   # child depends on parent
+bd dep blockers <id>          # what blocks this task
+bd dep blocking <id>          # what this task blocks
+```
+
+### Labels Convention
+- `lua` / `rust` - implementation
+- `phase10` / `phase9` - roadmap phase
+- `bug` / `feature` / `chore` - type
+- `priority:high` / `priority:low` - urgency
+
+### More Info
+See `AGENTS.md` for detailed beads workflow and `/core:beads` skill for full documentation.
+
+### Starting a Work Session
+
+```bash
+bd ready              # Find next task
+bd show <id>          # Read requirements
+bd update <id> --status in_progress  # Claim it
+```
+
+See `AGENTS.md` for full work loop and session completion protocols.
+
 ## Development Rules
 
 ### Tool Execution with mise
@@ -180,7 +230,7 @@ Execute tools to verify before making claims. Never assume.
 - 83 powers implemented
 - AI opponent (4 difficulty levels)
 - Multiplayer server/client infrastructure
-- See `lua/love2d/docs/roadmap_progress.md` for current status
+- Active tasks: `bd list -l lua -l phase10`
 
 ## Resources
 
