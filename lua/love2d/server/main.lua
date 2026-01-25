@@ -31,6 +31,7 @@ local Server = require("server.server")
 local Protocol = require("src.shared.protocol")
 local Persistence = require("server.persistence")
 local GameSession = require("server.game_session")
+local ConfigLoader = require("server.config_loader")
 
 -- Try to load luasocket
 local socket
@@ -38,13 +39,8 @@ local hasSocket = pcall(function()
 	socket = require("socket")
 end)
 
--- Server configuration
-local CONFIG = {
-	port = 7777,
-	maxGames = 10,
-	persistencePath = "server_state.json",
-	autoSaveInterval = 60, -- seconds
-}
+-- Server configuration (loaded from file or defaults)
+local CONFIG = nil -- Set in love.load()
 
 -- Global server state
 local server = nil
@@ -208,40 +204,65 @@ end
 --- Auto-save server state
 local function autoSave()
 	local now = love.timer.getTime()
-	if now - lastAutoSave >= CONFIG.autoSaveInterval then
+	if now - lastAutoSave >= CONFIG.persistence.autoSaveInterval then
 		log(LOG_DEBUG, "Auto-saving server state...")
 		local state = {
 			lobby = server.lobby,
 			gameSessions = server.gameSessions,
 		}
-		Persistence.saveServerState(CONFIG.persistencePath, state)
+		Persistence.saveServerState(CONFIG.persistence.filepath, state)
 		lastAutoSave = now
 	end
 end
 
 --- Love2D load callback
 function love.load(args)
-	-- Check for --gui flag
+	-- Load configuration from file
+	local configPath = "../server_config.lua"
+	local loadedConfig, configErr = ConfigLoader.load(configPath)
+	if loadedConfig then
+		CONFIG = loadedConfig
+	else
+		-- Use defaults if config failed to load
+		print("Warning: Failed to load config: " .. (configErr or "unknown"))
+		CONFIG = ConfigLoader.getDefaults()
+	end
+
+	-- Check for command-line flags (override config file)
 	for _, arg in ipairs(args or {}) do
 		if arg == "--gui" then
 			guiMode = true
 		elseif arg:match("^%-%-port=(%d+)$") then
 			CONFIG.port = tonumber(arg:match("^%-%-port=(%d+)$"))
 		elseif arg == "--debug" then
-			logLevel = LOG_DEBUG
+			CONFIG.logging.level = "debug"
+		elseif arg:match("^%-%-config=(.+)$") then
+			-- Allow specifying a different config file
+			local customPath = arg:match("^%-%-config=(.+)$")
+			local customConfig, customErr = ConfigLoader.load(customPath)
+			if customConfig then
+				CONFIG = customConfig
+			else
+				print("Warning: Failed to load custom config: " .. (customErr or "unknown"))
+			end
 		end
 	end
 
+	-- Set log level from config
+	local levelMap = { debug = LOG_DEBUG, info = LOG_INFO, warn = LOG_WARN, error = LOG_ERROR }
+	logLevel = levelMap[CONFIG.logging.level] or LOG_INFO
+
 	log(LOG_INFO, "NNQR Server starting...")
 	log(LOG_INFO, "GUI mode: " .. tostring(guiMode))
+	log(LOG_INFO, "Config loaded from: " .. configPath)
 
 	-- Create server
 	server = Server.create(CONFIG)
 
 	-- Load persisted state if available
-	if Persistence.fileExists(CONFIG.persistencePath) then
-		log(LOG_INFO, "Loading saved state from " .. CONFIG.persistencePath)
-		local state = Persistence.loadServerState(CONFIG.persistencePath)
+	if Persistence.fileExists(CONFIG.persistence.filepath) then
+		log(LOG_INFO, "Loading saved state from " .. CONFIG.persistence.filepath)
+		local state = Persistence.loadServerState(CONFIG.persistence.filepath)
 		server.lobby = state.lobby or server.lobby
 		server.gameSessions = state.gameSessions or server.gameSessions
 	end
@@ -351,7 +372,7 @@ function love.keypressed(key)
 			lobby = server.lobby,
 			gameSessions = server.gameSessions,
 		}
-		Persistence.saveServerState(CONFIG.persistencePath, state)
+		Persistence.saveServerState(CONFIG.persistence.filepath, state)
 	end
 end
 
@@ -365,7 +386,7 @@ function love.quit()
 			lobby = server.lobby,
 			gameSessions = server.gameSessions,
 		}
-		Persistence.saveServerState(CONFIG.persistencePath, state)
+		Persistence.saveServerState(CONFIG.persistence.filepath, state)
 		log(LOG_INFO, "State saved")
 	end
 
