@@ -1,5 +1,8 @@
 # NNQR Love2D - Roadmap Progress
 
+> **Note**: This file is now historical reference only.
+> Active task tracking uses Beads: run `bd list --labels lua,phase10`
+
 ## Current: Phase 9B Complete - Ready for Phase 10
 
 | Phase | Status | Tests | Sessions |

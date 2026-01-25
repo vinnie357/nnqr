@@ -2,6 +2,7 @@
 node = 'lts'
 "ubi:nushell/nushell" = { version = "latest", exe = "nu" }
 act = "latest"  # Local GitHub Actions testing
+"github:steveyegge/beads" = "latest"  # Git-backed issue tracker
 
 [env]
 RUST_BACKTRACE = "1"
@@ -117,6 +118,26 @@ run = "mise run -C lua/love2d test-busted"
 [tasks.love-setup]
 description = "Install luarocks and busted for Love2D testing"
 run = "mise run -C lua/love2d setup"
+
+# ============================================================================
+# BEADS ISSUE TRACKING TASKS
+# ============================================================================
+
+[tasks.bd-ready]
+description = "Show beads tasks ready to work on (no blockers)"
+run = "bd ready"
+
+[tasks.bd-list]
+description = "List all open beads tasks"
+run = "bd list"
+
+[tasks.bd-sync]
+description = "Sync beads with git remote"
+run = "bd sync"
+
+[tasks.bd-doctor]
+description = "Check beads health and configuration"
+run = "bd doctor"
 
 # ============================================================================
 # CI/CD TASKS
