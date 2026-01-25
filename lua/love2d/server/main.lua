@@ -32,6 +32,7 @@ local Protocol = require("src.shared.protocol")
 local Persistence = require("server.persistence")
 local GameSession = require("server.game_session")
 local ConfigLoader = require("server.config_loader")
+local AdminGui = require("server.admin_gui")
 
 -- Try to load luasocket
 local socket
@@ -325,39 +326,70 @@ function love.update(dt)
 	end
 end
 
+--- Kick a player from the server
+---@param playerId string Player ID to kick
+local function kickPlayer(playerId)
+	local clientId = Server.findClientByPlayerId(server, playerId)
+	if clientId then
+		local sock = clientSockets[clientId]
+		if sock then
+			log(LOG_INFO, "Kicking player: " .. playerId)
+			handleDisconnect(sock)
+		end
+	end
+end
+
+--- End a game forcefully
+---@param gameId string Game ID to end
+local function endGame(gameId)
+	local Lobby = require("server.lobby")
+	log(LOG_INFO, "Ending game: " .. gameId)
+	Lobby.endGame(server.lobby, gameId, nil)
+end
+
+--- Toggle server running state
+local function toggleServer()
+	if running then
+		log(LOG_INFO, "Stopping server...")
+		running = false
+		if tcpServer then
+			tcpServer:close()
+			tcpServer = nil
+		end
+	else
+		log(LOG_INFO, "Starting server...")
+		if hasSocket then
+			tcpServer = socket.tcp()
+			tcpServer:settimeout(0)
+			local success, err = tcpServer:bind("*", CONFIG.port)
+			if success then
+				tcpServer:listen(10)
+				running = true
+				log(LOG_INFO, "Server listening on port " .. CONFIG.port)
+			else
+				log(LOG_ERROR, "Failed to bind: " .. (err or "unknown"))
+			end
+		end
+	end
+end
+
 --- Love2D draw callback (GUI mode only)
 function love.draw()
 	if not guiMode then
 		return
 	end
 
-	love.graphics.setColor(1, 1, 1)
-	love.graphics.print("NNQR Server", 10, 10)
-	love.graphics.print("Port: " .. CONFIG.port, 10, 30)
-	love.graphics.print("Status: " .. (running and "Running" or "Stopped"), 10, 50)
-	love.graphics.print("Clients: " .. Server.getClientCount(server), 10, 70)
+	AdminGui.draw(CONFIG, server, running, logMessages, {
+		kick = kickPlayer,
+		endGame = endGame,
+		toggleServer = toggleServer,
+	})
+end
 
-	-- Player count
-	local playerCount = 0
-	for _ in pairs(server.lobby.players) do
-		playerCount = playerCount + 1
-	end
-	love.graphics.print("Players: " .. playerCount, 10, 90)
-
-	-- Game count
-	local gameCount = 0
-	for _ in pairs(server.lobby.games) do
-		gameCount = gameCount + 1
-	end
-	love.graphics.print("Games: " .. gameCount, 10, 110)
-
-	-- Log messages
-	love.graphics.print("--- Log ---", 10, 150)
-	local y = 170
-	local startIdx = math.max(1, #logMessages - 20)
-	for i = startIdx, #logMessages do
-		love.graphics.print(logMessages[i], 10, y)
-		y = y + 15
+--- Love2D mouse wheel callback
+function love.wheelmoved(x, y)
+	if guiMode then
+		AdminGui.wheelmoved(x, y)
 	end
 end
 
@@ -368,11 +400,13 @@ function love.keypressed(key)
 	elseif key == "s" then
 		-- Manual save
 		log(LOG_INFO, "Manual save triggered")
-		local state = {
+		local saveState = {
 			lobby = server.lobby,
 			gameSessions = server.gameSessions,
 		}
-		Persistence.saveServerState(CONFIG.persistence.filepath, state)
+		Persistence.saveServerState(CONFIG.persistence.filepath, saveState)
+	elseif guiMode then
+		AdminGui.keypressed(key)
 	end
 end
 
