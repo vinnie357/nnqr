@@ -229,4 +229,147 @@ describe("Network", function()
 			assert.is_truthy(encoded:find('"TEST"'))
 		end)
 	end)
+
+	-- 13. Network.isReconnecting()
+	describe("isReconnecting", function()
+		it("returns false when disconnected", function()
+			local net = Network.create()
+			assert.is_false(Network.isReconnecting(net))
+		end)
+
+		it("returns true when reconnecting", function()
+			local net = Network.create()
+			net.state = "reconnecting"
+			assert.is_true(Network.isReconnecting(net))
+		end)
+
+		it("returns false when connected", function()
+			local net = Network.create()
+			net.state = "connected"
+			assert.is_false(Network.isReconnecting(net))
+		end)
+	end)
+
+	-- 14. Network.startReconnection()
+	describe("startReconnection", function()
+		it("returns false if reconnection disabled", function()
+			local net = Network.create()
+			net.reconnectEnabled = false
+			net.wasConnected = true
+			assert.is_false(Network.startReconnection(net))
+		end)
+
+		it("returns false if never connected", function()
+			local net = Network.create()
+			net.wasConnected = false
+			assert.is_false(Network.startReconnection(net))
+		end)
+
+		it("returns false if already reconnecting", function()
+			local net = Network.create()
+			net.wasConnected = true
+			net.state = "reconnecting"
+			assert.is_false(Network.startReconnection(net))
+		end)
+
+		it("starts reconnection when enabled and was connected", function()
+			local net = Network.create()
+			net.wasConnected = true
+			local result = Network.startReconnection(net)
+			assert.is_true(result)
+			assert.are.equal("reconnecting", net.state)
+			assert.are.equal(0, net.reconnectAttempts)
+		end)
+
+		it("closes existing socket", function()
+			local net = Network.create()
+			net.wasConnected = true
+			local closed = false
+			net.socket = {
+				close = function()
+					closed = true
+				end,
+			}
+			Network.startReconnection(net)
+			assert.is_true(closed)
+			assert.is_nil(net.socket)
+		end)
+	end)
+
+	-- 15. Network.cancelReconnection()
+	describe("cancelReconnection", function()
+		it("cancels reconnection and sets state to disconnected", function()
+			local net = Network.create()
+			net.state = "reconnecting"
+			net.reconnectAttempts = 3
+			net.reconnectStartTime = 12345
+			Network.cancelReconnection(net)
+			assert.are.equal("disconnected", net.state)
+			assert.are.equal(0, net.reconnectAttempts)
+			assert.is_nil(net.reconnectStartTime)
+		end)
+
+		it("does nothing if not reconnecting", function()
+			local net = Network.create()
+			net.state = "connected"
+			Network.cancelReconnection(net)
+			assert.are.equal("connected", net.state)
+		end)
+	end)
+
+	-- 16. Network.getReconnectionStatus()
+	describe("getReconnectionStatus", function()
+		it("returns not attempting when not reconnecting", function()
+			local net = Network.create()
+			local status = Network.getReconnectionStatus(net)
+			assert.is_false(status.attempting)
+			assert.are.equal(0, status.attempts)
+			assert.are.equal(5, status.maxAttempts)
+		end)
+
+		it("returns status when reconnecting", function()
+			local net = Network.create()
+			net.state = "reconnecting"
+			net.reconnectAttempts = 2
+			net.reconnectStartTime = os.time()
+			local status = Network.getReconnectionStatus(net)
+			assert.is_true(status.attempting)
+			assert.are.equal(2, status.attempts)
+			assert.are.equal(5, status.maxAttempts)
+		end)
+	end)
+
+	-- 17. Network.setReconnectEnabled()
+	describe("setReconnectEnabled", function()
+		it("enables reconnection", function()
+			local net = Network.create()
+			net.reconnectEnabled = false
+			Network.setReconnectEnabled(net, true)
+			assert.is_true(net.reconnectEnabled)
+		end)
+
+		it("disables reconnection", function()
+			local net = Network.create()
+			Network.setReconnectEnabled(net, false)
+			assert.is_false(net.reconnectEnabled)
+		end)
+	end)
+
+	-- 18. Reconnection state in create
+	describe("reconnection state initialization", function()
+		it("initializes reconnection enabled by default", function()
+			local net = Network.create()
+			assert.is_true(net.reconnectEnabled)
+		end)
+
+		it("initializes reconnect attempts to zero", function()
+			local net = Network.create()
+			assert.are.equal(0, net.reconnectAttempts)
+		end)
+
+		it("initializes wasConnected to false", function()
+			local net = Network.create()
+			assert.is_false(net.wasConnected)
+		end)
+	end)
 end)

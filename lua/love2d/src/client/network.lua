@@ -15,6 +15,11 @@ local hasSocket = pcall(function()
 	socket = require("socket")
 end)
 
+-- Reconnection constants
+local RECONNECT_DELAY = 2 -- seconds between reconnect attempts
+local MAX_RECONNECT_ATTEMPTS = 5
+local RECONNECT_TIMEOUT = 60 -- total time before giving up
+
 --- Create a new network state
 ---@param config table|nil Optional configuration {host, port}
 ---@return table Network state
@@ -24,7 +29,7 @@ function Network.create(config)
 		host = config.host or "localhost",
 		port = config.port or 7777,
 		socket = nil,
-		state = "disconnected", -- disconnected, connecting, connected, error
+		state = "disconnected", -- disconnected, connecting, connected, reconnecting, error
 		lastError = nil,
 		messageQueue = {}, -- Incoming messages
 		sendBuffer = "", -- Partial send buffer
@@ -32,6 +37,12 @@ function Network.create(config)
 		playerId = nil,
 		playerName = nil,
 		lastActivity = 0,
+		-- Reconnection state
+		reconnectEnabled = true,
+		reconnectAttempts = 0,
+		reconnectStartTime = nil,
+		lastReconnectAttempt = 0,
+		wasConnected = false, -- Track if we were previously connected
 	}
 end
 
@@ -160,6 +171,9 @@ function Network.connect(net, host, port)
 	net.lastActivity = socket.gettime()
 
 	Network.setState(net, "connected")
+	net.wasConnected = true
+	net.reconnectAttempts = 0
+	net.reconnectStartTime = nil
 	return true, nil
 end
 
@@ -196,7 +210,12 @@ function Network.send(net, message)
 
 	if not success then
 		if err == "closed" then
-			Network.setState(net, "disconnected")
+			-- Connection lost - try to reconnect if enabled
+			if net.reconnectEnabled and net.wasConnected then
+				Network.startReconnection(net)
+			else
+				Network.setState(net, "disconnected")
+			end
 		else
 			Network.setState(net, "error", err)
 		end
@@ -243,7 +262,12 @@ function Network.poll(net)
 			end
 		end
 	elseif err == "closed" then
-		Network.setState(net, "disconnected")
+		-- Connection lost - try to reconnect if enabled
+		if net.reconnectEnabled and net.wasConnected then
+			Network.startReconnection(net)
+		else
+			Network.setState(net, "disconnected")
+		end
 	end
 	-- "timeout" is normal for non-blocking socket
 end
@@ -287,6 +311,172 @@ end
 ---@return boolean True if socket available
 function Network.hasSocketSupport()
 	return hasSocket
+end
+
+--- Check if currently reconnecting
+---@param net table Network state
+---@return boolean True if reconnecting
+function Network.isReconnecting(net)
+	return net.state == "reconnecting"
+end
+
+--- Start reconnection process
+---@param net table Network state
+---@return boolean True if reconnection started
+function Network.startReconnection(net)
+	if not net.reconnectEnabled then
+		return false
+	end
+
+	if not net.wasConnected then
+		-- Never connected successfully, don't auto-reconnect
+		return false
+	end
+
+	if net.state == "reconnecting" then
+		-- Already reconnecting
+		return false
+	end
+
+	-- Close existing socket if any
+	if net.socket then
+		net.socket:close()
+		net.socket = nil
+	end
+
+	net.state = "reconnecting"
+	net.reconnectAttempts = 0
+	net.reconnectStartTime = hasSocket and socket.gettime() or os.time()
+	net.lastReconnectAttempt = 0
+
+	return true
+end
+
+--- Attempt a single reconnection
+---@param net table Network state
+---@return boolean success
+---@return string|nil error message
+function Network.attemptReconnect(net)
+	if not hasSocket then
+		return false, "luasocket not available"
+	end
+
+	net.reconnectAttempts = net.reconnectAttempts + 1
+	net.lastReconnectAttempt = socket.gettime()
+
+	-- Try to connect
+	local sock = socket.tcp()
+	sock:settimeout(5)
+
+	local success, err = sock:connect(net.host, net.port)
+	if not success then
+		sock:close()
+		return false, err
+	end
+
+	-- Connection successful
+	sock:settimeout(0)
+	net.socket = sock
+	net.lastActivity = socket.gettime()
+	net.state = "connected"
+
+	-- Re-authenticate if we have a player name
+	if net.playerName then
+		local msg = Network.createConnectMessage(net.playerName)
+		Network.send(net, msg)
+	end
+
+	return true, nil
+end
+
+--- Update reconnection state (call in update loop)
+---@param net table Network state
+---@param dt number Delta time in seconds
+---@return string|nil Event: "reconnected", "failed", "attempting", or nil
+function Network.updateReconnection(net, dt)
+	if net.state ~= "reconnecting" then
+		return nil
+	end
+
+	if not hasSocket then
+		net.state = "error"
+		net.lastError = "luasocket not available"
+		return "failed"
+	end
+
+	local currentTime = socket.gettime()
+
+	-- Check total timeout
+	local elapsed = currentTime - net.reconnectStartTime
+	if elapsed >= RECONNECT_TIMEOUT then
+		net.state = "error"
+		net.lastError = "Reconnection timeout"
+		return "failed"
+	end
+
+	-- Check max attempts
+	if net.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS then
+		net.state = "error"
+		net.lastError = "Max reconnection attempts reached"
+		return "failed"
+	end
+
+	-- Check if it's time for another attempt
+	local timeSinceAttempt = currentTime - net.lastReconnectAttempt
+	if timeSinceAttempt < RECONNECT_DELAY then
+		return nil
+	end
+
+	-- Attempt reconnection
+	local success, err = Network.attemptReconnect(net)
+	if success then
+		return "reconnected"
+	end
+
+	return "attempting"
+end
+
+--- Cancel reconnection
+---@param net table Network state
+function Network.cancelReconnection(net)
+	if net.state == "reconnecting" then
+		net.state = "disconnected"
+		net.reconnectAttempts = 0
+		net.reconnectStartTime = nil
+	end
+end
+
+--- Get reconnection status for UI
+---@param net table Network state
+---@return table Status {attempting, attempts, maxAttempts, timeRemaining}
+function Network.getReconnectionStatus(net)
+	if net.state ~= "reconnecting" then
+		return {
+			attempting = false,
+			attempts = 0,
+			maxAttempts = MAX_RECONNECT_ATTEMPTS,
+			timeRemaining = 0,
+		}
+	end
+
+	local elapsed = 0
+	if hasSocket and net.reconnectStartTime then
+		elapsed = socket.gettime() - net.reconnectStartTime
+	end
+
+	return {
+		attempting = true,
+		attempts = net.reconnectAttempts,
+		maxAttempts = MAX_RECONNECT_ATTEMPTS,
+		timeRemaining = math.max(0, RECONNECT_TIMEOUT - elapsed),
+	}
+end
+
+--- Enable or disable auto-reconnection
+---@param net table Network state
+---@param enabled boolean Enable reconnection
+function Network.setReconnectEnabled(net, enabled)
+	net.reconnectEnabled = enabled
 end
 
 return Network
