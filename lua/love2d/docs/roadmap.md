@@ -1,5 +1,8 @@
 # NNQR Love2D - Roadmap
 
+> **Note**: This file is now historical reference only.
+> Active task tracking uses Beads: run `bd list --labels lua,phase10`
+
 ## Overview
 
 Multi-phase implementation plan to bring NNQR Love2D to feature parity with original Quadradius (87 powers, multiplayer, AI opponent).
