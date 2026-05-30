@@ -5,6 +5,12 @@
 ## with the power_id. When no piece is selected or it has no powers, the menu
 ## is empty / hidden.
 ##
+## C5 enhancements:
+##   - Number prefix on every row ("1. Name  ×2").
+##   - Overheat warning: count >= 7 shows "⚠" suffix + orange warning colour.
+##   - Targeting instruction line ("Click a highlighted tile · Esc to cancel")
+##     when a power is armed (_active_power_id != "").
+##
 ## Usage:
 ##   const PowerMenu = preload("res://src/power_menu.gd")
 ##   var menu = PowerMenu.new()
@@ -32,6 +38,8 @@ const MENU_W       : int = 210
 const ROW_H        : int = 24
 const HEADER_H     : int = 28
 const PAD          : int = 8
+## Extra height reserved for the targeting instruction line below the rows.
+const INSTRUCT_H   : int = 32
 
 # ---------------------------------------------------------------------------
 # Colours
@@ -44,6 +52,10 @@ const COL_ITEM_TEXT   := Color(0.902, 0.910, 0.933)
 const COL_ITEM_BG     := Color(0.0, 0.0, 0.0, 0.0)
 const COL_ITEM_HOVER  := Color(0.600, 0.267, 0.800, 0.30)
 const COL_ACTIVE      := Color(0.800, 0.400, 1.000, 0.40)
+## Overheat warning colour (mirrors web C.overheatWarning = #ff4422).
+const COL_OVERHEAT    := Color(1.0, 0.267, 0.133)
+## Instruction text (dim white).
+const COL_INSTRUCT    := Color(0.800, 0.820, 0.880, 0.80)
 
 
 ## Internal state: ordered list of {power_id, count, name}.
@@ -155,7 +167,9 @@ func _draw() -> void:
 	if _entries.is_empty():
 		return
 
-	var total_h: int = HEADER_H + _entries.size() * ROW_H + PAD
+	# Total panel height: add instruction row when a power is armed.
+	var instruct_extra: int = INSTRUCT_H if _active_power_id != "" else 0
+	var total_h: int = HEADER_H + _entries.size() * ROW_H + PAD + instruct_extra
 	# Background panel.
 	draw_rect(Rect2(MENU_X, MENU_Y, MENU_W, total_h), COL_BG)
 	draw_rect(Rect2(MENU_X, MENU_Y, MENU_W, total_h), COL_BORDER, false, 1.0)
@@ -181,9 +195,17 @@ func _draw() -> void:
 		elif i == _hover_row:
 			draw_rect(Rect2(MENU_X + 1, ry, MENU_W - 2, ROW_H), COL_ITEM_HOVER)
 
-		var label: String = entry.name
+		# Number prefix (1-based).
+		var label: String = "%d. %s" % [i + 1, entry.name]
 		if entry.count > 1:
-			label = "%s  ×%d" % [entry.name, entry.count]
+			label = "%d. %s  ×%d" % [i + 1, entry.name, entry.count]
+
+		# Overheat warning marker and colour.
+		var text_col: Color = COL_ITEM_TEXT
+		if entry.count >= 7:
+			label = label + "  ⚠"
+			text_col = COL_OVERHEAT
+
 		draw_string(
 			ThemeDB.fallback_font,
 			Vector2(MENU_X + PAD, ry + ROW_H - 6.0),
@@ -191,5 +213,27 @@ func _draw() -> void:
 			HORIZONTAL_ALIGNMENT_LEFT,
 			MENU_W - PAD * 2,
 			13,
-			COL_ITEM_TEXT
+			text_col
+		)
+
+	# Targeting instruction line when a power is armed.
+	if _active_power_id != "":
+		var iy: float = float(MENU_Y + HEADER_H + _entries.size() * ROW_H + PAD + 2)
+		draw_string(
+			ThemeDB.fallback_font,
+			Vector2(MENU_X + PAD, iy + 14.0),
+			"Click a highlighted tile",
+			HORIZONTAL_ALIGNMENT_LEFT,
+			MENU_W - PAD * 2,
+			12,
+			COL_INSTRUCT
+		)
+		draw_string(
+			ThemeDB.fallback_font,
+			Vector2(MENU_X + PAD, iy + 28.0),
+			"Esc to cancel",
+			HORIZONTAL_ALIGNMENT_LEFT,
+			MENU_W - PAD * 2,
+			12,
+			COL_INSTRUCT
 		)

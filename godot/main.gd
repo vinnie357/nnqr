@@ -1,76 +1,124 @@
-## main.gd — Interactive NNQR controller (C4).
+## main.gd — Interactive NNQR controller (C5).
+##
+## State machine: TITLE → PLAYING → PAUSED (→ TITLE or back to PLAYING).
 ##
 ## Launched by main.tscn when no --scenario arg is present.
-## When --scenario IS present, ScenarioRunner takes over via its own scene.
+## When --scenario IS present, ScenarioRunner takes over via its own scene
+## and this node removes itself immediately — no title screen appears.
 ##
-## Mouse-only interaction:
-##   - Left click on a board tile → controller.handle_tile_click
-##   - Left click on power menu row → activate_power; if needs-target,
-##     next board click resolves it.
-##   - "New Game" affordance: press N to reset.
+## Mouse interaction:
+##   - Title screen: click to select mode/difficulty, click Start Game.
+##   - Board tile click → controller.handle_tile_click
+##   - Power menu click → activate_power; if needs-target, next board click
+##     resolves it.
+##   - Keys 1-9: activate Nth power of selected piece (deduplicated order).
+##   - N: new game (jumps back to title).
+##   - Escape: cancel power targeting (priority) OR toggle pause overlay.
 ##
-## vs-AI: player 1 = human, player 2 = AI (medium difficulty by default).
-## After each human move the AI responds automatically.
+## vs-AI: player 1 = human, player 2 = AI.
+## Hotseat: both players human — AI never fires.
 extends Node2D
 
-const GameState   = preload("res://src/game_state.gd")
-const Board       = preload("res://src/board.gd")
-const Renderer    = preload("res://src/renderer.gd")
-const PowerMenu   = preload("res://src/power_menu.gd")
-const Controller  = preload("res://src/controller.gd")
-const RNG         = preload("res://src/rng.gd")
-const AI          = preload("res://src/ai/ai.gd")
+const GameState      = preload("res://src/game_state.gd")
+const Board          = preload("res://src/board.gd")
+const Renderer       = preload("res://src/renderer.gd")
+const PowerMenu      = preload("res://src/power_menu.gd")
+const Controller     = preload("res://src/controller.gd")
+const RNG            = preload("res://src/rng.gd")
+const AI             = preload("res://src/ai/ai.gd")
 const ScenarioRunner = preload("res://src/scenario_runner.gd")
+const TitleScreen    = preload("res://src/title.gd")
+const PauseOverlay   = preload("res://src/pause_overlay.gd")
 
 # ---------------------------------------------------------------------------
-# Config
+# State machine
 # ---------------------------------------------------------------------------
 
-const VS_AI       : bool   = true
-const AI_PLAYER   : int    = 2
-const DIFFICULTY  : String = "medium"
+enum AppState { TITLE, PLAYING, PAUSED }
+
+var _app_state: AppState = AppState.TITLE
 
 # ---------------------------------------------------------------------------
-# State
+# Runtime config (set from title screen signal)
 # ---------------------------------------------------------------------------
 
-var _game_state               = null    ## GameState
-var _renderer: Node2D         = null
-var _power_menu: Node2D       = null
+const AI_PLAYER: int = 2
 
-## Power-targeting mode: null or {"piece": Piece, "power_id": String, "target_tiles": Array}
-var _power_mode               = null
-## True while the AI is computing its move (guard against double-clicks).
-var _ai_thinking: bool        = false
+var _vs_ai: bool       = true
+var _difficulty: String = "medium"
+
+# ---------------------------------------------------------------------------
+# Nodes
+# ---------------------------------------------------------------------------
+
+var _title: Node2D        = null
+var _game_state           = null    ## GameState
+var _renderer: Node2D     = null
+var _power_menu: Node2D   = null
+var _pause_overlay: Node2D = null
+
+## Power-targeting mode: null or {piece, power_id, target_tiles}.
+var _power_mode           = null
+## True while the AI is computing its move.
+var _ai_thinking: bool    = false
 
 
 # ---------------------------------------------------------------------------
-# _ready — check for --scenario arg first; if present, hand off.
+# _ready — check for --scenario arg first; if present, hand off immediately.
 # ---------------------------------------------------------------------------
 
 func _ready() -> void:
-	# Check for --scenario arg; if present, delegate to ScenarioRunner inline.
+	# CRITICAL: preserve the scenario early-return so the QA see-harness works.
 	var args: PackedStringArray = OS.get_cmdline_user_args()
-	for i in range(args.size()):
+	for i: int in range(args.size()):
 		if args[i] == "--scenario":
-			# Add a ScenarioRunner as a sibling node (deferred) and stop here.
 			var runner: Node2D = ScenarioRunner.new()
 			get_parent().call_deferred("add_child", runner)
-			# Remove self after runner is added so it doesn't render.
 			call_deferred("queue_free")
 			return
+
+	_show_title()
+
+
+# ---------------------------------------------------------------------------
+# Title screen
+# ---------------------------------------------------------------------------
+
+func _show_title() -> void:
+	_app_state = AppState.TITLE
+
+	# Tear down any running game.
+	_teardown_game()
+
+	# Tear down previous title if any.
+	if _title != null:
+		_title.queue_free()
+		_title = null
+
+	_title = TitleScreen.new()
+	_title.start_requested.connect(_on_start_requested)
+	add_child(_title)
+
+
+func _on_start_requested(mode: String, difficulty: String) -> void:
+	_vs_ai = (mode == "vsai")
+	_difficulty = difficulty
+
+	if _title != null:
+		_title.queue_free()
+		_title = null
 
 	_start_game()
 
 
+# ---------------------------------------------------------------------------
+# Game start / teardown
+# ---------------------------------------------------------------------------
+
 func _start_game() -> void:
-	# Clean up previous nodes if restarting.
-	if _renderer != null:
-		_renderer.queue_free()
-		_renderer = null
-	if _power_menu != null:
-		_power_menu.queue_free()
-		_power_menu = null
+	_app_state = AppState.PLAYING
+
+	_teardown_game()
 
 	var seed: int = Time.get_ticks_msec()
 	_game_state = Board.create_initial_state(seed)
@@ -86,9 +134,53 @@ func _start_game() -> void:
 
 	_refresh_display()
 
-	# If vs-AI and AI goes first, schedule the AI turn.
-	if VS_AI and _game_state.current_player == AI_PLAYER:
+	if _vs_ai and _game_state.current_player == AI_PLAYER:
 		_schedule_ai_turn()
+
+
+func _teardown_game() -> void:
+	if _pause_overlay != null:
+		_pause_overlay.queue_free()
+		_pause_overlay = null
+	if _renderer != null:
+		_renderer.queue_free()
+		_renderer = null
+	if _power_menu != null:
+		_power_menu.queue_free()
+		_power_menu = null
+	_game_state = null
+	_power_mode = null
+	_ai_thinking = false
+
+
+# ---------------------------------------------------------------------------
+# Pause overlay
+# ---------------------------------------------------------------------------
+
+func _show_pause() -> void:
+	_app_state = AppState.PAUSED
+	if _pause_overlay != null:
+		_pause_overlay.queue_free()
+		_pause_overlay = null
+	_pause_overlay = PauseOverlay.new()
+	_pause_overlay.resume_pressed.connect(_on_resume_pressed)
+	_pause_overlay.quit_pressed.connect(_on_quit_to_title)
+	add_child(_pause_overlay)
+
+
+func _hide_pause() -> void:
+	_app_state = AppState.PLAYING
+	if _pause_overlay != null:
+		_pause_overlay.queue_free()
+		_pause_overlay = null
+
+
+func _on_resume_pressed() -> void:
+	_hide_pause()
+
+
+func _on_quit_to_title() -> void:
+	_show_title()
 
 
 # ---------------------------------------------------------------------------
@@ -96,34 +188,92 @@ func _start_game() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	# N = new game; Escape = cancel power targeting.
-	if event is InputEventKey:
-		var ke := event as InputEventKey
-		if ke.pressed and ke.keycode == KEY_N:
-			_start_game()
-			return
-		if ke.pressed and ke.keycode == KEY_ESCAPE:
+	if not event is InputEventKey:
+		_handle_mouse_input(event)
+		return
+
+	var ke := event as InputEventKey
+	if not ke.pressed:
+		return
+
+	match _app_state:
+		AppState.TITLE:
+			pass  # Title screen handles its own input.
+
+		AppState.PLAYING:
+			_handle_key_playing(ke)
+
+		AppState.PAUSED:
+			# Esc while paused → resume.
+			if ke.keycode == KEY_ESCAPE:
+				_hide_pause()
+
+
+func _handle_key_playing(ke: InputEventKey) -> void:
+	match ke.keycode:
+		KEY_N:
+			_show_title()
+		KEY_ESCAPE:
 			if _power_mode != null:
+				# Targeting mode takes priority over pause.
 				_power_mode = null
 				_renderer.set_power_target_tiles([])
 				_power_menu.set_active_power("")
-			return
+			else:
+				_show_pause()
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
+			_handle_number_key(ke.keycode)
 
+
+## Activate the Nth power of the currently selected piece (1-indexed).
+## Power list = deduplicated first-occurrence order of selected_piece.powers.
+func _handle_number_key(keycode: Key) -> void:
+	if _game_state == null or _game_state.status != "playing":
+		return
+	if _ai_thinking:
+		return
+	if _vs_ai and _game_state.current_player == AI_PLAYER:
+		return
+
+	var sel = _game_state.selected
+	if sel == null:
+		return
+	var piece = Board.piece_at(_game_state, sel.row, sel.col)
+	if piece == null:
+		return
+
+	# Deduplicate powers preserving first-occurrence order.
+	var seen: Dictionary = {}
+	var ordered: Array = []
+	for p_id: String in piece.powers:
+		if not seen.has(p_id):
+			seen[p_id] = true
+			ordered.append(p_id)
+
+	# Map keycode → 0-indexed slot.
+	var idx: int = keycode - KEY_1   # KEY_1=0, KEY_2=1, …, KEY_9=8
+	if idx < 0 or idx >= ordered.size():
+		return
+
+	_on_power_chosen(ordered[idx])
+
+
+func _handle_mouse_input(event: InputEvent) -> void:
 	if not event is InputEventMouseButton:
 		return
 	var me := event as InputEventMouseButton
 	if not me.pressed or me.button_index != MOUSE_BUTTON_LEFT:
 		return
 
+	if _app_state != AppState.PLAYING:
+		return
 	if _ai_thinking or _game_state == null or _game_state.status != "playing":
 		return
-	# Block human input on AI's turn.
-	if VS_AI and _game_state.current_player == AI_PLAYER:
+	if _vs_ai and _game_state.current_player == AI_PLAYER:
 		return
 
 	var tile = _renderer.pixel_to_tile(me.position)
 	if tile == null:
-		# Click outside board: cancel power mode.
 		if _power_mode != null:
 			_power_mode = null
 			_renderer.set_power_target_tiles([])
@@ -134,33 +284,28 @@ func _unhandled_input(event: InputEvent) -> void:
 	var col: int = tile.col
 
 	if _power_mode != null:
-		# In targeting mode: check if this tile is a valid target.
 		var found_target: bool = false
-		for t in _power_mode.target_tiles:
+		for t: Dictionary in _power_mode.target_tiles:
 			if t.row == row and t.col == col:
 				found_target = true
 				break
 		if found_target:
 			_apply_power_with_target(row, col)
 		else:
-			# Cancel targeting.
 			_power_mode = null
 			_renderer.set_power_target_tiles([])
 			_power_menu.set_active_power("")
 		return
 
-	# Normal tile click.
 	_game_state = Controller.handle_tile_click(_game_state, row, col)
 	_refresh_display()
-
-	# After a successful human move, check if AI should respond.
 	_maybe_trigger_ai()
 
 
 func _on_power_chosen(power_id: String) -> void:
 	if _ai_thinking or _game_state == null or _game_state.status != "playing":
 		return
-	if VS_AI and _game_state.current_player == AI_PLAYER:
+	if _vs_ai and _game_state.current_player == AI_PLAYER:
 		return
 
 	var sel = _game_state.selected
@@ -187,7 +332,6 @@ func _on_power_chosen(power_id: String) -> void:
 		_renderer.set_power_target_tiles(result.target_tiles)
 		_power_menu.set_active_power(power_id)
 	else:
-		# Immediate power: apply and advance.
 		_game_state = result.state
 		_power_mode = null
 		_renderer.set_power_target_tiles([])
@@ -214,9 +358,9 @@ func _apply_power_with_target(row: int, col: int) -> void:
 # ---------------------------------------------------------------------------
 
 func _maybe_trigger_ai() -> void:
-	if not VS_AI:
-		return
-	if _game_state.status != "playing":
+	if not _vs_ai:
+		return   # Hotseat: no AI.
+	if _game_state == null or _game_state.status != "playing":
 		return
 	if _game_state.current_player == AI_PLAYER:
 		_schedule_ai_turn()
@@ -224,17 +368,16 @@ func _maybe_trigger_ai() -> void:
 
 func _schedule_ai_turn() -> void:
 	_ai_thinking = true
-	# Defer one frame so the display updates before the AI runs.
 	await get_tree().process_frame
 	_run_ai_turn()
 
 
 func _run_ai_turn() -> void:
-	if _game_state.status != "playing" or _game_state.current_player != AI_PLAYER:
+	if _game_state == null or _game_state.status != "playing" or _game_state.current_player != AI_PLAYER:
 		_ai_thinking = false
 		return
 	var rng := RNG.new(_game_state.seed + _game_state.turn)
-	_game_state = Controller.ai_take_turn(_game_state, DIFFICULTY, rng)
+	_game_state = Controller.ai_take_turn(_game_state, _difficulty, rng)
 	_ai_thinking = false
 	_refresh_display()
 
@@ -245,6 +388,11 @@ func _run_ai_turn() -> void:
 
 func _refresh_display() -> void:
 	if _renderer != null:
-		_renderer.load_state(_game_state)
+		var mode_str: String = "vsai" if _vs_ai else "hotseat"
+		_renderer.load_state(_game_state, {
+			"ai_thinking": _ai_thinking,
+			"mode": mode_str,
+			"difficulty": _difficulty,
+		})
 	if _power_menu != null:
 		_power_menu.update(_game_state)

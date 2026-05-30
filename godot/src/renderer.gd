@@ -12,6 +12,11 @@
 ##   - Height bar at tile bottom.
 ##   - Power badge dot on pieces with powers.
 ##
+## C5 enhancements:
+##   - HUD piece counts (P1: N  P2: N) derived from state.pieces.
+##   - AI-thinking indicator ("AI thinking…") from hud_info.ai_thinking.
+##   - Mode/difficulty label ("vs AI — hard" / "Hotseat") from hud_info.mode+difficulty.
+##
 ## Usage:
 ##   const Renderer = preload("res://src/renderer.gd")
 ##   var renderer = Renderer.new()
@@ -47,6 +52,8 @@ const COL_BADGE_NORM  := Color(1.0, 0.894, 0.302)
 const COL_BADGE_WARN  := Color(1.0, 0.267, 0.133)
 const COL_HB0         := Color(0.165, 0.184, 0.243, 0.6)
 const COL_HB4         := Color(0.353, 0.376, 0.471, 0.9)
+const COL_AI_IND      := Color(0.267, 0.667, 1.000)   ## ai indicator / thinking blue
+const COL_MODE_LABEL  := Color(0.800, 0.850, 0.950, 0.85)  ## mode/difficulty label
 
 
 var _state                = null           ## GameState
@@ -234,6 +241,9 @@ func _draw_pieces() -> void:
 
 func _draw_hud() -> void:
 	var board_bottom: float = MARGIN + _state.rows * TILE + 10.0
+	var y: float = board_bottom + 20.0
+
+	# Line 1: turn + current player (existing behaviour, kept verbatim for game-over path).
 	var label: String
 	if _state.status == "won":
 		label = "Turn %d — Player %d WINS" % [_state.turn, _state.winner]
@@ -241,13 +251,74 @@ func _draw_hud() -> void:
 		label = "Turn %d — Player %d to move" % [_state.turn, _state.current_player]
 	draw_string(
 		ThemeDB.fallback_font,
-		Vector2(MARGIN, board_bottom + 20.0),
+		Vector2(MARGIN, y),
 		label,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
 		16,
 		COL_LABEL
 	)
+
+	# Do not draw C5 extras when game is won (win banner dominates).
+	if _state.status == "won":
+		return
+
+	# Line 2 (same y, right-justified after the board): piece counts P1: N  P2: N
+	var p1_count: int = 0
+	var p2_count: int = 0
+	for piece in _state.pieces:
+		if piece.player == 1:
+			p1_count += 1
+		else:
+			p2_count += 1
+	var counts_label: String = "P1: %d   P2: %d" % [p1_count, p2_count]
+	# Draw counts to the right of the turn label — x=320 avoids overlap on a 560px board.
+	draw_string(
+		ThemeDB.fallback_font,
+		Vector2(320, y),
+		counts_label,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		16,
+		COL_LABEL
+	)
+
+	# Line 3 (y+20): mode/difficulty label + AI-thinking indicator.
+	var mode: String = str(_hud_info.get("mode", ""))
+	var difficulty: String = str(_hud_info.get("difficulty", ""))
+	var ai_thinking: bool = bool(_hud_info.get("ai_thinking", false))
+
+	var mode_text: String = ""
+	if mode == "vsai":
+		mode_text = "vs AI"
+		if difficulty != "":
+			mode_text = "vs AI — %s" % difficulty
+	elif mode == "hotseat":
+		mode_text = "Hotseat"
+
+	if ai_thinking:
+		var think_label: String = "AI thinking…"
+		if mode_text != "":
+			think_label = "%s  |  AI thinking…" % mode_text
+		draw_string(
+			ThemeDB.fallback_font,
+			Vector2(MARGIN, y + 22.0),
+			think_label,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			14,
+			COL_AI_IND
+		)
+	elif mode_text != "":
+		draw_string(
+			ThemeDB.fallback_font,
+			Vector2(MARGIN, y + 22.0),
+			mode_text,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			14,
+			COL_MODE_LABEL
+		)
 
 
 func _draw_win_banner() -> void:

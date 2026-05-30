@@ -1,0 +1,33 @@
+{
+	"_comment": "qa_hud.json — C5 HUD validation. Mid-game state with hud_info: ai_thinking=true, mode=vsai, difficulty=hard. Rendered HUD should show: piece counts (P1:3 P2:3), AI thinking label, vs AI — hard mode label.",
+	"current_player": 2,
+	"turn": 8,
+	"status": "playing",
+	"winner": 0,
+	"seed": 42,
+	"pieces": [
+		{"id": "p1-a", "player": 1, "row": 3, "col": 3, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p1-b", "player": 1, "row": 3, "col": 5, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p1-c", "player": 1, "row": 3, "col": 7, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-a", "player": 2, "row": 6, "col": 3, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-b", "player": 2, "row": 6, "col": 5, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-c", "player": 2, "row": 6, "col": 7, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [],
+	"hud_info": {
+		"ai_thinking": true,
+		"mode": "vsai",
+		"difficulty": "hard"
+	}
+}

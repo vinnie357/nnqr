@@ -42,11 +42,13 @@ func _ready() -> void:
 	var parse_result: Dictionary = _resolve_state_and_inputs()
 	var state = parse_result["state"]
 	var inputs: Array = parse_result.get("inputs", [])
+	var hud_info: Dictionary = parse_result.get("hud_info", {})
 
 	# Apply input actions before rendering.
 	state = _apply_inputs(state, inputs)
 
-	_renderer.load_state(state)
+	# Pass hud_info to renderer so C5 HUD extras are visible in QA screenshots.
+	_renderer.load_state(state, hud_info)
 
 	_menu = PowerMenu.new()
 	add_child(_menu)
@@ -76,7 +78,7 @@ func _resolve_state_and_inputs() -> Dictionary:
 		print("ScenarioRunner: no --scenario arg; using initial board.")
 		var state = GameState.new()
 		state.init_board()
-		return {"state": state, "inputs": []}
+		return {"state": state, "inputs": [], "hud_info": {}}
 
 	print("ScenarioRunner: loading scenario: ", scenario_path)
 	return _load_scenario(scenario_path)
@@ -109,7 +111,13 @@ func _load_scenario(path: String) -> Dictionary:
 		inputs = dict["inputs"] as Array
 		print("ScenarioRunner: %d input action(s) to apply." % inputs.size())
 
-	return {"state": state, "inputs": inputs}
+	# Optional hud_info object: passed through to renderer.load_state for C5 QA.
+	var hud_info: Dictionary = {}
+	if dict.has("hud_info") and dict["hud_info"] is Dictionary:
+		hud_info = dict["hud_info"] as Dictionary
+		print("ScenarioRunner: hud_info keys: %s" % str(hud_info.keys()))
+
+	return {"state": state, "inputs": inputs, "hud_info": hud_info}
 
 
 # ---------------------------------------------------------------------------
