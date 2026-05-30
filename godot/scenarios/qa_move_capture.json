@@ -1,0 +1,30 @@
+{
+	"_comment": "qa_move_capture.json — QA: select a piece, move onto adjacent enemy, assert enemy gone and mover at target. Player 1 piece at (4,4) is adjacent to player 2 piece at (5,4). Inputs: click (4,4) to select, click (5,4) to capture. Expected: p2-enemy absent from pieces, p1-mover at row=5 col=4, current_player==2, turn==1.",
+	"current_player": 1,
+	"turn": 0,
+	"status": "playing",
+	"winner": 0,
+	"seed": 1,
+	"pieces": [
+		{"id": "p1-mover", "player": 1, "row": 4, "col": 4, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-enemy", "player": 2, "row": 5, "col": 4, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p1-other", "player": 1, "row": 1, "col": 1, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-other", "player": 2, "row": 8, "col": 10, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [],
+	"inputs": [
+		{"type": "click", "row": 4, "col": 4},
+		{"type": "click", "row": 5, "col": 4}
+	]
+}

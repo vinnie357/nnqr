@@ -1,0 +1,38 @@
+{
+	"_comment": "qa_overheat.json — C5 power-menu overheat validation. p1-a carries 8x 'raise_tile' (count>=7 triggers warning). Inputs: click (4,5) to select. The rendered menu should show '1. Raise Tile  x8  ⚠' in orange warning colour with the number label.",
+	"current_player": 1,
+	"turn": 5,
+	"status": "playing",
+	"winner": 0,
+	"seed": 9,
+	"pieces": [
+		{
+			"id": "p1-a",
+			"player": 1,
+			"row": 4,
+			"col": 5,
+			"powers": ["raise_tile","raise_tile","raise_tile","raise_tile","raise_tile","raise_tile","raise_tile","raise_tile"],
+			"is_jump_proof": false,
+			"can_move_diagonally": false,
+			"can_climb_any": false,
+			"can_wrap": false,
+			"is_invisible": false
+		},
+		{"id": "p2-a", "player": 2, "row": 7, "col": 5, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [],
+	"inputs": [
+		{"type": "click", "row": 4, "col": 5}
+	]
+}

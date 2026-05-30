@@ -1,0 +1,18 @@
+# NOTE: the mise/aqua Godot install is broken on case-insensitive macOS
+# (self-referential godot->Godot symlink clobbers the binary). scripts/godot.sh
+# resolves a working binary via direct download instead. Set GODOT_BIN to override.
+
+[tasks.godot]
+description = "Run the interactive game (resolves a working binary; downloads if needed)"
+run = "./scripts/godot.sh --path ."
+
+[tasks.scenario]
+description = "Run a scenario headlessly: render -> screenshot PNG + state JSON (see-loop)"
+run = "./scripts/godot.sh --path . --quit-after 60"
+
+[tasks.ci]
+description = "Headless import/compile check (GDScript parse) + run all tests"
+run = """
+./scripts/godot.sh --headless --path . --quit-after 5
+bash tests/run_all.sh
+"""

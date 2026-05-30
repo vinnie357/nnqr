@@ -1,0 +1,31 @@
+{
+	"_comment": "qa_vs_ai.json — QA: human move then AI responds. p1 piece at (3,5), p2 pieces at (6,4), (6,5), (6,6). Inputs: (1) click (3,5) select, (2) click (4,5) move, (3) ai_turn medium. Expected: current_player==1 (cycled back), at least one p2 piece not at original row 6 position, status=='playing'.",
+	"current_player": 1,
+	"turn": 0,
+	"status": "playing",
+	"winner": 0,
+	"seed": 42,
+	"pieces": [
+		{"id": "p1-a", "player": 1, "row": 3, "col": 5, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-a", "player": 2, "row": 6, "col": 4, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-b", "player": 2, "row": 6, "col": 5, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-c", "player": 2, "row": 6, "col": 6, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [],
+	"inputs": [
+		{"type": "click", "row": 3, "col": 5},
+		{"type": "click", "row": 4, "col": 5},
+		{"type": "ai_turn", "difficulty": "medium"}
+	]
+}

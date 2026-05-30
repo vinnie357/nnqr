@@ -1,0 +1,28 @@
+{
+	"_comment": "qa_activate_power.json — QA: p1 piece at (4,5) holds ['jump_proof'] in powers. Inputs: (1) click (4,5) to select, (2) activate 'jump_proof' (self power, no target). Expected: piece.is_jump_proof==true, piece.powers no longer contains 'jump_proof' (consumed), current_player unchanged (blocking power ends turn — actually jump_proof is non-blocking so turn does NOT flip; current_player stays 1).",
+	"current_player": 1,
+	"turn": 1,
+	"status": "playing",
+	"winner": 0,
+	"seed": 7,
+	"pieces": [
+		{"id": "p1-a", "player": 1, "row": 4, "col": 5, "powers": ["jump_proof"], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-a", "player": 2, "row": 7, "col": 5, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [],
+	"inputs": [
+		{"type": "click", "row": 4, "col": 5},
+		{"type": "activate", "power_id": "jump_proof"}
+	]
+}

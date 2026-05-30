@@ -1,0 +1,12 @@
+# Godot editor cache / imported assets
+.godot/
+*.import
+export_presets.cfg
+
+# QA see-loop artifacts (screenshots + state dumps)
+.qa/
+probe.png
+probe-state.json
+
+# Locally-resolved Godot runtime (see mise.toml; aqua install is broken on macOS)
+.bin/

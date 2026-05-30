@@ -81,3 +81,61 @@ jobs:
       # mise-provided shell; bun then finds web/package.json.
       - name: Install deps + typecheck + test
         run: mise exec -- bash -c 'cd "$GITHUB_WORKSPACE/web" && bun install && bun run typecheck && bun run test'
+
+  godot:
+    name: Godot
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: godot
+    env:
+      GODOT_VERSION: 4.6.3-stable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-mise
+
+      # Cache the downloaded Godot binary (~100 MB zip) keyed by version.
+      # godot.sh extracts to ~/.cache/nnqr-godot/<ver>/; caching that dir avoids
+      # re-downloading on every run.
+      - name: Cache Godot binary
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/nnqr-godot
+          key: godot-bin-${{ runner.os }}-${{ env.GODOT_VERSION }}
+
+      # Godot 4 on a headless Linux runner needs these system libraries even in
+      # --headless script mode (no display or GPU required for the unit tests).
+      # libasound2t64 is the Ubuntu 24.04 name; libasound2 is the Ubuntu 22.04 name.
+      # Both are attempted so the job works regardless of ubuntu-latest vintage.
+      - name: Install Godot runtime dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libgl1 \
+            libgles2 \
+            libpulse0 \
+            libx11-6 \
+            libxcursor1 \
+            libxinerama1 \
+            libxrandr2 \
+            libxrender1 \
+            libxi6
+          sudo apt-get install -y --no-install-recommends libasound2t64 \
+            || sudo apt-get install -y --no-install-recommends libasound2
+
+      - name: Install tools
+        run: mise trust && mise install
+
+      # Gate: run the 13 headless GDScript unit tests.
+      # These use --headless + script mode (SceneTree logic only, no GPU/display).
+      # Exit code = number of failures; 0 means all pass.
+      - name: Run unit tests
+        run: bash tests/run_all.sh
+
+      # NOTE: qa/run_stories.sh is intentionally NOT run in CI.
+      # The scenario runner calls RenderingServer.frame_post_draw and saves PNGs,
+      # which requires a real display/GPU. Running it under xvfb + Mesa lavapipe
+      # is possible but adds flake risk (render timing, lavapipe availability across
+      # ubuntu-latest versions). run_stories.sh is a local/lead see-loop tool;
+      # run_all.sh is the reliable headless gate.
