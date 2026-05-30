@@ -1,0 +1,34 @@
+{
+	"_comment": "powermenu.json — a p1 piece carrying 3 distinct powers selected; expects power menu visible with names + counts.",
+	"current_player": 1,
+	"turn": 10,
+	"status": "playing",
+	"winner": 0,
+	"seed": 7,
+	"pieces": [
+		{
+			"id": "p1-pow",
+			"player": 1,
+			"row": 4,
+			"col": 5,
+			"powers": ["relocate", "flat_to_sphere", "relocate", "shield"]
+		},
+		{"id": "p2-a", "player": 2, "row": 6, "col": 5},
+		{"id": "p2-b", "player": 2, "row": 6, "col": 6}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,2,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [],
+	"inputs": [
+		{"type": "click", "row": 4, "col": 5}
+	]
+}

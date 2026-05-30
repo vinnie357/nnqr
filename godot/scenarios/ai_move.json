@@ -1,0 +1,31 @@
+{
+	"_comment": "ai_move.json — human move followed by AI response. p1 piece at (3,5) moves to (4,5) capturing p2 there, then AI (p2) takes a turn. Screenshot shows state after both moves.",
+	"current_player": 1,
+	"turn": 0,
+	"status": "playing",
+	"winner": 0,
+	"seed": 42,
+	"pieces": [
+		{"id": "p1-a", "player": 1, "row": 3, "col": 5},
+		{"id": "p2-a", "player": 2, "row": 5, "col": 5},
+		{"id": "p2-b", "player": 2, "row": 5, "col": 6},
+		{"id": "p2-c", "player": 2, "row": 6, "col": 4}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [],
+	"inputs": [
+		{"type": "click",  "row": 3, "col": 5},
+		{"type": "click",  "row": 4, "col": 5},
+		{"type": "ai_turn", "difficulty": "medium"}
+	]
+}

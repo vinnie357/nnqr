@@ -1,0 +1,32 @@
+{
+	"_comment": "orbs.json — varied height_map + orbs on the board; expects height shading visible on tiles and orb gold-circle markers.",
+	"current_player": 1,
+	"turn": 2,
+	"status": "playing",
+	"winner": 0,
+	"seed": 3,
+	"pieces": [
+		{"id": "p1-a", "player": 1, "row": 1, "col": 1},
+		{"id": "p1-b", "player": 1, "row": 2, "col": 4},
+		{"id": "p2-a", "player": 2, "row": 7, "col": 8},
+		{"id": "p2-b", "player": 2, "row": 8, "col": 3}
+	],
+	"height_map": [
+		[0,1,2,3,4,3,2,1,0,0],
+		[1,2,3,4,3,2,1,0,0,0],
+		[2,3,4,3,2,1,0,0,0,0],
+		[3,4,3,2,1,0,0,0,0,0],
+		[4,3,2,1,0,0,0,0,1,2],
+		[3,2,1,0,0,0,0,1,2,3],
+		[2,1,0,0,0,0,1,2,3,4],
+		[1,0,0,0,0,1,2,3,4,3]
+	],
+	"destroyed_tiles": {"3,6": true, "4,7": true},
+	"orbs": [
+		{"row": 3, "col": 3, "power_id": "relocate"},
+		{"row": 5, "col": 5, "power_id": "shield"},
+		{"row": 4, "col": 9, "power_id": "flat_to_sphere"},
+		{"row": 6, "col": 2, "power_id": "raise_tile"}
+	],
+	"inputs": []
+}

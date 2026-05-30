@@ -1,0 +1,120 @@
+## controller.gd — Pure game-flow logic for NNQR.
+## No input or render dependencies — fully unit-testable.
+##
+## handle_tile_click: selection → move flow (mirrors web/src/game/controller.ts).
+## activate_power: routes through executor; returns a result dict with
+##   "state" (GameState), "mode" (MODE_NORMAL or MODE_AWAITING_TARGET),
+##   and "target_tiles" (Array, non-empty when mode == MODE_AWAITING_TARGET).
+## ai_take_turn: calls ai.choose_move and applies the result.
+##
+## Mode constants:
+##   Controller.MODE_NORMAL           — normal play
+##   Controller.MODE_AWAITING_TARGET  — waiting for player to click a target tile
+extends RefCounted
+
+const Board    = preload("res://src/board.gd")
+const GameState = preload("res://src/game_state.gd")
+const Executor = preload("res://src/powers/executor.gd")
+const Targets  = preload("res://src/powers/targets.gd")
+const AI       = preload("res://src/ai/ai.gd")
+
+## Mode values returned by activate_power.
+const MODE_NORMAL           : String = "normal"
+const MODE_AWAITING_TARGET  : String = "awaiting_target"
+
+
+# ---------------------------------------------------------------------------
+# handle_tile_click
+# ---------------------------------------------------------------------------
+
+## Handle a board tile click during the current player's turn.
+##
+## Flow (mirrors web controller.ts handleTileClick):
+##   1. If game is over, return state unchanged.
+##   2. If a valid move is selected and the click is on a valid move tile → move.
+##   3. Otherwise → (re)select or deselect via board.select_piece.
+##
+## Returns a new GameState (immutable pattern — never mutates input).
+static func handle_tile_click(state: GameState, row: int, col: int) -> GameState:
+	if state.status != "playing":
+		return state
+
+	# If a piece is selected and the clicked tile is a valid move, execute the move.
+	if state.selected != null:
+		for m: Dictionary in state.valid_moves:
+			if m.row == row and m.col == col:
+				return Board.move_to(state, row, col)
+
+	# Otherwise (re)select: board.select_piece handles empty tiles, enemy pieces,
+	# and clicking the same tile (clears selection).
+	return Board.select_piece(state, row, col)
+
+
+# ---------------------------------------------------------------------------
+# activate_power
+# ---------------------------------------------------------------------------
+
+## Activate a power for `piece` on `state`.
+##
+## If the power needs a target and no target is provided:
+##   Returns {"state": state, "mode": MODE_AWAITING_TARGET, "target_tiles": Array}.
+##   The caller should highlight target_tiles and call activate_power again with
+##   the chosen tile once the player clicks.
+##
+## If the power needs a target and a valid target is provided, or if the power
+## is immediate (no target needed):
+##   Returns {"state": <new_state>, "mode": MODE_NORMAL, "target_tiles": []}.
+##
+## `target` is a {"row":int, "col":int} Dictionary or null.
+static func activate_power(
+		state: GameState,
+		piece: GameState.Piece,
+		power_id: String,
+		target) -> Dictionary:   # -> {"state":GameState, "mode":String, "target_tiles":Array}
+
+	if Targets.needs_target(power_id) and target == null:
+		var tiles: Array = Targets.get_target_tiles(state, piece, power_id)
+		return {
+			"state": state,
+			"mode": MODE_AWAITING_TARGET,
+			"target_tiles": tiles,
+		}
+
+	# Execute the power (with or without a target).
+	var executor := Executor.new()
+	var new_state: GameState = executor.execute(state, piece, power_id, target)
+	return {
+		"state": new_state,
+		"mode": MODE_NORMAL,
+		"target_tiles": [],
+	}
+
+
+# ---------------------------------------------------------------------------
+# ai_take_turn
+# ---------------------------------------------------------------------------
+
+## Apply the AI's move for the current player in `state`.
+##
+## Calls AI.choose_move, then board.select_piece + board.move_to.
+## If no move is available (no legal moves), returns the state unchanged.
+##
+## @param state      Current game state (AI player must be current_player).
+## @param difficulty "easy" | "medium" | "hard" | "expert"
+## @param rng        Seeded RNG instance from rng.gd.
+## @returns New GameState after the AI move, or original state if no move found.
+static func ai_take_turn(state: GameState, difficulty: String, rng: Object) -> GameState:
+	if state.status != "playing":
+		return state
+
+	var decision = AI.choose_move(state, state.current_player, difficulty, rng)
+	if decision == null:
+		return state
+
+	var piece: GameState.Piece = decision["piece"]
+	var move: Dictionary = decision["move"]
+
+	# Select the piece (populates valid_moves in the intermediate state)
+	var mid: GameState = Board.select_piece(state, piece.row, piece.col)
+	# Apply the move
+	return Board.move_to(mid, move.row, move.col)
