@@ -1,0 +1,31 @@
+[tools]
+node = "lts"
+bun = "latest"
+
+[tasks.setup]
+description = "Install web dependencies"
+run = "bun install"
+
+[tasks.dev]
+description = "Run the web game dev server (localhost:1425)"
+run = "bun run dev"
+
+[tasks.test]
+description = "Run vitest unit tests"
+depends = ["setup"]
+run = "bun run test"
+
+[tasks.typecheck]
+description = "TypeScript type check"
+depends = ["setup"]
+run = "bun run typecheck"
+
+[tasks.build]
+description = "Type-check + production build"
+depends = ["setup"]
+run = "bun run build"
+
+[tasks.ci]
+description = "CI: type check + unit tests"
+depends = ["setup"]
+run = "bun run typecheck && bun run test"

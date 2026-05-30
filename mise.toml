@@ -160,9 +160,21 @@ run = "mise run -C lua/love2d ci"
 description = "Rust/Bevy CI workflow"
 run = "mise run -C rust/bevy ci"
 
+[tasks.web-dev]
+description = "Run the web implementation dev server (localhost:1425)"
+run = "mise run -C web dev"
+
+[tasks.web-test]
+description = "Web implementation unit tests"
+run = "mise run -C web test"
+
+[tasks.web-ci]
+description = "Web implementation CI workflow"
+run = "mise run -C web ci"
+
 [tasks.ci]
 description = "CI workflow: runs all implementation test suites"
-depends = ["lua-ci", "rust-ci"]
+depends = ["lua-ci", "rust-ci", "web-ci"]
 
 [tasks.precommit]
 description = "Alias for ci task"
