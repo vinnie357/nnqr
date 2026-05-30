@@ -28,3 +28,12 @@ Feature: Basic piece movement and capture
     When the player piece moves onto the enemy tile
     Then state.json shows status == "won" and winner is set
 ```
+
+## QA harness scenarios (driven from a fresh state)
+
+The scenarios above are reference stories. The following QA scenarios each START
+from a state that does NOT contain the outcome, drive inputs to PRODUCE it,
+and assert the result on `state.json`.
+
+- `res://scenarios/qa_move_capture.json` — select piece at (4,4), move onto adjacent
+  enemy at (5,4); asserts enemy gone, mover at (5,4), turn advanced, current_player==2.

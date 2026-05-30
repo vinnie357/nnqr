@@ -35,3 +35,9 @@ Feature: Collecting and using powers
     And the rendered frame shows the power menu listing "relocate" and "flat_to_sphere"
     QA file: res://scenarios/powermenu.json
 ```
+
+## QA harness scenarios (driven from a fresh state)
+
+- `res://scenarios/qa_collect_menu.json` — starts with p1 piece having empty powers
+  and an orb adjacent; drives move-onto-orb (collect), then ai_turn to return turn to
+  player 1, then re-select to show menu. Asserts power gained, orb gone, piece selected.

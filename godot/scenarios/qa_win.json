@@ -1,0 +1,28 @@
+{
+	"_comment": "qa_win.json — QA: p1 piece at (4,4) is adjacent to p2's only piece at (5,4). Inputs: (1) click (4,4) select, (2) click (5,4) capture. Expected: status=='won', winner==1, no player-2 pieces in pieces[].",
+	"current_player": 1,
+	"turn": 10,
+	"status": "playing",
+	"winner": 0,
+	"seed": 3,
+	"pieces": [
+		{"id": "p1-last", "player": 1, "row": 4, "col": 4, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-last", "player": 2, "row": 5, "col": 4, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [],
+	"inputs": [
+		{"type": "click", "row": 4, "col": 4},
+		{"type": "click", "row": 5, "col": 4}
+	]
+}
