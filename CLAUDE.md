@@ -36,7 +36,7 @@ mise run love-fmt        # Format code
 
 ```
 nnqr/
-├── .beads/              # Beads issue tracker database
+├── .bees/               # Bees issue tracker database
 ├── rust/bevy/           # Rust/Bevy implementation
 │   ├── src/             # Source code
 │   │   ├── components/  # ECS components
@@ -126,51 +126,51 @@ cd rust/bevy
 - **LuaPill**: For isometric maps
 - **HUMP**: Helper utilities
 
-## Beads Issue Tracking
+## Bees Issue Tracking
 
-This project uses **Beads** (`bd`) for git-backed issue tracking, designed for AI agent workflows.
+This project uses **bees** for SQLite-backed, local-first issue tracking, designed for AI agent workflows. Unlike beads, bees installs **no git hooks** and exports to JSONL on demand via `bees sync`.
 
 ### Quick Reference
 ```bash
-bd ready                 # Show tasks with no blockers (pick next task)
-bd ready --json          # JSON output for programmatic access
-bd list                  # List all open tasks
-bd list -l lua           # Filter by label
-bd list -l lua -l phase10  # Filter by multiple labels (AND)
-bd show <id>             # Show task details (use first 4+ chars of ID)
-bd create "title"        # Create new task
-bd close <id>            # Mark task complete
-bd sync                  # Sync with git remote
+bees ready               # Show issues with no blockers (pick next issue)
+bees ready --json        # JSON output for programmatic access
+bees list                # List all open issues
+bees list --labels lua   # Filter by label
+bees show <id>           # Show issue details
+bees create "title"      # Create new issue
+bees close <id> -r "..." # Mark issue complete (with reason)
+bees sync                # Export DB to .bees/issues.jsonl (commit it)
 ```
 
 ### Agent Workflow
-1. Run `bd ready` to find available tasks
-2. Pick a task and work on it
-3. Run `bd close <id>` when done
-4. Run `bd sync` to push changes
+1. Run `bees ready` to find available issues
+2. Pick an issue and work on it
+3. Run `bees close <id> -r "..."` when done
+4. Run `bees sync`, commit `.bees/issues.jsonl`, and push
 
-### Task Dependencies
+### Issue Dependencies
 ```bash
-bd dep add <child> <parent>   # child depends on parent
-bd dep blockers <id>          # what blocks this task
-bd dep blocking <id>          # what this task blocks
+bees dep add <id> <blocker-id>   # <id> depends on <blocker-id>
+bees dep add <id> <other> -t related  # non-blocking link
+bees dep list <id>               # this issue's dependencies
 ```
 
 ### Labels Convention
 - `lua` / `rust` - implementation
-- `phase10` / `phase9` - roadmap phase
+- `phase10` / `phase11` - roadmap phase
 - `bug` / `feature` / `chore` - type
-- `priority:high` / `priority:low` - urgency
+- `complexity:trivial` / `complexity:complex` - pipeline-decision label
+- `priority:p1` … `priority:p4` - urgency (keeps `bees ready` order)
 
 ### More Info
-See `AGENTS.md` for detailed beads workflow and `/core:beads` skill for full documentation.
+See `AGENTS.md` for detailed bees workflow and `/core:beads` skill for full documentation.
 
 ### Starting a Work Session
 
 ```bash
-bd ready              # Find next task
-bd show <id>          # Read requirements
-bd update <id> --status in_progress  # Claim it
+bees ready            # Find next issue
+bees show <id>        # Read requirements
+bees update <id> --status in_progress  # Claim it
 ```
 
 See `AGENTS.md` for full work loop and session completion protocols.
@@ -249,7 +249,7 @@ Execute tools to verify before making claims. Never assume.
 - 82 powers implemented
 - AI opponent (4 difficulty levels)
 - Multiplayer server/client infrastructure
-- Active tasks: `bd list -l lua -l phase10`
+- Active tasks: `bees list --labels lua`
 
 ## Resources
 

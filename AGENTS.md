@@ -1,42 +1,42 @@
 # Agent Instructions
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+This project uses **bees** for issue tracking (SQLite-backed, local-first, no git hooks). Run `bees init` once per clone if `.bees/` is missing.
 
 For AI agent-specific documentation (pseudocode, prompt templates, multi-agent coordination), see `docs/beads/agent-loop.md`.
 
 ## Quick Reference
 
 ```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
+bees ready              # Find available work
+bees show <id>          # View issue details
+bees update <id> --status in_progress  # Claim work
+bees close <id> -r "..."  # Complete work (with reason)
+bees sync               # Export DB to .bees/issues.jsonl (commit it)
 ```
 
 ## Work Loop (Starting a Session)
 
 ### 1. Find Work
 ```bash
-bd ready              # Tasks with no blockers
-bd show <id>          # Full task details
+bees ready              # Issues with no blockers
+bees show <id>          # Full issue details
 ```
 
-### 2. Claim Task
+### 2. Claim Issue
 ```bash
-bd update <id> --status in_progress
+bees update <id> --status in_progress
 ```
 
 ### 3. Do Work
-- Read task description for requirements
+- Read issue description for requirements
 - Implement following project patterns
 - Write tests (TDD preferred)
 - Run quality checks (see below)
 
-### 4. Complete Task
+### 4. Complete Issue
 ```bash
-bd close <id>         # Unblocks dependent tasks
-bd ready              # See newly available work
+bees close <id> -r "Done in PR #N"   # Unblocks dependent issues
+bees ready                            # See newly available work
 ```
 
 ## Quality Gates
@@ -53,23 +53,24 @@ mise run rust-test          # Tests
 mise run rust-clippy        # Lint
 ```
 
-## Filtering Tasks
+## Filtering Issues
 
 ```bash
-bd list                       # All open tasks
-bd list -l lua                # Filter by label
-bd list -l lua -l phase10     # Multiple labels (AND)
-bd list --status in_progress  # Active work
+bees list                       # All open issues
+bees list --labels "lua"        # Filter by label
+bees list --status closed       # Closed issues
+bees list --json                # Machine-readable
 ```
 
 ## Dependencies
 
-Closing a task may unblock others:
+Closing an issue may unblock others:
 
 ```bash
-bd show <id>                    # Shows BLOCKS section
-bd dep blockers <id>            # What blocks this task
-bd dep add <task> <depends-on>  # Add dependency
+bees show <id>                  # Shows dependencies
+bees dep list <id>              # List this issue's dependencies
+bees dep add <id> <blocker-id>  # <id> depends on <blocker-id>
+bees dep add <id> <other> -t related   # Non-blocking link
 ```
 
 ## Labels Convention
@@ -77,9 +78,10 @@ bd dep add <task> <depends-on>  # Add dependency
 | Label | Meaning |
 |-------|---------|
 | `lua` / `rust` | Implementation |
-| `phase10` | Roadmap phase |
+| `phase10` / `phase11` | Roadmap phase |
 | `10a` / `10b` / `10c` | Sub-phase |
 | `bug` / `feature` / `task` | Type |
+| `complexity:trivial` / `complexity:complex` | Pipeline-decision label |
 
 ## Landing the Plane (Session Completion)
 
@@ -90,10 +92,11 @@ bd dep add <task> <depends-on>  # Add dependency
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+4. **Export + PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd sync
+   bees sync          # Export DB to .bees/issues.jsonl
+   git add .bees/issues.jsonl && git commit -m "chore(bees): sync"
    git push
    git status  # MUST show "up to date with origin"
    ```
@@ -106,4 +109,4 @@ bd dep add <task> <depends-on>  # Add dependency
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
-
+- bees stores state in SQLite (`.bees/bees.db`, gitignored); the shared source of truth is `.bees/issues.jsonl` via `bees sync`. Unlike beads, there is no bidirectional `pull` — share via git + JSONL.

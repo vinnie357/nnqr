@@ -113,3 +113,6 @@ flake.lock
 /default.nix
 
 # Before adding new lines, see the comment at the top.
+
+# bees: local VS Code compat symlink (.beads -> .bees); tracked data is .bees/issues.jsonl
+/.beads

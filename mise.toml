@@ -2,7 +2,16 @@
 node = 'lts'
 "ubi:nushell/nushell" = { version = "latest", exe = "nu" }
 act = "latest"  # Local GitHub Actions testing
-"github:steveyegge/beads" = "latest"  # Git-backed issue tracker
+
+# Lightweight SQLite-backed issue tracker (no git hooks; manual `bees sync` export)
+[tools."github:ctxshift/bees"]
+version = "latest"
+
+[tools."github:ctxshift/bees".platforms]
+linux-x64 = { asset_pattern = "bees-linux-x86_64.tar.gz" }
+linux-arm64 = { asset_pattern = "bees-linux-aarch64.tar.gz" }
+macos-arm64 = { asset_pattern = "bees-macos-aarch64.tar.gz" }
+macos-x64 = { asset_pattern = "bees-macos-x86_64.tar.gz" }
 
 [env]
 RUST_BACKTRACE = "1"
@@ -120,24 +129,24 @@ description = "Install luarocks and busted for Love2D testing"
 run = "mise run -C lua/love2d setup"
 
 # ============================================================================
-# BEADS ISSUE TRACKING TASKS
+# BEES ISSUE TRACKING TASKS
 # ============================================================================
 
-[tasks.bd-ready]
-description = "Show beads tasks ready to work on (no blockers)"
-run = "bd ready"
+[tasks.bees-ready]
+description = "Show bees issues ready to work on (no blockers)"
+run = "bees ready"
 
-[tasks.bd-list]
-description = "List all open beads tasks"
-run = "bd list"
+[tasks.bees-list]
+description = "List all open bees issues"
+run = "bees list"
 
-[tasks.bd-sync]
-description = "Sync beads with git remote"
-run = "bd sync"
+[tasks.bees-sync]
+description = "Export bees database to .bees/issues.jsonl"
+run = "bees sync"
 
-[tasks.bd-doctor]
-description = "Check beads health and configuration"
-run = "bd doctor"
+[tasks.bees-prime]
+description = "Dump bees issues as AI context (markdown)"
+run = "bees prime"
 
 # ============================================================================
 # CI/CD TASKS
