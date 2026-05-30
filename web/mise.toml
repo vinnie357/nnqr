@@ -2,30 +2,41 @@
 node = "lts"
 bun = "latest"
 
+# All tasks run in this file's own directory ({{config_root}} = web/) so `bun`
+# always finds web/package.json, even when mise is invoked from the repo root
+# (e.g. the root `web-ci` proxy or CI). Without this, mise runs tasks from the
+# top-most config dir (repo root) and `bun install` fails with "no package.json".
+
 [tasks.setup]
 description = "Install web dependencies"
+dir = "{{config_root}}"
 run = "bun install"
 
 [tasks.dev]
 description = "Run the web game dev server (localhost:1425)"
+dir = "{{config_root}}"
 run = "bun run dev"
 
 [tasks.test]
 description = "Run vitest unit tests"
+dir = "{{config_root}}"
 depends = ["setup"]
 run = "bun run test"
 
 [tasks.typecheck]
 description = "TypeScript type check"
+dir = "{{config_root}}"
 depends = ["setup"]
 run = "bun run typecheck"
 
 [tasks.build]
 description = "Type-check + production build"
+dir = "{{config_root}}"
 depends = ["setup"]
 run = "bun run build"
 
 [tasks.ci]
 description = "CI: type check + unit tests"
+dir = "{{config_root}}"
 depends = ["setup"]
 run = "bun run typecheck && bun run test"
