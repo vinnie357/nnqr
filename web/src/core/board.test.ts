@@ -9,6 +9,7 @@ import {
   pieceAt,
   selectPiece,
 } from "./board";
+import { createHeightMap } from "./height";
 import type { GameState, Piece } from "./types";
 
 describe("createInitialState", () => {
@@ -52,15 +53,131 @@ describe("getValidMoves", () => {
         { id: "a", player: 1, row: 4, col: 4, powers: [] },
         { id: "b", player: 2, row: 4, col: 5, powers: [] },
       ],
+      heightMap: createHeightMap(BOARD_ROWS, BOARD_COLS, 0),
+      destroyedTiles: {},
+      orbs: [],
       currentPlayer: 1,
       selected: null,
       validMoves: [],
       status: "playing",
       winner: null,
       turn: 0,
+      seed: 1,
     };
     const moves = getValidMoves(s, s.pieces[0] as Piece);
     expect(moves).toContainEqual({ row: 4, col: 5, capture: true });
+  });
+
+  it("excludes a +2 height tile a normal piece cannot climb", () => {
+    const heightMap = createHeightMap(BOARD_ROWS, BOARD_COLS, 0);
+    // piece is at height 0, target (4,5) is height 2 — climb of 2 is illegal
+    heightMap[3]![4] = 2; // row 4, col 5 (0-indexed: row-1=3, col-1=4)
+    const s: GameState = {
+      cols: BOARD_COLS,
+      rows: BOARD_ROWS,
+      pieces: [{ id: "a", player: 1, row: 4, col: 4, powers: [] }],
+      heightMap,
+      destroyedTiles: {},
+      orbs: [],
+      currentPlayer: 1,
+      selected: null,
+      validMoves: [],
+      status: "playing",
+      winner: null,
+      turn: 0,
+      seed: 1,
+    };
+    const moves = getValidMoves(s, s.pieces[0] as Piece);
+    expect(moves.find((m) => m.row === 4 && m.col === 5)).toBeUndefined();
+  });
+
+  it("allows dropping from a high tile to a low tile", () => {
+    const heightMap = createHeightMap(BOARD_ROWS, BOARD_COLS, 0);
+    // piece is at height 4, target (4,5) is height 0 — drop of 4 is legal
+    heightMap[3]![3] = 4; // row 4, col 4 (0-indexed)
+    const s: GameState = {
+      cols: BOARD_COLS,
+      rows: BOARD_ROWS,
+      pieces: [{ id: "a", player: 1, row: 4, col: 4, powers: [] }],
+      heightMap,
+      destroyedTiles: {},
+      orbs: [],
+      currentPlayer: 1,
+      selected: null,
+      validMoves: [],
+      status: "playing",
+      winner: null,
+      turn: 0,
+      seed: 1,
+    };
+    const moves = getValidMoves(s, s.pieces[0] as Piece);
+    expect(moves.find((m) => m.row === 4 && m.col === 5)).toEqual({ row: 4, col: 5, capture: false });
+  });
+
+  it("excludes a destroyed adjacent tile", () => {
+    const s: GameState = {
+      cols: BOARD_COLS,
+      rows: BOARD_ROWS,
+      pieces: [{ id: "a", player: 1, row: 4, col: 4, powers: [] }],
+      heightMap: createHeightMap(BOARD_ROWS, BOARD_COLS, 0),
+      destroyedTiles: { "4,5": true },
+      orbs: [],
+      currentPlayer: 1,
+      selected: null,
+      validMoves: [],
+      status: "playing",
+      winner: null,
+      turn: 0,
+      seed: 1,
+    };
+    const moves = getValidMoves(s, s.pieces[0] as Piece);
+    expect(moves.find((m) => m.row === 4 && m.col === 5)).toBeUndefined();
+  });
+
+  it("grants diagonal moves when canMoveDiagonally is set", () => {
+    const s: GameState = {
+      cols: BOARD_COLS,
+      rows: BOARD_ROWS,
+      pieces: [{ id: "a", player: 1, row: 4, col: 4, powers: [], canMoveDiagonally: true }],
+      heightMap: createHeightMap(BOARD_ROWS, BOARD_COLS, 0),
+      destroyedTiles: {},
+      orbs: [],
+      currentPlayer: 1,
+      selected: null,
+      validMoves: [],
+      status: "playing",
+      winner: null,
+      turn: 0,
+      seed: 1,
+    };
+    const moves = getValidMoves(s, s.pieces[0] as Piece);
+    // Must include at least one diagonal move, e.g. (3,3)
+    expect(moves.find((m) => m.row === 3 && m.col === 3)).toEqual({ row: 3, col: 3, capture: false });
+    expect(moves.length).toBeGreaterThan(4);
+  });
+
+  it("cannot capture a jump-proof enemy", () => {
+    const s: GameState = {
+      cols: BOARD_COLS,
+      rows: BOARD_ROWS,
+      pieces: [
+        { id: "a", player: 1, row: 4, col: 4, powers: [] },
+        { id: "b", player: 2, row: 4, col: 5, powers: [], isJumpProof: true },
+      ],
+      heightMap: createHeightMap(BOARD_ROWS, BOARD_COLS, 0),
+      destroyedTiles: {},
+      orbs: [],
+      currentPlayer: 1,
+      selected: null,
+      validMoves: [],
+      status: "playing",
+      winner: null,
+      turn: 0,
+      seed: 1,
+    };
+    const moves = getValidMoves(s, s.pieces[0] as Piece);
+    // The jump-proof enemy tile should not appear as a capture move
+    expect(moves.find((m) => m.row === 4 && m.col === 5)).toBeUndefined();
   });
 });
 
@@ -98,12 +215,16 @@ describe("moveTo", () => {
         { id: "a", player: 1, row: 4, col: 4, powers: [] },
         { id: "b", player: 2, row: 4, col: 5, powers: [] },
       ],
+      heightMap: createHeightMap(BOARD_ROWS, BOARD_COLS, 0),
+      destroyedTiles: {},
+      orbs: [],
       currentPlayer: 1,
       selected: null,
       validMoves: [],
       status: "playing",
       winner: null,
       turn: 0,
+      seed: 1,
     };
     s = selectPiece(s, 4, 4);
     s = moveTo(s, 4, 5);

@@ -1,10 +1,13 @@
-// Core board rules for the NNQR walking skeleton: 10x8 board, 20 pieces per
-// player (rows 1-2 and 7-8), orthogonal single-step movement, capture by
-// landing on an enemy, win by elimination. Ported from the canonical spec
-// (research/game.md) and the Lua reference (lua/love2d/src/logic.lua). Height,
-// powers, and orbs are added in later milestones (Track B2).
+// Core board rules: 10x8 board, 20 pieces per player (rows 1-2 and 7-8),
+// orthogonal single-step movement (diagonal/wrap via power flags), terrain-height
+// climb limits, capture by landing on an enemy (unless jump-proof), win by
+// elimination. Ported from research/game.md and lua/love2d (logic.lua,
+// power_effects.lua getValidMovesWithPowers). Powers, orbs (collection), and AI
+// build on this contract in their own modules.
 
+import { canClimb, createHeightMap, getHeight } from "./height";
 import type { GameState, Move, Piece, Player } from "./types";
+import { tileKey } from "./types";
 
 export const BOARD_COLS = 10;
 export const BOARD_ROWS = 8;
@@ -14,6 +17,12 @@ const ORTHOGONAL: ReadonlyArray<readonly [number, number]> = [
   [1, 0],
   [0, -1],
   [0, 1],
+];
+const DIAGONAL: ReadonlyArray<readonly [number, number]> = [
+  [-1, -1],
+  [-1, 1],
+  [1, -1],
+  [1, 1],
 ];
 
 function makePieces(player: Player): Piece[] {
@@ -27,17 +36,21 @@ function makePieces(player: Player): Piece[] {
   return pieces;
 }
 
-export function createInitialState(): GameState {
+export function createInitialState(seed = 1): GameState {
   return {
     cols: BOARD_COLS,
     rows: BOARD_ROWS,
     pieces: [...makePieces(1), ...makePieces(2)],
+    heightMap: createHeightMap(BOARD_ROWS, BOARD_COLS, 0),
+    destroyedTiles: {},
+    orbs: [],
     currentPlayer: 1,
     selected: null,
     validMoves: [],
     status: "playing",
     winner: null,
     turn: 0,
+    seed,
   };
 }
 
@@ -49,17 +62,48 @@ export function pieceAt(state: GameState, row: number, col: number): Piece | nul
   return state.pieces.find((p) => p.row === row && p.col === col) ?? null;
 }
 
-/** Orthogonal single-step moves to empty tiles or enemy-occupied tiles (capture). */
+export function isDestroyed(state: GameState, row: number, col: number): boolean {
+  return state.destroyedTiles[tileKey(row, col)] === true;
+}
+
+/** A jump-proof piece cannot be captured by normal movement. */
+export function canCapture(_state: GameState, _attacker: Piece, target: Piece): boolean {
+  return !target.isJumpProof;
+}
+
+function wrap(row: number, col: number): { row: number; col: number } {
+  let r = row;
+  let c = col;
+  if (r < 1) r = BOARD_ROWS;
+  else if (r > BOARD_ROWS) r = 1;
+  if (c < 1) c = BOARD_COLS;
+  else if (c > BOARD_COLS) c = 1;
+  return { row: r, col: c };
+}
+
+/**
+ * Valid single-step moves, honoring the piece's power flags: diagonal movement,
+ * edge wrap, unrestricted climbing, and jump-proof capture immunity.
+ */
 export function getValidMoves(state: GameState, piece: Piece): Move[] {
   const moves: Move[] = [];
-  for (const [dr, dc] of ORTHOGONAL) {
-    const row = piece.row + dr;
-    const col = piece.col + dc;
+  const fromHeight = getHeight(state.heightMap, piece.row, piece.col);
+  const dirs = piece.canMoveDiagonally ? [...ORTHOGONAL, ...DIAGONAL] : ORTHOGONAL;
+
+  for (const [dr, dc] of dirs) {
+    let row = piece.row + dr;
+    let col = piece.col + dc;
+    if (piece.canWrap) ({ row, col } = wrap(row, col));
     if (!inBounds(row, col)) continue;
+    if (isDestroyed(state, row, col)) continue;
+
+    const toHeight = getHeight(state.heightMap, row, col);
+    if (!piece.canClimbAny && !canClimb(fromHeight, toHeight)) continue;
+
     const occupant = pieceAt(state, row, col);
     if (!occupant) {
       moves.push({ row, col, capture: false });
-    } else if (occupant.player !== piece.player) {
+    } else if (occupant.player !== piece.player && canCapture(state, piece, occupant)) {
       moves.push({ row, col, capture: true });
     }
   }
@@ -85,9 +129,9 @@ export function selectPiece(state: GameState, row: number, col: number): GameSta
 }
 
 /**
- * Move the selected piece to (row, col) if it is a valid move. Captures any
- * enemy on the target, ends the turn, and resolves a winner. Returns the state
- * unchanged when the move is illegal.
+ * Move the selected piece to (row, col) if legal: captures an enemy on the
+ * target, ends the turn, and resolves a winner. Orb collection is layered on by
+ * the orbs module at the call site. Returns state unchanged when illegal.
  */
 export function moveTo(state: GameState, row: number, col: number): GameState {
   if (state.status !== "playing" || !state.selected) return state;
