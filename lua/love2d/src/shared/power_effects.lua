@@ -2268,6 +2268,11 @@ end
 ---@param target table Target position {row, col} - top-left of 2x2
 ---@return table Updated game state
 function PowerEffects.activateCenterpult(state, piece, target)
+	-- No target supplied: nothing to do, keep the power (defensive no-op).
+	if not target then
+		return state
+	end
+
 	-- Move piece to the top-left corner of the 2x2
 	-- The piece at target gets displaced (destroyed)
 	for i = #state.pieces, 1, -1 do
