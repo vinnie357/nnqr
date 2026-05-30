@@ -112,7 +112,7 @@ See implementation-specific README files for detailed contribution guidelines:
 - **v0.1.0**: Basic board and movement
 
 ### Lua/Love2D
-- **v0.9.0** *(In Development)*: 83 powers, 980+ tests, multiplayer in progress
+- **v0.9.0** *(In Development)*: 82 powers, 980+ tests, multiplayer in progress
 
 ## License
 
