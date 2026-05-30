@@ -16,6 +16,12 @@ import {
   type GameMode,
 } from "./game/controller";
 import {
+  createPauseOverlay,
+  handleEscape,
+  resume,
+  type PauseOverlayState,
+} from "./game/pause-overlay";
+import {
   CANVAS_W,
   CANVAS_H,
   MARGIN_LEFT,
@@ -36,6 +42,15 @@ class MainScene extends Phaser.Scene {
   private gfx!: Phaser.GameObjects.Graphics;
   private texts!: RenderTargets["texts"];
   private ctrlState!: ControllerState;
+
+  // ---- Pause overlay state ----
+  private pauseState: PauseOverlayState = createPauseOverlay();
+  /** Semi-transparent dim rectangle drawn over the board when paused. */
+  private pauseGfx!: Phaser.GameObjects.Graphics;
+  /** Container holding the pause menu text objects. */
+  private pauseContainer!: Phaser.GameObjects.Container;
+  private pauseResumeBtn!: Phaser.GameObjects.Rectangle;
+  private pauseQuitBtn!: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super("main");
@@ -105,8 +120,74 @@ class MainScene extends Phaser.Scene {
       winBanner: winText,
     };
 
+    // ---- Discoverable hint (always visible in-game) ----
+    this.add.text(CANVAS_W - 10, 32, "Esc: pause / menu", {
+      fontFamily: "system-ui, sans-serif",
+      fontSize: "11px",
+      color: "#555577",
+    }).setOrigin(1, 0);
+
+    // ---- Pause overlay ----
+    this.pauseGfx = this.add.graphics();
+    this.pauseContainer = this.add.container(0, 0);
+
+    const cx = CANVAS_W / 2;
+    const cy = CANVAS_H / 2;
+
+    // Backdrop card.
+    const card = this.add.rectangle(cx, cy, 320, 200, 0x111318, 0.97)
+      .setStrokeStyle(2, 0x6666aa);
+
+    const title = this.add.text(cx, cy - 70, "⏸  Paused", {
+      fontFamily: "system-ui, sans-serif",
+      fontSize: "22px",
+      color: "#ffd633",
+      fontStyle: "bold",
+    }).setOrigin(0.5);
+
+    // Resume button.
+    this.pauseResumeBtn = this.add.rectangle(cx, cy - 12, 220, 40, 0x33384a)
+      .setStrokeStyle(1, 0x6666aa)
+      .setInteractive({ useHandCursor: true });
+    const resumeLabel = this.add.text(cx, cy - 12, "Resume  (Esc / Enter)", {
+      fontFamily: "system-ui, sans-serif",
+      fontSize: "15px",
+      color: "#e6e8ee",
+    }).setOrigin(0.5);
+
+    // Quit button.
+    this.pauseQuitBtn = this.add.rectangle(cx, cy + 42, 220, 40, 0x33384a)
+      .setStrokeStyle(1, 0x6666aa)
+      .setInteractive({ useHandCursor: true });
+    const quitLabel = this.add.text(cx, cy + 42, "Quit to Title  (Q)", {
+      fontFamily: "system-ui, sans-serif",
+      fontSize: "15px",
+      color: "#e6e8ee",
+    }).setOrigin(0.5);
+
+    const hint = this.add.text(cx, cy + 82, "R also returns to title at any time", {
+      fontFamily: "system-ui, sans-serif",
+      fontSize: "11px",
+      color: "#444466",
+    }).setOrigin(0.5);
+
+    this.pauseContainer.add([card, title, this.pauseResumeBtn, resumeLabel, this.pauseQuitBtn, quitLabel, hint]);
+    this.pauseContainer.setVisible(false);
+
+    // Button interactions.
+    this.pauseResumeBtn.on("pointerover", () => { this.pauseResumeBtn.setFillStyle(0x4a5070); });
+    this.pauseResumeBtn.on("pointerout", () => { this.pauseResumeBtn.setFillStyle(0x33384a); });
+    this.pauseResumeBtn.on("pointerdown", () => { this.applyResume(); });
+
+    this.pauseQuitBtn.on("pointerover", () => { this.pauseQuitBtn.setFillStyle(0x4a5070); });
+    this.pauseQuitBtn.on("pointerout", () => { this.pauseQuitBtn.setFillStyle(0x33384a); });
+    this.pauseQuitBtn.on("pointerdown", () => { this.applyQuitToTitle(); });
+
     // Board click handler.
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
+      // Suspend board input while paused (pause overlay handles its own clicks).
+      if (this.pauseState.paused) return;
+
       const col = Math.floor((p.x - MARGIN_LEFT) / TILE) + 1;
       const row = Math.floor((p.y - MARGIN_TOP) / TILE) + 1;
       if (row >= 1 && row <= BOARD_ROWS && col >= 1 && col <= BOARD_COLS) {
@@ -123,7 +204,22 @@ class MainScene extends Phaser.Scene {
     // Keyboard input.
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        this.controller.cancelPowerMode();
+        const result = handleEscape(this.pauseState, this.ctrlState.powerMode !== null);
+        if (result.action === "cancelPower") {
+          this.controller.cancelPowerMode();
+        } else {
+          this.pauseState = result.next;
+          this.updatePauseOverlay();
+        }
+        return;
+      }
+      // While paused, only Q (quit) and Enter (resume) are active.
+      if (this.pauseState.paused) {
+        if (event.key === "Enter") {
+          this.applyResume();
+        } else if (event.key === "q" || event.key === "Q") {
+          this.applyQuitToTitle();
+        }
         return;
       }
       if (event.key === "r" || event.key === "R") {
@@ -141,6 +237,33 @@ class MainScene extends Phaser.Scene {
 
     this.exposeBridge();
     this.render();
+  }
+
+  /** Resume from the pause overlay — restores the same game state exactly. */
+  private applyResume(): void {
+    this.pauseState = resume(this.pauseState);
+    this.updatePauseOverlay();
+  }
+
+  /** Quit to title from the pause overlay. */
+  private applyQuitToTitle(): void {
+    this.pauseState = resume(this.pauseState);
+    this.controller.destroy();
+    this.scene.start("title");
+  }
+
+  /** Sync the pause overlay Phaser objects with the current pauseState. */
+  private updatePauseOverlay(): void {
+    const visible = this.pauseState.paused;
+    this.pauseContainer.setVisible(visible);
+    if (visible) {
+      // Draw a semi-transparent dim over the full canvas.
+      this.pauseGfx.clear();
+      this.pauseGfx.fillStyle(0x000000, 0.55);
+      this.pauseGfx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    } else {
+      this.pauseGfx.clear();
+    }
   }
 
   private handlePowerMenuClick(y: number): void {
@@ -206,6 +329,7 @@ class MainScene extends Phaser.Scene {
     window.NNQR = {
       version: "0.2.0",
       getState: () => structuredClone(this.ctrlState.game),
+      isPaused: () => this.pauseState.paused,
       api: {
         select: (row: number, col: number) => {
           // Route through the controller so validMoves and all side-effects run.
@@ -366,6 +490,7 @@ const game = new Phaser.Game({
         window.NNQR = {
           version: "0.2.0",
           getState: () => createInitialState(),
+          isPaused: () => false,
           api: {
             select: (_r: number, _c: number) => createInitialState(),
             move: (_r: number, _c: number) => createInitialState(),

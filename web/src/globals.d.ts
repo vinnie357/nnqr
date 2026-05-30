@@ -9,6 +9,8 @@ declare global {
       version: string;
       /** Returns a deep clone of the current game state. */
       getState: () => GameState;
+      /** Returns true when the pause overlay is open (QA / see-loop use). */
+      isPaused: () => boolean;
       api: {
         /**
          * Select the piece at (row, col) for the current player, or clear
