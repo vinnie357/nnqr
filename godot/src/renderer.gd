@@ -247,17 +247,26 @@ func _draw_win_banner() -> void:
 	if _state.status != "won":
 		return
 	var bw := 340.0
-	var bh := 60.0
+	var bh := 80.0
 	var board_cx: float = MARGIN + float(_state.cols) * TILE / 2.0
 	var board_cy: float = MARGIN + float(_state.rows) * TILE / 2.0
 	draw_rect(Rect2(board_cx - bw / 2.0, board_cy - bh / 2.0, bw, bh), COL_WIN_BG)
-	var msg := "PLAYER %d WINS!" % _state.winner
+	var msg := "PLAYER %d WINS! (turn %d)" % [_state.winner, _state.turn]
 	draw_string(
 		ThemeDB.fallback_font,
-		Vector2(board_cx - bw / 2.0 + 20.0, board_cy + 10.0),
+		Vector2(board_cx - bw / 2.0 + 20.0, board_cy - 5.0),
 		msg,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
 		26,
 		COL_WIN_TEXT
+	)
+	draw_string(
+		ThemeDB.fallback_font,
+		Vector2(board_cx - bw / 2.0 + 20.0, board_cy + 22.0),
+		"Press N for a new game",
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		16,
+		COL_LABEL
 	)

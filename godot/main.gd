@@ -37,7 +37,6 @@ const DIFFICULTY  : String = "medium"
 var _game_state               = null    ## GameState
 var _renderer: Node2D         = null
 var _power_menu: Node2D       = null
-var _rng                      = null
 
 ## Power-targeting mode: null or {"piece": Piece, "power_id": String, "target_tiles": Array}
 var _power_mode               = null
@@ -73,8 +72,8 @@ func _start_game() -> void:
 		_power_menu.queue_free()
 		_power_menu = null
 
-	_rng = RNG.new(1)
-	_game_state = Board.create_initial_state(1)
+	var seed: int = Time.get_ticks_msec()
+	_game_state = Board.create_initial_state(seed)
 	_power_mode = null
 	_ai_thinking = false
 
@@ -97,11 +96,17 @@ func _start_game() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	# N = new game.
+	# N = new game; Escape = cancel power targeting.
 	if event is InputEventKey:
 		var ke := event as InputEventKey
 		if ke.pressed and ke.keycode == KEY_N:
 			_start_game()
+			return
+		if ke.pressed and ke.keycode == KEY_ESCAPE:
+			if _power_mode != null:
+				_power_mode = null
+				_renderer.set_power_target_tiles([])
+				_power_menu.set_active_power("")
 			return
 
 	if not event is InputEventMouseButton:
