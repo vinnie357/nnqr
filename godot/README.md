@@ -15,8 +15,14 @@ TS reference).
 ## Running
 
 ```bash
-mise run -C godot godot -- --path godot/   # open/run (resolves a working binary)
+mise run -C godot godot          # run the interactive vs-AI game
+# or directly:
+cd godot && ./scripts/godot.sh --path .
 ```
+
+Click a piece to select it; green dots are legal moves (orange ring = capture).
+A piece carrying power orbs shows a "Powers" menu on the right. Player 2 is the AI.
+To open the project in the editor instead: `mise run -C godot godot -- -e`.
 
 `scripts/godot.sh` resolves Godot: `$GODOT_BIN` → cached download →
 official-release download. The mise/aqua install is broken on case-insensitive
