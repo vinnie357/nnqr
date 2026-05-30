@@ -172,6 +172,7 @@ return function(Game)
 			or def.targeting == "adjacent_enemy"
 			or def.targeting == "adjacent_empty"
 			or def.targeting == "adjacent_destroyed"
+			or def.targeting == "special"
 
 		if needsTarget then
 			-- Enter power targeting mode
@@ -194,6 +195,8 @@ return function(Game)
 			return PowerEffects.getRefurbTargets(Game.state, piece)
 		elseif powerId == "switcheroo" then
 			return PowerEffects.getSwitcherooTargets(Game.state, piece)
+		elseif powerId == "centerpult" then
+			return PowerEffects.getCenterpultTargets(Game.state, piece)
 		end
 		return {}
 	end
