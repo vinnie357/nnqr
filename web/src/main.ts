@@ -9,8 +9,7 @@
 
 import Phaser from "phaser";
 import type { Difficulty } from "./core/ai/ai";
-import { BOARD_COLS, BOARD_ROWS, createInitialState, selectPiece, moveTo } from "./core/board";
-import { execute } from "./core/powers/executor";
+import { BOARD_COLS, BOARD_ROWS, createInitialState } from "./core/board";
 import {
   GameController,
   type ControllerState,
@@ -209,29 +208,23 @@ class MainScene extends Phaser.Scene {
       getState: () => structuredClone(this.ctrlState.game),
       api: {
         select: (row: number, col: number) => {
-          const next = selectPiece(this.ctrlState.game, row, col);
-          this.controller["state"] = { ...this.ctrlState, game: next };
-          this.ctrlState = this.controller.getState();
-          this.render();
+          // Route through the controller so validMoves and all side-effects run.
+          this.controller.handleTileClick(row, col);
           return structuredClone(this.ctrlState.game);
         },
         move: (row: number, col: number) => {
-          const next = moveTo(this.ctrlState.game, row, col);
-          this.controller["state"] = { ...this.ctrlState, game: next };
-          this.ctrlState = this.controller.getState();
-          this.render();
+          // Route through the controller — triggers orb collection, overheat,
+          // orb spawn, and scheduleAiTurn when in vs-AI mode.
+          this.controller.handleTileClick(row, col);
           return structuredClone(this.ctrlState.game);
         },
         activatePower: (powerId: string, target?: { row: number; col: number }) => {
-          const { game } = this.ctrlState;
-          const sel = game.selected;
-          if (!sel) return structuredClone(game);
-          const piece = game.pieces.find((p) => p.row === sel.row && p.col === sel.col);
-          if (!piece) return structuredClone(game);
-          const next = execute(game, piece, powerId, target);
-          this.controller["state"] = { ...this.ctrlState, game: next };
-          this.ctrlState = this.controller.getState();
-          this.render();
+          // Activate the power via the controller's handler.
+          this.controller.handlePowerActivation(powerId);
+          // If a target is provided, complete targeting with a second tile click.
+          if (target !== undefined) {
+            this.controller.handleTileClick(target.row, target.col);
+          }
           return structuredClone(this.ctrlState.game);
         },
         newGame: (opts: { mode: GameMode; difficulty: Difficulty }) => {

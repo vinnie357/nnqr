@@ -3,6 +3,7 @@
 // ControllerState + scene references.
 
 import type Phaser from "phaser";
+import { isDestroyed as isTileDestroyed } from "../core/board";
 import { getHeight } from "../core/height";
 import { definitions } from "../core/powers/definitions";
 import { powerCounts, tileColor } from "../core/powers/targets";
@@ -171,9 +172,9 @@ function renderBoard(g: Phaser.GameObjects.Graphics, game: GameState): void {
   for (let row = 1; row <= game.rows; row++) {
     for (let col = 1; col <= game.cols; col++) {
       const { x, y } = tileXY(row, col);
-      const isDestroyed = game.destroyedTiles[`${row},${col}`] === true;
+      const destroyed = isTileDestroyed(game, row, col);
 
-      if (isDestroyed) {
+      if (destroyed) {
         g.fillStyle(C.destroyedTile, 1);
         g.fillRect(x, y, TILE, TILE);
         // Hatch pattern to make destroyed tiles distinct.
