@@ -11,5 +11,8 @@ description = "Run a scenario headlessly: render -> screenshot PNG + state JSON 
 run = "./scripts/godot.sh --path . --quit-after 60"
 
 [tasks.ci]
-description = "Headless import/compile check (GDScript parse)"
-run = "./scripts/godot.sh --headless --path . --quit-after 5"
+description = "Headless import/compile check (GDScript parse) + run all tests"
+run = """
+./scripts/godot.sh --headless --path . --quit-after 5
+bash tests/run_all.sh
+"""
