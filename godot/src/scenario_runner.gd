@@ -27,10 +27,12 @@ const Renderer   = preload("res://src/renderer.gd")
 const Controller = preload("res://src/controller.gd")
 const Board      = preload("res://src/board.gd")
 const RNG        = preload("res://src/rng.gd")
+const PowerMenu  = preload("res://src/power_menu.gd")
 
 const QA_DIR: String = "res://.qa"
 
 var _renderer: Node2D = null
+var _menu: Node2D = null
 
 
 func _ready() -> void:
@@ -45,6 +47,10 @@ func _ready() -> void:
 	state = _apply_inputs(state, inputs)
 
 	_renderer.load_state(state)
+
+	_menu = PowerMenu.new()
+	add_child(_menu)
+	_menu.update(state)
 
 	# Wait for one rendered frame before capturing.
 	await RenderingServer.frame_post_draw
