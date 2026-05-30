@@ -23,7 +23,7 @@ mise run rust-test            # Run tests
 
 ### Lua/Love2D (Development)
 **Path**: `lua/love2d/`
-**Status**: Phase 9B complete, 83 powers implemented, multiplayer in progress
+**Status**: Phase 9B complete, 82 powers implemented, multiplayer in progress
 
 ```bash
 mise run love-start      # Run game
@@ -246,7 +246,7 @@ Execute tools to verify before making claims. Never assume.
 - Meta powers (power-on-power)
 
 ### Lua/Love2D
-- 83 powers implemented
+- 82 powers implemented
 - AI opponent (4 difficulty levels)
 - Multiplayer server/client infrastructure
 - Active tasks: `bd list -l lua -l phase10`
