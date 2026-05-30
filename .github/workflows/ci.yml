@@ -78,4 +78,4 @@ jobs:
         run: mise trust && mise install
 
       - name: Run CI
-        run: mise run web-ci
+        run: mise run ci
