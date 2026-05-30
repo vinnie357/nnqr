@@ -70,6 +70,68 @@ local function wrapPosition(row, col, rows, cols)
 	return wrappedRow, wrappedCol
 end
 
+--- Return pieces in the given area (row/column/radial) excluding the activator.
+---@param state table Game state
+---@param piece table Activating piece (excluded from results)
+---@param area string "row" | "column" | "radial"
+---@return table Array of matching pieces
+local function areaPieceTargets(state, piece, area)
+	local targets = {}
+	for _, p in ipairs(state.pieces) do
+		if p ~= piece then
+			local match = false
+			if area == "row" then
+				match = p.row == piece.row
+			elseif area == "column" then
+				match = p.col == piece.col
+			elseif area == "radial" then
+				local dr = math.abs(p.row - piece.row)
+				local dc = math.abs(p.col - piece.col)
+				match = dr <= 1 and dc <= 1
+			end
+			if match then
+				table.insert(targets, p)
+			end
+		end
+	end
+	return targets
+end
+
+--- Return tile coordinates in the given area (row/column/radial) excluding the activator's own tile.
+---@param state table Game state
+---@param piece table Activating piece (own tile excluded)
+---@param area string "row" | "column" | "radial"
+---@return table Array of {row, col} tables
+local function areaTiles(state, piece, area)
+	local tiles = {}
+	if area == "row" then
+		for c = 1, state.cols do
+			if c ~= piece.col then
+				table.insert(tiles, { row = piece.row, col = c })
+			end
+		end
+	elseif area == "column" then
+		for r = 1, state.rows do
+			if r ~= piece.row then
+				table.insert(tiles, { row = r, col = piece.col })
+			end
+		end
+	elseif area == "radial" then
+		for dr = -1, 1 do
+			for dc = -1, 1 do
+				if not (dr == 0 and dc == 0) then
+					local r = piece.row + dr
+					local c = piece.col + dc
+					if Logic.isValidPosition(r, c) then
+						table.insert(tiles, { row = r, col = c })
+					end
+				end
+			end
+		end
+	end
+	return tiles
+end
+
 --- Get valid moves considering powers (especially move_diagonal)
 --- Uses piece flags (canMoveDiagonally, isJumpProof, canClimbAny, canWrap) set by activation
 ---@param state table Game state
@@ -161,41 +223,14 @@ function PowerEffects.canDestroyWithPower(defender, powerId)
 	return true
 end
 
+-- Phase 9A.1: Destroy Variants
+
 --- Get targets for destroy_row power
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Array of pieces in the row
 function PowerEffects.getDestroyRowTargets(state, piece)
-	local targets = {}
-	for _, p in ipairs(state.pieces) do
-		if p.row == piece.row and p ~= piece then
-			table.insert(targets, p)
-		end
-	end
-	return targets
-end
-
---- Activate destroy_row power
----@param state table Game state
----@param piece table Piece activating power
----@return table Updated game state
-function PowerEffects.activateDestroyRow(state, piece)
-	local targets = PowerEffects.getDestroyRowTargets(state, piece)
-
-	-- Remove targets
-	for _, target in ipairs(targets) do
-		for i = #state.pieces, 1, -1 do
-			if state.pieces[i] == target then
-				table.remove(state.pieces, i)
-				break
-			end
-		end
-	end
-
-	-- Remove power
-	removePower(piece, "destroy_row")
-
-	return state
+	return areaPieceTargets(state, piece, "row")
 end
 
 --- Get targets for destroy_column power
@@ -203,21 +238,26 @@ end
 ---@param piece table Piece activating power
 ---@return table Array of pieces in the column
 function PowerEffects.getDestroyColumnTargets(state, piece)
-	local targets = {}
-	for _, p in ipairs(state.pieces) do
-		if p.col == piece.col and p ~= piece then
-			table.insert(targets, p)
-		end
-	end
-	return targets
+	return areaPieceTargets(state, piece, "column")
 end
 
---- Activate destroy_column power
+--- Get targets for destroy_radial power (pieces in 3x3 area, excluding activator)
+--- Unlike bomb, this only affects pieces, not terrain
 ---@param state table Game state
 ---@param piece table Piece activating power
+---@return table Array of pieces in 3x3 area
+function PowerEffects.getDestroyRadialTargets(state, piece)
+	return areaPieceTargets(state, piece, "radial")
+end
+
+--- Core destroy implementation: remove pieces in area then consume power.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
 ---@return table Updated game state
-function PowerEffects.activateDestroyColumn(state, piece)
-	local targets = PowerEffects.getDestroyColumnTargets(state, piece)
+local function destroyArea(state, piece, area, powerId)
+	local targets = areaPieceTargets(state, piece, area)
 
 	for _, target in ipairs(targets) do
 		for i = #state.pieces, 1, -1 do
@@ -228,9 +268,33 @@ function PowerEffects.activateDestroyColumn(state, piece)
 		end
 	end
 
-	removePower(piece, "destroy_column")
+	removePower(piece, powerId)
 
 	return state
+end
+
+--- Activate destroy_row power
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateDestroyRow(state, piece)
+	return destroyArea(state, piece, "row", "destroy_row")
+end
+
+--- Activate destroy_column power
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateDestroyColumn(state, piece)
+	return destroyArea(state, piece, "column", "destroy_column")
+end
+
+--- Activate destroy_radial power (destroys pieces in 3x3 area, no terrain damage)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateDestroyRadial(state, piece)
+	return destroyArea(state, piece, "radial", "destroy_radial")
 end
 
 --- Get targets for raise_tile power (adjacent tiles)
@@ -564,50 +628,9 @@ function PowerEffects.activateRefurb(state, piece, target)
 	return state
 end
 
--- Phase 9A.1: Destroy Variants
-
---- Get targets for destroy_radial power (pieces in 3x3 area, excluding activator)
---- Unlike bomb, this only affects pieces, not terrain
----@param state table Game state
----@param piece table Piece activating power
----@return table Array of pieces in 3x3 area
-function PowerEffects.getDestroyRadialTargets(state, piece)
-	local targets = {}
-
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece then
-			local dr = math.abs(p.row - piece.row)
-			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
-				table.insert(targets, p)
-			end
-		end
-	end
-
-	return targets
-end
-
---- Activate destroy_radial power (destroys pieces in 3x3 area, no terrain damage)
----@param state table Game state
----@param piece table Piece activating power
----@return table Updated game state
-function PowerEffects.activateDestroyRadial(state, piece)
-	local targets = PowerEffects.getDestroyRadialTargets(state, piece)
-
-	-- Remove targets
-	for _, target in ipairs(targets) do
-		for i = #state.pieces, 1, -1 do
-			if state.pieces[i] == target then
-				table.remove(state.pieces, i)
-				break
-			end
-		end
-	end
-
-	removePower(piece, "destroy_radial")
-
-	return state
-end
+-- Phase 9A.1: Kamikaze Variants
+-- NOTE: Kamikaze includes SELF in the destruction — cannot use areaPieceTargets (which excludes self).
+-- Each variant uses its own inline loop to remove all matching pieces including the activator.
 
 --- Activate kamikaze_radial power (destroys pieces in 3x3 INCLUDING self)
 ---@param state table Game state
@@ -690,22 +713,6 @@ function PowerEffects.getRecruitRowTargets(state, piece)
 	return targets
 end
 
---- Activate recruit_row power (convert all enemies in row)
----@param state table Game state
----@param piece table Piece activating power
----@return table Updated game state
-function PowerEffects.activateRecruitRow(state, piece)
-	local targets = PowerEffects.getRecruitRowTargets(state, piece)
-
-	for _, target in ipairs(targets) do
-		target.player = piece.player
-	end
-
-	removePower(piece, "recruit_row")
-
-	return state
-end
-
 --- Get targets for recruit_column power (enemy pieces in same column)
 ---@param state table Game state
 ---@param piece table Piece activating power
@@ -722,30 +729,110 @@ function PowerEffects.getRecruitColumnTargets(state, piece)
 	return targets
 end
 
+--- Core recruit implementation: convert enemy pieces in area to own player.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param targets table Array of enemy pieces to recruit
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function recruitArea(state, piece, targets, powerId)
+	for _, target in ipairs(targets) do
+		target.player = piece.player
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
+
+--- Activate recruit_row power (convert all enemies in row)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateRecruitRow(state, piece)
+	return recruitArea(state, piece, PowerEffects.getRecruitRowTargets(state, piece), "recruit_row")
+end
+
 --- Activate recruit_column power (convert all enemies in column)
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateRecruitColumn(state, piece)
-	local targets = PowerEffects.getRecruitColumnTargets(state, piece)
+	return recruitArea(state, piece, PowerEffects.getRecruitColumnTargets(state, piece), "recruit_column")
+end
 
-	for _, target in ipairs(targets) do
-		target.player = piece.player
+-- Phase 9A.4: Scramble Powers
+-- NOTE: Row shuffles cols (1D), Column shuffles rows (1D), Radial shuffles {row,col} pairs (2D).
+-- The coordinate logic differs per variant but the shuffle pattern is shared.
+
+--- Core scramble implementation for row area (shuffles column positions).
+---@param state table Game state
+---@param piece table Piece activating power
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function scrambleRow(state, piece, powerId)
+	local targetRow = piece.row
+	local piecesInRow = {}
+	local cols = {}
+
+	for _, p in ipairs(state.pieces) do
+		if p.row == targetRow then
+			table.insert(piecesInRow, p)
+			table.insert(cols, p.col)
+		end
 	end
 
-	removePower(piece, "recruit_column")
+	for i = #cols, 2, -1 do
+		local j = math.random(i)
+		cols[i], cols[j] = cols[j], cols[i]
+	end
+
+	for i, p in ipairs(piecesInRow) do
+		p.col = cols[i]
+	end
+
+	removePower(piece, powerId)
 
 	return state
 end
 
--- Phase 9A.4: Scramble Powers
-
---- Activate scramble_radial power (shuffle positions of pieces in 3x3 area)
+--- Core scramble implementation for column area (shuffles row positions).
 ---@param state table Game state
 ---@param piece table Piece activating power
+---@param powerId string Power identifier to remove
 ---@return table Updated game state
-function PowerEffects.activateScrambleRadial(state, piece)
-	-- Find all pieces in 3x3 area
+local function scrambleColumn(state, piece, powerId)
+	local targetCol = piece.col
+	local piecesInCol = {}
+	local rows = {}
+
+	for _, p in ipairs(state.pieces) do
+		if p.col == targetCol then
+			table.insert(piecesInCol, p)
+			table.insert(rows, p.row)
+		end
+	end
+
+	for i = #rows, 2, -1 do
+		local j = math.random(i)
+		rows[i], rows[j] = rows[j], rows[i]
+	end
+
+	for i, p in ipairs(piecesInCol) do
+		p.row = rows[i]
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
+
+--- Core scramble implementation for radial area (shuffles {row,col} pairs).
+---@param state table Game state
+---@param piece table Piece activating power
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function scrambleRadial(state, piece, powerId)
 	local piecesInArea = {}
 	local positions = {}
 
@@ -758,21 +845,43 @@ function PowerEffects.activateScrambleRadial(state, piece)
 		end
 	end
 
-	-- Shuffle positions
 	for i = #positions, 2, -1 do
 		local j = math.random(i)
 		positions[i], positions[j] = positions[j], positions[i]
 	end
 
-	-- Assign shuffled positions to pieces
 	for i, p in ipairs(piecesInArea) do
 		p.row = positions[i].row
 		p.col = positions[i].col
 	end
 
-	removePower(piece, "scramble_radial")
+	removePower(piece, powerId)
 
 	return state
+end
+
+--- Activate scramble_radial power (shuffle positions of pieces in 3x3 area)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateScrambleRadial(state, piece)
+	return scrambleRadial(state, piece, "scramble_radial")
+end
+
+--- Activate scramble_row power (shuffle positions of pieces in row)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateScrambleRow(state, piece)
+	return scrambleRow(state, piece, "scramble_row")
+end
+
+--- Activate scramble_column power (shuffle positions of pieces in column)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateScrambleColumn(state, piece)
+	return scrambleColumn(state, piece, "scramble_column")
 end
 
 -- Phase 9A.5: Smart Bombs
@@ -821,13 +930,16 @@ end
 
 -- Phase 9A.2: Acidic Powers
 
---- Activate acidic_radial power (destroy pieces AND tiles in 3x3 area)
+--- Core acidic implementation: destroy pieces then mark tiles in area as destroyed.
+--- Own tile is never marked destroyed.
 ---@param state table Game state
 ---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
 ---@return table Updated game state
-function PowerEffects.activateAcidicRadial(state, piece)
-	-- First destroy pieces (excluding activator)
-	local targets = PowerEffects.getDestroyRadialTargets(state, piece)
+local function acidicArea(state, piece, area, powerId)
+	-- Destroy pieces (excluding activator)
+	local targets = areaPieceTargets(state, piece, area)
 	for _, target in ipairs(targets) do
 		for i = #state.pieces, 1, -1 do
 			if state.pieces[i] == target then
@@ -842,23 +954,23 @@ function PowerEffects.activateAcidicRadial(state, piece)
 		state.destroyedTiles = {}
 	end
 
-	-- Destroy tiles in 3x3 area (except under activator)
-	for dr = -1, 1 do
-		for dc = -1, 1 do
-			local row = piece.row + dr
-			local col = piece.col + dc
-			-- Skip activator's tile
-			if not (dr == 0 and dc == 0) then
-				if Logic.isValidPosition(row, col) then
-					state.destroyedTiles[row .. "," .. col] = true
-				end
-			end
-		end
+	-- Mark tiles in area (excluding own tile) as destroyed
+	local tiles = areaTiles(state, piece, area)
+	for _, tile in ipairs(tiles) do
+		state.destroyedTiles[tile.row .. "," .. tile.col] = true
 	end
 
-	removePower(piece, "acidic_radial")
+	removePower(piece, powerId)
 
 	return state
+end
+
+--- Activate acidic_radial power (destroy pieces AND tiles in 3x3 area)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateAcidicRadial(state, piece)
+	return acidicArea(state, piece, "radial", "acidic_radial")
 end
 
 --- Activate acidic_row power (destroy pieces AND tiles in row)
@@ -866,31 +978,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateAcidicRow(state, piece)
-	local targetRow = piece.row
-
-	-- Destroy pieces in row (except activator)
-	for i = #state.pieces, 1, -1 do
-		local p = state.pieces[i]
-		if p.row == targetRow and p ~= piece then
-			table.remove(state.pieces, i)
-		end
-	end
-
-	-- Initialize destroyedTiles if needed
-	if not state.destroyedTiles then
-		state.destroyedTiles = {}
-	end
-
-	-- Destroy tiles in row (except under activator)
-	for col = 1, state.cols do
-		if col ~= piece.col then
-			state.destroyedTiles[targetRow .. "," .. col] = true
-		end
-	end
-
-	removePower(piece, "acidic_row")
-
-	return state
+	return acidicArea(state, piece, "row", "acidic_row")
 end
 
 --- Activate acidic_column power (destroy pieces AND tiles in column)
@@ -898,101 +986,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateAcidicColumn(state, piece)
-	local targetCol = piece.col
-
-	-- Destroy pieces in column (except activator)
-	for i = #state.pieces, 1, -1 do
-		local p = state.pieces[i]
-		if p.col == targetCol and p ~= piece then
-			table.remove(state.pieces, i)
-		end
-	end
-
-	-- Initialize destroyedTiles if needed
-	if not state.destroyedTiles then
-		state.destroyedTiles = {}
-	end
-
-	-- Destroy tiles in column (except under activator)
-	for row = 1, state.rows do
-		if row ~= piece.row then
-			state.destroyedTiles[row .. "," .. targetCol] = true
-		end
-	end
-
-	removePower(piece, "acidic_column")
-
-	return state
-end
-
--- Phase 9A.4: Scramble Row/Column
-
---- Activate scramble_row power (shuffle positions of pieces in row)
----@param state table Game state
----@param piece table Piece activating power
----@return table Updated game state
-function PowerEffects.activateScrambleRow(state, piece)
-	local targetRow = piece.row
-
-	-- Find all pieces in row
-	local piecesInRow = {}
-	local cols = {}
-
-	for _, p in ipairs(state.pieces) do
-		if p.row == targetRow then
-			table.insert(piecesInRow, p)
-			table.insert(cols, p.col)
-		end
-	end
-
-	-- Shuffle columns
-	for i = #cols, 2, -1 do
-		local j = math.random(i)
-		cols[i], cols[j] = cols[j], cols[i]
-	end
-
-	-- Assign shuffled columns to pieces
-	for i, p in ipairs(piecesInRow) do
-		p.col = cols[i]
-	end
-
-	removePower(piece, "scramble_row")
-
-	return state
-end
-
---- Activate scramble_column power (shuffle positions of pieces in column)
----@param state table Game state
----@param piece table Piece activating power
----@return table Updated game state
-function PowerEffects.activateScrambleColumn(state, piece)
-	local targetCol = piece.col
-
-	-- Find all pieces in column
-	local piecesInCol = {}
-	local rows = {}
-
-	for _, p in ipairs(state.pieces) do
-		if p.col == targetCol then
-			table.insert(piecesInCol, p)
-			table.insert(rows, p.row)
-		end
-	end
-
-	-- Shuffle rows
-	for i = #rows, 2, -1 do
-		local j = math.random(i)
-		rows[i], rows[j] = rows[j], rows[i]
-	end
-
-	-- Assign shuffled rows to pieces
-	for i, p in ipairs(piecesInCol) do
-		p.row = rows[i]
-	end
-
-	removePower(piece, "scramble_column")
-
-	return state
+	return acidicArea(state, piece, "column", "acidic_column")
 end
 
 -- Phase 9B: Terrain Powers
@@ -1058,23 +1052,39 @@ function PowerEffects.activateClimbTile(state, piece)
 	return state
 end
 
--- 9B.2 Line Effects
+-- 9B.2 Line Effects: Trench and Wall
+-- NOTE: Only Row/Column variants exist (no Radial) — shared core per family.
+
+--- Core trench implementation: lower all tiles in a line by 2.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column"
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function trenchArea(state, piece, area, powerId)
+	if area == "row" then
+		for col = 1, state.cols do
+			local currentHeight = Height.getHeight(state.heightMap, piece.row, col)
+			Height.setHeight(state.heightMap, piece.row, col, currentHeight - 2)
+		end
+	else
+		for row = 1, state.rows do
+			local currentHeight = Height.getHeight(state.heightMap, row, piece.col)
+			Height.setHeight(state.heightMap, row, piece.col, currentHeight - 2)
+		end
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
 
 --- Activate trench_row power (lower entire row by 2)
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateTrenchRow(state, piece)
-	local targetRow = piece.row
-
-	for col = 1, state.cols do
-		local currentHeight = Height.getHeight(state.heightMap, targetRow, col)
-		Height.setHeight(state.heightMap, targetRow, col, currentHeight - 2)
-	end
-
-	removePower(piece, "trench_row")
-
-	return state
+	return trenchArea(state, piece, "row", "trench_row")
 end
 
 --- Activate trench_column power (lower entire column by 2)
@@ -1082,14 +1092,29 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateTrenchColumn(state, piece)
-	local targetCol = piece.col
+	return trenchArea(state, piece, "column", "trench_column")
+end
 
-	for row = 1, state.rows do
-		local currentHeight = Height.getHeight(state.heightMap, row, targetCol)
-		Height.setHeight(state.heightMap, row, targetCol, currentHeight - 2)
+--- Core wall implementation: raise all tiles in a line by 2.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column"
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function wallArea(state, piece, area, powerId)
+	if area == "row" then
+		for col = 1, state.cols do
+			local currentHeight = Height.getHeight(state.heightMap, piece.row, col)
+			Height.setHeight(state.heightMap, piece.row, col, currentHeight + 2)
+		end
+	else
+		for row = 1, state.rows do
+			local currentHeight = Height.getHeight(state.heightMap, row, piece.col)
+			Height.setHeight(state.heightMap, row, piece.col, currentHeight + 2)
+		end
 	end
 
-	removePower(piece, "trench_column")
+	removePower(piece, powerId)
 
 	return state
 end
@@ -1099,16 +1124,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateWallRow(state, piece)
-	local targetRow = piece.row
-
-	for col = 1, state.cols do
-		local currentHeight = Height.getHeight(state.heightMap, targetRow, col)
-		Height.setHeight(state.heightMap, targetRow, col, currentHeight + 2)
-	end
-
-	removePower(piece, "wall_row")
-
-	return state
+	return wallArea(state, piece, "row", "wall_row")
 end
 
 --- Activate wall_column power (raise entire column by 2)
@@ -1116,16 +1132,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateWallColumn(state, piece)
-	local targetCol = piece.col
-
-	for row = 1, state.rows do
-		local currentHeight = Height.getHeight(state.heightMap, row, targetCol)
-		Height.setHeight(state.heightMap, row, targetCol, currentHeight + 2)
-	end
-
-	removePower(piece, "wall_column")
-
-	return state
+	return wallArea(state, piece, "column", "wall_column")
 end
 
 -- 9B.3 Invert Powers
@@ -1137,25 +1144,47 @@ local function invertHeight(height)
 	return Height.MAX_HEIGHT - height
 end
 
+--- Core invert implementation: flip tile heights in area.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function invertArea(state, piece, area, powerId)
+	if area == "radial" then
+		for dr = -1, 1 do
+			for dc = -1, 1 do
+				local row = piece.row + dr
+				local col = piece.col + dc
+				if Logic.isValidPosition(row, col) then
+					local currentHeight = Height.getHeight(state.heightMap, row, col)
+					Height.setHeight(state.heightMap, row, col, invertHeight(currentHeight))
+				end
+			end
+		end
+	elseif area == "row" then
+		for col = 1, state.cols do
+			local currentHeight = Height.getHeight(state.heightMap, piece.row, col)
+			Height.setHeight(state.heightMap, piece.row, col, invertHeight(currentHeight))
+		end
+	else
+		for row = 1, state.rows do
+			local currentHeight = Height.getHeight(state.heightMap, row, piece.col)
+			Height.setHeight(state.heightMap, row, piece.col, invertHeight(currentHeight))
+		end
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
+
 --- Activate invert_radial power (flip heights in 3x3)
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateInvertRadial(state, piece)
-	for dr = -1, 1 do
-		for dc = -1, 1 do
-			local row = piece.row + dr
-			local col = piece.col + dc
-			if Logic.isValidPosition(row, col) then
-				local currentHeight = Height.getHeight(state.heightMap, row, col)
-				Height.setHeight(state.heightMap, row, col, invertHeight(currentHeight))
-			end
-		end
-	end
-
-	removePower(piece, "invert_radial")
-
-	return state
+	return invertArea(state, piece, "radial", "invert_radial")
 end
 
 --- Activate invert_row power (flip heights in row)
@@ -1163,16 +1192,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateInvertRow(state, piece)
-	local targetRow = piece.row
-
-	for col = 1, state.cols do
-		local currentHeight = Height.getHeight(state.heightMap, targetRow, col)
-		Height.setHeight(state.heightMap, targetRow, col, invertHeight(currentHeight))
-	end
-
-	removePower(piece, "invert_row")
-
-	return state
+	return invertArea(state, piece, "row", "invert_row")
 end
 
 --- Activate invert_column power (flip heights in column)
@@ -1180,16 +1200,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateInvertColumn(state, piece)
-	local targetCol = piece.col
-
-	for row = 1, state.rows do
-		local currentHeight = Height.getHeight(state.heightMap, row, targetCol)
-		Height.setHeight(state.heightMap, row, targetCol, invertHeight(currentHeight))
-	end
-
-	removePower(piece, "invert_column")
-
-	return state
+	return invertArea(state, piece, "column", "invert_column")
 end
 
 -- 9B.4 Dredge Powers
@@ -1208,34 +1219,68 @@ local function getPieceAtPosition(state, row, col)
 	return nil
 end
 
---- Activate dredge_radial power (raise friendly tiles, lower enemy tiles in 3x3)
+--- Core dredge implementation: raise friendly tiles, lower enemy tiles in area.
 ---@param state table Game state
 ---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
 ---@return table Updated game state
-function PowerEffects.activateDredgeRadial(state, piece)
-	for dr = -1, 1 do
-		for dc = -1, 1 do
-			local row = piece.row + dr
-			local col = piece.col + dc
-			if Logic.isValidPosition(row, col) then
-				local pieceOnTile = getPieceAtPosition(state, row, col)
-				if pieceOnTile then
-					local currentHeight = Height.getHeight(state.heightMap, row, col)
-					if pieceOnTile.player == piece.player then
-						-- Friendly: raise
-						Height.setHeight(state.heightMap, row, col, currentHeight + 1)
-					else
-						-- Enemy: lower
-						Height.setHeight(state.heightMap, row, col, currentHeight - 1)
+local function dredgeArea(state, piece, area, powerId)
+	if area == "radial" then
+		for dr = -1, 1 do
+			for dc = -1, 1 do
+				local row = piece.row + dr
+				local col = piece.col + dc
+				if Logic.isValidPosition(row, col) then
+					local pieceOnTile = getPieceAtPosition(state, row, col)
+					if pieceOnTile then
+						local currentHeight = Height.getHeight(state.heightMap, row, col)
+						if pieceOnTile.player == piece.player then
+							Height.setHeight(state.heightMap, row, col, currentHeight + 1)
+						else
+							Height.setHeight(state.heightMap, row, col, currentHeight - 1)
+						end
 					end
+				end
+			end
+		end
+	elseif area == "row" then
+		for col = 1, state.cols do
+			local pieceOnTile = getPieceAtPosition(state, piece.row, col)
+			if pieceOnTile then
+				local currentHeight = Height.getHeight(state.heightMap, piece.row, col)
+				if pieceOnTile.player == piece.player then
+					Height.setHeight(state.heightMap, piece.row, col, currentHeight + 1)
+				else
+					Height.setHeight(state.heightMap, piece.row, col, currentHeight - 1)
+				end
+			end
+		end
+	else
+		for row = 1, state.rows do
+			local pieceOnTile = getPieceAtPosition(state, row, piece.col)
+			if pieceOnTile then
+				local currentHeight = Height.getHeight(state.heightMap, row, piece.col)
+				if pieceOnTile.player == piece.player then
+					Height.setHeight(state.heightMap, row, piece.col, currentHeight + 1)
+				else
+					Height.setHeight(state.heightMap, row, piece.col, currentHeight - 1)
 				end
 			end
 		end
 	end
 
-	removePower(piece, "dredge_radial")
+	removePower(piece, powerId)
 
 	return state
+end
+
+--- Activate dredge_radial power (raise friendly tiles, lower enemy tiles in 3x3)
+---@param state table Game state
+---@param piece table Piece activating power
+---@return table Updated game state
+function PowerEffects.activateDredgeRadial(state, piece)
+	return dredgeArea(state, piece, "radial", "dredge_radial")
 end
 
 --- Activate dredge_row power (raise friendly tiles, lower enemy tiles in row)
@@ -1243,23 +1288,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateDredgeRow(state, piece)
-	local targetRow = piece.row
-
-	for col = 1, state.cols do
-		local pieceOnTile = getPieceAtPosition(state, targetRow, col)
-		if pieceOnTile then
-			local currentHeight = Height.getHeight(state.heightMap, targetRow, col)
-			if pieceOnTile.player == piece.player then
-				Height.setHeight(state.heightMap, targetRow, col, currentHeight + 1)
-			else
-				Height.setHeight(state.heightMap, targetRow, col, currentHeight - 1)
-			end
-		end
-	end
-
-	removePower(piece, "dredge_row")
-
-	return state
+	return dredgeArea(state, piece, "row", "dredge_row")
 end
 
 --- Activate dredge_column power (raise friendly tiles, lower enemy tiles in column)
@@ -1267,23 +1296,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateDredgeColumn(state, piece)
-	local targetCol = piece.col
-
-	for row = 1, state.rows do
-		local pieceOnTile = getPieceAtPosition(state, row, targetCol)
-		if pieceOnTile then
-			local currentHeight = Height.getHeight(state.heightMap, row, targetCol)
-			if pieceOnTile.player == piece.player then
-				Height.setHeight(state.heightMap, row, targetCol, currentHeight + 1)
-			else
-				Height.setHeight(state.heightMap, row, targetCol, currentHeight - 1)
-			end
-		end
-	end
-
-	removePower(piece, "dredge_column")
-
-	return state
+	return dredgeArea(state, piece, "column", "dredge_column")
 end
 
 -- Phase 9C: Power Transfer Powers
@@ -1309,25 +1322,32 @@ local function copyPowersTo(source, target, excludePower)
 	end
 end
 
+--- Core teach implementation: copy powers to allied pieces in area.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove (and to exclude from copy)
+---@return table Updated game state
+local function teachArea(state, piece, area, powerId)
+	local allies = areaPieceTargets(state, piece, area)
+
+	for _, p in ipairs(allies) do
+		if p.player == piece.player then
+			copyPowersTo(piece, p, powerId)
+		end
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
+
 --- Activate teach_radial power (copy powers to adjacent allies)
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateTeachRadial(state, piece)
-	-- Find adjacent allies
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player == piece.player then
-			local dr = math.abs(p.row - piece.row)
-			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
-				copyPowersTo(piece, p, "teach_radial")
-			end
-		end
-	end
-
-	removePower(piece, "teach_radial")
-
-	return state
+	return teachArea(state, piece, "radial", "teach_radial")
 end
 
 --- Activate teach_row power (copy powers to allies in row)
@@ -1335,15 +1355,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateTeachRow(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player == piece.player and p.row == piece.row then
-			copyPowersTo(piece, p, "teach_row")
-		end
-	end
-
-	removePower(piece, "teach_row")
-
-	return state
+	return teachArea(state, piece, "row", "teach_row")
 end
 
 --- Activate teach_column power (copy powers to allies in column)
@@ -1351,15 +1363,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateTeachColumn(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player == piece.player and p.col == piece.col then
-			copyPowersTo(piece, p, "teach_column")
-		end
-	end
-
-	removePower(piece, "teach_column")
-
-	return state
+	return teachArea(state, piece, "column", "teach_column")
 end
 
 -- 9C.2 Learn (Absorb from allies)
@@ -1384,26 +1388,32 @@ local function absorbPowersFrom(source, target)
 	source.powers = {}
 end
 
+--- Core learn implementation: absorb powers from allied pieces in area.
+--- removePower is called FIRST (before absorbing) so the learn power is consumed.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove first
+---@return table Updated game state
+local function learnArea(state, piece, area, powerId)
+	removePower(piece, powerId)
+
+	local candidates = areaPieceTargets(state, piece, area)
+	for _, p in ipairs(candidates) do
+		if p.player == piece.player then
+			absorbPowersFrom(p, piece)
+		end
+	end
+
+	return state
+end
+
 --- Activate learn_radial power (absorb powers from adjacent allies)
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateLearnRadial(state, piece)
-	-- Remove the learn power first
-	removePower(piece, "learn_radial")
-
-	-- Find adjacent allies and absorb their powers
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player == piece.player then
-			local dr = math.abs(p.row - piece.row)
-			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
-				absorbPowersFrom(p, piece)
-			end
-		end
-	end
-
-	return state
+	return learnArea(state, piece, "radial", "learn_radial")
 end
 
 --- Activate learn_row power (absorb powers from allies in row)
@@ -1411,15 +1421,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateLearnRow(state, piece)
-	removePower(piece, "learn_row")
-
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player == piece.player and p.row == piece.row then
-			absorbPowersFrom(p, piece)
-		end
-	end
-
-	return state
+	return learnArea(state, piece, "row", "learn_row")
 end
 
 --- Activate learn_column power (absorb powers from allies in column)
@@ -1427,15 +1429,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateLearnColumn(state, piece)
-	removePower(piece, "learn_column")
-
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player == piece.player and p.col == piece.col then
-			absorbPowersFrom(p, piece)
-		end
-	end
-
-	return state
+	return learnArea(state, piece, "column", "learn_column")
 end
 
 -- 9C.3 Pilfer (Steal from enemies)
@@ -1465,24 +1459,32 @@ local function stealRandomPower(source, target)
 	return true
 end
 
+--- Core pilfer implementation: steal one power from each enemy piece in area.
+--- removePower is called FIRST.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove first
+---@return table Updated game state
+local function pilferArea(state, piece, area, powerId)
+	removePower(piece, powerId)
+
+	local candidates = areaPieceTargets(state, piece, area)
+	for _, p in ipairs(candidates) do
+		if p.player ~= piece.player then
+			stealRandomPower(p, piece)
+		end
+	end
+
+	return state
+end
+
 --- Activate pilfer_radial power (steal one power from each adjacent enemy)
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activatePilferRadial(state, piece)
-	removePower(piece, "pilfer_radial")
-
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player then
-			local dr = math.abs(p.row - piece.row)
-			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
-				stealRandomPower(p, piece)
-			end
-		end
-	end
-
-	return state
+	return pilferArea(state, piece, "radial", "pilfer_radial")
 end
 
 --- Activate pilfer_row power (steal one power from each enemy in row)
@@ -1490,15 +1492,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activatePilferRow(state, piece)
-	removePower(piece, "pilfer_row")
-
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player and p.row == piece.row then
-			stealRandomPower(p, piece)
-		end
-	end
-
-	return state
+	return pilferArea(state, piece, "row", "pilfer_row")
 end
 
 --- Activate pilfer_column power (steal one power from each enemy in column)
@@ -1506,15 +1500,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activatePilferColumn(state, piece)
-	removePower(piece, "pilfer_column")
-
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player and p.col == piece.col then
-			stealRandomPower(p, piece)
-		end
-	end
-
-	return state
+	return pilferArea(state, piece, "column", "pilfer_column")
 end
 
 -- Phase 9D: Meta Powers
@@ -1723,24 +1709,31 @@ end
 
 -- 9E.5 Intelligence Powers
 
+--- Core spyware implementation: mark enemy pieces' powers as revealed in area.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function spywareArea(state, piece, area, powerId)
+	local candidates = areaPieceTargets(state, piece, area)
+	for _, p in ipairs(candidates) do
+		if p.player ~= piece.player then
+			p.powersRevealed = true
+		end
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
+
 --- Activate spyware_radial - reveal powers of adjacent enemy pieces
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateSpywareRadial(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player then
-			local dr = math.abs(p.row - piece.row)
-			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
-				p.powersRevealed = true
-			end
-		end
-	end
-
-	removePower(piece, "spyware_radial")
-
-	return state
+	return spywareArea(state, piece, "radial", "spyware_radial")
 end
 
 --- Activate spyware_row - reveal powers of enemy pieces in row
@@ -1748,15 +1741,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateSpywareRow(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player and p.row == piece.row then
-			p.powersRevealed = true
-		end
-	end
-
-	removePower(piece, "spyware_row")
-
-	return state
+	return spywareArea(state, piece, "row", "spyware_row")
 end
 
 --- Activate spyware_column - reveal powers of enemy pieces in column
@@ -1764,15 +1749,36 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateSpywareColumn(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player and p.col == piece.col then
-			p.powersRevealed = true
+	return spywareArea(state, piece, "column", "spyware_column")
+end
+
+--- Core orb_spy implementation: reveal orb contents in area.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param orbs table Array of orbs
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
+---@return table Updated game state, table Updated orbs
+local function orbSpyArea(state, piece, orbs, area, powerId)
+	for _, orb in ipairs(orbs) do
+		local match = false
+		if area == "radial" then
+			local dr = math.abs(orb.row - piece.row)
+			local dc = math.abs(orb.col - piece.col)
+			match = dr <= 1 and dc <= 1
+		elseif area == "row" then
+			match = orb.row == piece.row
+		elseif area == "column" then
+			match = orb.col == piece.col
+		end
+		if match then
+			orb.revealed = true
 		end
 	end
 
-	removePower(piece, "spyware_column")
+	removePower(piece, powerId)
 
-	return state
+	return state, orbs
 end
 
 --- Activate orb_spy_radial - reveal contents of adjacent orbs
@@ -1781,17 +1787,7 @@ end
 ---@param orbs table Array of orbs
 ---@return table Updated game state, table Updated orbs
 function PowerEffects.activateOrbSpyRadial(state, piece, orbs)
-	for _, orb in ipairs(orbs) do
-		local dr = math.abs(orb.row - piece.row)
-		local dc = math.abs(orb.col - piece.col)
-		if dr <= 1 and dc <= 1 then
-			orb.revealed = true
-		end
-	end
-
-	removePower(piece, "orb_spy_radial")
-
-	return state, orbs
+	return orbSpyArea(state, piece, orbs, "radial", "orb_spy_radial")
 end
 
 --- Activate orb_spy_row - reveal contents of orbs in row
@@ -1800,15 +1796,7 @@ end
 ---@param orbs table Array of orbs
 ---@return table Updated game state, table Updated orbs
 function PowerEffects.activateOrbSpyRow(state, piece, orbs)
-	for _, orb in ipairs(orbs) do
-		if orb.row == piece.row then
-			orb.revealed = true
-		end
-	end
-
-	removePower(piece, "orb_spy_row")
-
-	return state, orbs
+	return orbSpyArea(state, piece, orbs, "row", "orb_spy_row")
 end
 
 --- Activate orb_spy_column - reveal contents of orbs in column
@@ -1817,46 +1805,49 @@ end
 ---@param orbs table Array of orbs
 ---@return table Updated game state, table Updated orbs
 function PowerEffects.activateOrbSpyColumn(state, piece, orbs)
-	for _, orb in ipairs(orbs) do
-		if orb.col == piece.col then
-			orb.revealed = true
-		end
-	end
-
-	removePower(piece, "orb_spy_column")
-
-	return state, orbs
+	return orbSpyArea(state, piece, orbs, "column", "orb_spy_column")
 end
 
 -- 9E.6 Restoration Powers
+
+--- Core refurb area implementation: repair destroyed tiles in area.
+--- Early returns (consuming power) if no destroyedTiles table exists.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function refurbArea(state, piece, area, powerId)
+	if not state.destroyedTiles then
+		removePower(piece, powerId)
+		return state
+	end
+
+	-- areaTiles excludes the activator's own tile, but all three refurb variants
+	-- iterate their full area including the activator's own tile (unlike acidic/bankrupt
+	-- which skip own tile). Add own tile back.
+	local tiles = areaTiles(state, piece, area)
+	table.insert(tiles, { row = piece.row, col = piece.col })
+
+	for _, tile in ipairs(tiles) do
+		local key = tile.row .. "," .. tile.col
+		if state.destroyedTiles[key] then
+			state.destroyedTiles[key] = nil
+			Height.setHeight(state.heightMap, tile.row, tile.col, 0)
+		end
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
 
 --- Activate refurb_radial - repair destroyed tiles in 3x3 area
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateRefurbRadial(state, piece)
-	if not state.destroyedTiles then
-		removePower(piece, "refurb_radial")
-		return state
-	end
-
-	for dr = -1, 1 do
-		for dc = -1, 1 do
-			local row = piece.row + dr
-			local col = piece.col + dc
-			if Logic.isValidPosition(row, col) then
-				local key = row .. "," .. col
-				if state.destroyedTiles[key] then
-					state.destroyedTiles[key] = nil
-					Height.setHeight(state.heightMap, row, col, 0)
-				end
-			end
-		end
-	end
-
-	removePower(piece, "refurb_radial")
-
-	return state
+	return refurbArea(state, piece, "radial", "refurb_radial")
 end
 
 --- Activate refurb_row - repair destroyed tiles in row
@@ -1864,22 +1855,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateRefurbRow(state, piece)
-	if not state.destroyedTiles then
-		removePower(piece, "refurb_row")
-		return state
-	end
-
-	for col = 1, state.cols do
-		local key = piece.row .. "," .. col
-		if state.destroyedTiles[key] then
-			state.destroyedTiles[key] = nil
-			Height.setHeight(state.heightMap, piece.row, col, 0)
-		end
-	end
-
-	removePower(piece, "refurb_row")
-
-	return state
+	return refurbArea(state, piece, "row", "refurb_row")
 end
 
 --- Activate refurb_column - repair destroyed tiles in column
@@ -1887,54 +1863,41 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateRefurbColumn(state, piece)
-	if not state.destroyedTiles then
-		removePower(piece, "refurb_column")
-		return state
-	end
-
-	for row = 1, state.rows do
-		local key = row .. "," .. piece.col
-		if state.destroyedTiles[key] then
-			state.destroyedTiles[key] = nil
-			Height.setHeight(state.heightMap, row, piece.col, 0)
-		end
-	end
-
-	removePower(piece, "refurb_column")
-
-	return state
+	return refurbArea(state, piece, "column", "refurb_column")
 end
 
 -- Phase 9 Remaining Powers
 
 -- 9E.4 Bankrupt Powers (power-draining trap tiles)
 
+--- Core bankrupt implementation: mark tiles in area as bankrupt traps.
+--- Own tile is never marked.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function bankruptArea(state, piece, area, powerId)
+	if not state.bankruptTiles then
+		state.bankruptTiles = {}
+	end
+
+	local tiles = areaTiles(state, piece, area)
+	for _, tile in ipairs(tiles) do
+		state.bankruptTiles[tile.row .. "," .. tile.col] = true
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
+
 --- Activate bankrupt_radial - create power-draining traps in 3x3 area
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateBankruptRadial(state, piece)
-	-- Initialize bankruptTiles if not present
-	if not state.bankruptTiles then
-		state.bankruptTiles = {}
-	end
-
-	for dr = -1, 1 do
-		for dc = -1, 1 do
-			-- Skip the piece's own position
-			if not (dr == 0 and dc == 0) then
-				local row = piece.row + dr
-				local col = piece.col + dc
-				if Logic.isValidPosition(row, col) then
-					state.bankruptTiles[row .. "," .. col] = true
-				end
-			end
-		end
-	end
-
-	removePower(piece, "bankrupt_radial")
-
-	return state
+	return bankruptArea(state, piece, "radial", "bankrupt_radial")
 end
 
 --- Activate bankrupt_row - create power-draining traps in entire row
@@ -1942,19 +1905,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateBankruptRow(state, piece)
-	if not state.bankruptTiles then
-		state.bankruptTiles = {}
-	end
-
-	for col = 1, state.cols do
-		if col ~= piece.col then
-			state.bankruptTiles[piece.row .. "," .. col] = true
-		end
-	end
-
-	removePower(piece, "bankrupt_row")
-
-	return state
+	return bankruptArea(state, piece, "row", "bankrupt_row")
 end
 
 --- Activate bankrupt_column - create power-draining traps in entire column
@@ -1962,19 +1913,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateBankruptColumn(state, piece)
-	if not state.bankruptTiles then
-		state.bankruptTiles = {}
-	end
-
-	for row = 1, state.rows do
-		if row ~= piece.row then
-			state.bankruptTiles[row .. "," .. piece.col] = true
-		end
-	end
-
-	removePower(piece, "bankrupt_column")
-
-	return state
+	return bankruptArea(state, piece, "column", "bankrupt_column")
 end
 
 --- Apply bankrupt tile effect when piece lands on it
@@ -2008,25 +1947,32 @@ end
 
 -- 9E.2 Tripwire Powers
 
+--- Core tripwire implementation: mark enemy pieces in area as tripwired.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function tripwireArea(state, piece, area, powerId)
+	local candidates = areaPieceTargets(state, piece, area)
+	for _, p in ipairs(candidates) do
+		if p.player ~= piece.player then
+			p.isTripwired = true
+			p.tripwireOwner = piece
+		end
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
+
 --- Activate tripwire_radial - adjacent enemies die if they move
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateTripwireRadial(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player then
-			local dr = math.abs(p.row - piece.row)
-			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
-				p.isTripwired = true
-				p.tripwireOwner = piece
-			end
-		end
-	end
-
-	removePower(piece, "tripwire_radial")
-
-	return state
+	return tripwireArea(state, piece, "radial", "tripwire_radial")
 end
 
 --- Activate tripwire_row - row enemies die if they move
@@ -2034,16 +1980,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateTripwireRow(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player and p.row == piece.row then
-			p.isTripwired = true
-			p.tripwireOwner = piece
-		end
-	end
-
-	removePower(piece, "tripwire_row")
-
-	return state
+	return tripwireArea(state, piece, "row", "tripwire_row")
 end
 
 --- Activate tripwire_column - column enemies die if they move
@@ -2051,16 +1988,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateTripwireColumn(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player and p.col == piece.col then
-			p.isTripwired = true
-			p.tripwireOwner = piece
-		end
-	end
-
-	removePower(piece, "tripwire_column")
-
-	return state
+	return tripwireArea(state, piece, "column", "tripwire_column")
 end
 
 --- Check if a piece should die from tripwire when moving
@@ -2072,24 +2000,31 @@ end
 
 -- 9E.3 Inhibit Powers
 
+--- Core inhibit implementation: mark enemy pieces in area as inhibited.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function inhibitArea(state, piece, area, powerId)
+	local candidates = areaPieceTargets(state, piece, area)
+	for _, p in ipairs(candidates) do
+		if p.player ~= piece.player then
+			p.isInhibited = true
+		end
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
+
 --- Activate inhibit_radial - adjacent enemies can't collect powers
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateInhibitRadial(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player then
-			local dr = math.abs(p.row - piece.row)
-			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
-				p.isInhibited = true
-			end
-		end
-	end
-
-	removePower(piece, "inhibit_radial")
-
-	return state
+	return inhibitArea(state, piece, "radial", "inhibit_radial")
 end
 
 --- Activate inhibit_row - row enemies can't collect powers
@@ -2097,15 +2032,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateInhibitRow(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player and p.row == piece.row then
-			p.isInhibited = true
-		end
-	end
-
-	removePower(piece, "inhibit_row")
-
-	return state
+	return inhibitArea(state, piece, "row", "inhibit_row")
 end
 
 --- Activate inhibit_column - column enemies can't collect powers
@@ -2113,15 +2040,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateInhibitColumn(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player and p.col == piece.col then
-			p.isInhibited = true
-		end
-	end
-
-	removePower(piece, "inhibit_column")
-
-	return state
+	return inhibitArea(state, piece, "column", "inhibit_column")
 end
 
 --- Check if a piece can collect an orb
@@ -2133,24 +2052,31 @@ end
 
 -- 9C.4 Parasite Powers
 
+--- Core parasite implementation: mark enemy pieces in area as parasitized.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function parasiteArea(state, piece, area, powerId)
+	local candidates = areaPieceTargets(state, piece, area)
+	for _, p in ipairs(candidates) do
+		if p.player ~= piece.player then
+			p.parasitizedBy = piece
+		end
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
+
 --- Activate parasite_radial - adjacent enemies' future powers go to you
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateParasiteRadial(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player then
-			local dr = math.abs(p.row - piece.row)
-			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
-				p.parasitizedBy = piece
-			end
-		end
-	end
-
-	removePower(piece, "parasite_radial")
-
-	return state
+	return parasiteArea(state, piece, "radial", "parasite_radial")
 end
 
 --- Activate parasite_row - row enemies' future powers go to you
@@ -2158,15 +2084,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateParasiteRow(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player and p.row == piece.row then
-			p.parasitizedBy = piece
-		end
-	end
-
-	removePower(piece, "parasite_row")
-
-	return state
+	return parasiteArea(state, piece, "row", "parasite_row")
 end
 
 --- Activate parasite_column - column enemies' future powers go to you
@@ -2174,15 +2092,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateParasiteColumn(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.player ~= piece.player and p.col == piece.col then
-			p.parasitizedBy = piece
-		end
-	end
-
-	removePower(piece, "parasite_column")
-
-	return state
+	return parasiteArea(state, piece, "column", "parasite_column")
 end
 
 --- Get the piece that should receive redirected powers (if parasitized)
@@ -2220,28 +2130,33 @@ local function removeBuffs(piece)
 	piece.isBeneficiary = nil
 end
 
+--- Core purify implementation: remove debuffs from allies, buffs from enemies in area.
+---@param state table Game state
+---@param piece table Piece activating power
+---@param area string "row" | "column" | "radial"
+---@param powerId string Power identifier to remove
+---@return table Updated game state
+local function purifyArea(state, piece, area, powerId)
+	local candidates = areaPieceTargets(state, piece, area)
+	for _, p in ipairs(candidates) do
+		if p.player == piece.player then
+			removeDebuffs(p) -- Allies: remove bad stuff
+		else
+			removeBuffs(p) -- Enemies: remove good stuff
+		end
+	end
+
+	removePower(piece, powerId)
+
+	return state
+end
+
 --- Activate purify_radial - remove debuffs from adjacent allies, buffs from adjacent enemies
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activatePurifyRadial(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece then
-			local dr = math.abs(p.row - piece.row)
-			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
-				if p.player == piece.player then
-					removeDebuffs(p) -- Allies: remove bad stuff
-				else
-					removeBuffs(p) -- Enemies: remove good stuff
-				end
-			end
-		end
-	end
-
-	removePower(piece, "purify_radial")
-
-	return state
+	return purifyArea(state, piece, "radial", "purify_radial")
 end
 
 --- Activate purify_row - remove debuffs from allies in row, buffs from enemies in row
@@ -2249,19 +2164,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activatePurifyRow(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.row == piece.row then
-			if p.player == piece.player then
-				removeDebuffs(p) -- Allies: remove bad stuff
-			else
-				removeBuffs(p) -- Enemies: remove good stuff
-			end
-		end
-	end
-
-	removePower(piece, "purify_row")
-
-	return state
+	return purifyArea(state, piece, "row", "purify_row")
 end
 
 --- Activate purify_column - remove debuffs from allies in column, buffs from enemies in column
@@ -2269,19 +2172,7 @@ end
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activatePurifyColumn(state, piece)
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece and p.col == piece.col then
-			if p.player == piece.player then
-				removeDebuffs(p) -- Allies: remove bad stuff
-			else
-				removeBuffs(p) -- Enemies: remove good stuff
-			end
-		end
-	end
-
-	removePower(piece, "purify_column")
-
-	return state
+	return purifyArea(state, piece, "column", "purify_column")
 end
 
 -- 9E.1 Hotspot Power
