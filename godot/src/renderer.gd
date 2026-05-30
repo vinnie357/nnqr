@@ -53,9 +53,16 @@ var _state                = null           ## GameState
 var _power_target_tiles: Array = []        ## [{row,col}] for purple highlight
 
 
+## Optional HUD extras, set via load_state. Keys (all optional):
+##   ai_thinking:bool, mode:String ("hotseat"|"vsai"), difficulty:String.
+## Empty {} (the default) reproduces the original HUD — scenario_runner relies on this.
+var _hud_info: Dictionary = {}
+
 ## Set or replace the state and request a redraw.
-func load_state(state) -> void:
+## hud_info carries HUD extras (piece counts are derived from state directly).
+func load_state(state, hud_info := {}) -> void:
 	_state = state
+	_hud_info = hud_info
 	queue_redraw()
 
 
