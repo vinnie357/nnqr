@@ -1,0 +1,33 @@
+{
+  "description": "Mid-game snapshot — reduced piece counts, some powers, raised terrain, Player 2 to move.",
+  "rows": 8,
+  "cols": 10,
+  "current_player": 2,
+  "turn": 14,
+  "pieces": [
+    {"player": 1, "row": 1, "col": 2, "powers": []},
+    {"player": 1, "row": 1, "col": 5, "powers": []},
+    {"player": 1, "row": 2, "col": 3, "powers": ["bomb"]},
+    {"player": 1, "row": 2, "col": 7, "powers": []},
+    {"player": 1, "row": 3, "col": 1, "powers": ["jump_proof"]},
+    {"player": 1, "row": 3, "col": 6, "powers": []},
+    {"player": 2, "row": 6, "col": 4, "powers": ["recruit"]},
+    {"player": 2, "row": 6, "col": 8, "powers": []},
+    {"player": 2, "row": 7, "col": 2, "powers": []},
+    {"player": 2, "row": 7, "col": 5, "powers": ["destroy_row"]},
+    {"player": 2, "row": 8, "col": 3, "powers": []},
+    {"player": 2, "row": 8, "col": 9, "powers": []}
+  ],
+  "heights": [
+    {"row": 3, "col": 4, "height": 1},
+    {"row": 3, "col": 5, "height": 2},
+    {"row": 4, "col": 4, "height": 2},
+    {"row": 4, "col": 5, "height": 3},
+    {"row": 5, "col": 5, "height": 1},
+    {"row": 5, "col": 6, "height": 1}
+  ],
+  "destroyed_tiles": [
+    {"row": 4, "col": 7},
+    {"row": 5, "col": 3}
+  ]
+}

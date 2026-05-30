@@ -118,3 +118,6 @@ flake.lock
 
 # bees: local VS Code compat symlink (.beads -> .bees); tracked data is .bees/issues.jsonl
 /.beads
+
+# Love2D scenario see-harness output (transient QA artifacts — not committed)
+lua/love2d/.qa/
