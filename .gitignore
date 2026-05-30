@@ -98,6 +98,8 @@ __pycache__/
 node_modules
 package-lock.json
 package.json
+# web/ is a JS implementation — its package.json must be tracked (overrides the rust-inherited ignore above)
+!/web/package.json
 /src/doc/rustc-dev-guide/mermaid.min.js
 
 ## Rustdoc GUI tests
