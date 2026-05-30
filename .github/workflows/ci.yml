@@ -63,3 +63,21 @@ jobs:
 
       - name: Run CI
         run: mise run lua-ci
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-mise
+
+      - name: Install tools
+        run: mise trust && mise install
+
+      # mise re-roots to the repo-root config, so cd explicitly to web/ inside the
+      # mise-provided shell; bun then finds web/package.json.
+      - name: Install deps + typecheck + test
+        run: mise exec -- bash -c 'cd "$GITHUB_WORKSPACE/web" && bun install && bun run typecheck && bun run test'
