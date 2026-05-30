@@ -53,7 +53,7 @@ Run the ui_shot harness to render the pause overlay over a mid-game board:
 
 ```bash
 cd godot
-bash scripts/godot.sh --path . res://tools/ui_shot.tscn -- pause
+bash scripts/godot.sh --path . --script res://tools/ui_shot.gd -- pause
 ```
 
 Expected stdout:

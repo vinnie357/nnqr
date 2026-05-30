@@ -56,7 +56,7 @@ Run the ui_shot harness to render the title screen:
 
 ```bash
 cd godot
-bash scripts/godot.sh --path . res://tools/ui_shot.tscn -- title
+bash scripts/godot.sh --path . --script res://tools/ui_shot.gd -- title
 ```
 
 Expected stdout:
