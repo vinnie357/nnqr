@@ -77,11 +77,7 @@ jobs:
       - name: Install tools
         run: mise trust && mise install
 
-      # Run bun directly (working-directory: web) instead of `mise run ci`:
-      # mise re-roots tasks to the top-most config dir, so `bun install` would
-      # run at the repo root and fail to find package.json.
-      - name: Install deps
-        run: mise exec -- bun install
-
-      - name: Typecheck + test
-        run: mise exec -- bun run typecheck && mise exec -- bun run test
+      # mise re-roots to the repo-root config, so cd explicitly to web/ inside the
+      # mise-provided shell; bun then finds web/package.json.
+      - name: Install deps + typecheck + test
+        run: mise exec -- bash -c 'cd "$GITHUB_WORKSPACE/web" && bun install && bun run typecheck && bun run test'
