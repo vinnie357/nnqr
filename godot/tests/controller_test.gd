@@ -5,6 +5,7 @@ extends SceneTree
 const Board      = preload("res://src/board.gd")
 const GameState  = preload("res://src/game_state.gd")
 const Controller = preload("res://src/controller.gd")
+const Orbs       = preload("res://src/orbs.gd")
 const RNG        = preload("res://src/rng.gd")
 const Executor   = preload("res://src/powers/executor.gd")
 const Targets    = preload("res://src/powers/targets.gd")
@@ -167,6 +168,73 @@ func _init() -> void:
 	_assert(ai_next.current_player == 1 or ai_next.status == "won",
 		"ai_take_turn: player flipped to 1 (or game won)", fails)
 	_assert(ai_next.turn == s_ai.turn + 1, "ai_take_turn: turn incremented", fails)
+
+	# ------------------------------------------------------------------
+	# ORB INTEGRATION: handle_tile_click collects orb at destination
+	# p1 at (3,5), orb at (3,4) with power_id "raise_tile".
+	# Select piece then move onto orb tile; piece should gain the power.
+	# ------------------------------------------------------------------
+	var s_orb := _two_piece_state()
+	s_orb.orbs = [{"row": 3, "col": 4, "power_id": "raise_tile"}]
+	# Select piece
+	var s_orb1: GameState = Controller.handle_tile_click(s_orb, 3, 5)
+	# Move onto orb tile
+	var s_orb2: GameState = Controller.handle_tile_click(s_orb1, 3, 4)
+	var collector := Board.piece_at(s_orb2, 3, 4)
+	_assert(collector != null, "orb collect: piece at (3,4) after move", fails)
+	_assert(collector.powers.has("raise_tile"),
+		"orb collect: piece.powers contains 'raise_tile'", fails)
+	_assert(s_orb2.orbs.size() == 0,
+		"orb collect: orb removed from state.orbs", fails)
+
+	# ------------------------------------------------------------------
+	# ORB INTEGRATION: orbs spawn after turn == SPAWN_INTERVAL
+	# Start at turn SPAWN_INTERVAL - 1 (turn = 6), move once → turn = 7.
+	# Board has no orbs; after the move state.orbs should be non-empty.
+	# ------------------------------------------------------------------
+	var s_spawn := _two_piece_state()
+	s_spawn.turn = Orbs.SPAWN_INTERVAL - 1  # 6
+	s_spawn.seed = 7  # any value; deterministic with rng
+	var s_spawn1: GameState = Controller.handle_tile_click(s_spawn, 3, 5)
+	var s_spawn2: GameState = Controller.handle_tile_click(s_spawn1, 3, 4)
+	_assert(s_spawn2.turn == Orbs.SPAWN_INTERVAL,
+		"orb spawn: turn reached SPAWN_INTERVAL (%d)" % Orbs.SPAWN_INTERVAL, fails)
+	_assert(s_spawn2.orbs.size() > 0,
+		"orb spawn: orbs spawned after reaching SPAWN_INTERVAL", fails)
+
+	# ------------------------------------------------------------------
+	# ORB INTEGRATION: overheat — piece holding 9 of same power collects
+	# a 10th copy → piece is destroyed (removed from pieces).
+	# ------------------------------------------------------------------
+	var s_heat := _two_piece_state()
+	var hot_piece := Board.piece_at(s_heat, 3, 5)
+	# Give the piece 9 copies of "bomb" without going through the controller.
+	for _i in range(9):
+		hot_piece.powers.append("bomb")
+	# Place an orb with "bomb" at the move destination.
+	s_heat.orbs = [{"row": 3, "col": 4, "power_id": "bomb"}]
+	var s_heat1: GameState = Controller.handle_tile_click(s_heat, 3, 5)
+	var s_heat2: GameState = Controller.handle_tile_click(s_heat1, 3, 4)
+	var piece_ids: Array = []
+	for p: GameState.Piece in s_heat2.pieces:
+		piece_ids.append(p.id)
+	_assert(not piece_ids.has("p1-a"),
+		"overheat: piece with 10x same power is removed from state.pieces", fails)
+
+	# ------------------------------------------------------------------
+	# ORB INTEGRATION (AI path): ai_take_turn spawns orbs on interval
+	# Start at turn SPAWN_INTERVAL - 1 with player 2 to move.
+	# After ai_take_turn, turn == SPAWN_INTERVAL and orbs spawned.
+	# ------------------------------------------------------------------
+	var s_ai_orb := _ai_state()
+	s_ai_orb.turn = Orbs.SPAWN_INTERVAL - 1  # 6
+	s_ai_orb.seed = 13
+	var rng_ai := RNG.new(s_ai_orb.seed + s_ai_orb.turn)
+	var s_ai_after: GameState = Controller.ai_take_turn(s_ai_orb, "easy", rng_ai)
+	_assert(s_ai_after.turn == Orbs.SPAWN_INTERVAL,
+		"ai orb spawn: turn reached SPAWN_INTERVAL", fails)
+	_assert(s_ai_after.orbs.size() > 0,
+		"ai orb spawn: ai path spawns orbs on interval", fails)
 
 	# ------------------------------------------------------------------
 	# Results

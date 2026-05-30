@@ -1,0 +1,31 @@
+{
+	"_comment": "orb_collect.json — verifies orb collection through the controller. A p1 piece at (4,5) is adjacent to an orb at (4,4) with power_id 'raise_tile'. Inputs: select the piece, move it onto the orb tile, then re-select to trigger the power menu. After running: state.json must show the piece at (4,4) with powers=['raise_tile'] and orbs=[].",
+	"current_player": 1,
+	"turn": 2,
+	"status": "playing",
+	"winner": 0,
+	"seed": 5,
+	"pieces": [
+		{"id": "p1-a", "player": 1, "row": 4, "col": 5},
+		{"id": "p2-a", "player": 2, "row": 7, "col": 5}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [
+		{"row": 4, "col": 4, "power_id": "raise_tile"}
+	],
+	"inputs": [
+		{"type": "click", "row": 4, "col": 5},
+		{"type": "click", "row": 4, "col": 4},
+		{"type": "click", "row": 4, "col": 4}
+	]
+}
