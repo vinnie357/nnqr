@@ -402,8 +402,9 @@ function renderWinBanner(
   game: GameState,
 ): void {
   if (game.status !== "won" || game.winner === null) {
-    text.setText("");
+    text.setVisible(false);
     return;
   }
   text.setText(`Player ${game.winner} wins!  (turn ${game.turn})\n\nPress R to play again`);
+  text.setVisible(true);
 }

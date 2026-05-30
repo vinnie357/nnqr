@@ -88,7 +88,7 @@ class MainScene extends Phaser.Scene {
       ...smallStyle,
     }).setOrigin(1, 0);
 
-    // Win banner (centered).
+    // Win banner (centered). Hidden until a player wins — see renderWinBanner.
     const winText = this.add.text(MARGIN_LEFT + (BOARD_COLS * TILE) / 2, MARGIN_TOP + (BOARD_ROWS * TILE) / 2, "", {
       fontFamily: "system-ui, sans-serif",
       fontSize: "28px",
@@ -96,7 +96,7 @@ class MainScene extends Phaser.Scene {
       align: "center",
       backgroundColor: "#111318",
       padding: { x: 20, y: 14 },
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setVisible(false);
 
     this.texts = {
       status: statusText,
