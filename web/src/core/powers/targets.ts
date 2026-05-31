@@ -10,6 +10,8 @@
 import { inBounds, isDestroyed, pieceAt } from "../board";
 import type { GameState, Piece } from "../types";
 
+type Area = "row" | "column" | "radial";
+
 export interface TargetTile {
   row: number;
   col: number;
@@ -133,6 +135,66 @@ export function getTargetTiles(
     default:
       return [];
   }
+}
+
+// ---------------------------------------------------------------------------
+// Area preview tiles (for UI highlight and AI targeting of area powers)
+// ---------------------------------------------------------------------------
+
+/** Read the grow_quadradius level from a piece (0 if not set). */
+function growLevel(piece: Piece): number {
+  return (piece as Piece & { growQuadradiusLevel?: number }).growQuadradiusLevel ?? 0;
+}
+
+/**
+ * Returns the tiles that an area power activated by `piece` would affect.
+ * Excludes the activating piece's own tile (center).
+ * Respects grow_quadradius expansion:
+ *  - radial: Chebyshev distance 1+L
+ *  - row:    band [r-L, r+L] full board width
+ *  - column: band [c-L, c+L] full board height
+ * All results are clamped to board bounds.
+ *
+ * Used by the view layer to preview area effects before activation and by the
+ * AI to determine how many tiles a power would hit.
+ */
+export function getAreaPreviewTiles(
+  state: GameState,
+  piece: Piece,
+  area: Area,
+): TargetTile[] {
+  const L = growLevel(piece);
+  const dist = 1 + L;
+  const tiles: TargetTile[] = [];
+  if (area === "row") {
+    const rMin = Math.max(1, piece.row - L);
+    const rMax = Math.min(state.rows, piece.row + L);
+    for (let r = rMin; r <= rMax; r++) {
+      for (let c = 1; c <= state.cols; c++) {
+        if (r === piece.row && c === piece.col) continue;
+        tiles.push({ row: r, col: c });
+      }
+    }
+  } else if (area === "column") {
+    const cMin = Math.max(1, piece.col - L);
+    const cMax = Math.min(state.cols, piece.col + L);
+    for (let r = 1; r <= state.rows; r++) {
+      for (let c = cMin; c <= cMax; c++) {
+        if (r === piece.row && c === piece.col) continue;
+        tiles.push({ row: r, col: c });
+      }
+    }
+  } else {
+    for (let dr = -dist; dr <= dist; dr++) {
+      for (let dc = -dist; dc <= dist; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const r = piece.row + dr;
+        const c = piece.col + dc;
+        if (inBounds(r, c)) tiles.push({ row: r, col: c });
+      }
+    }
+  }
+  return tiles;
 }
 
 /**

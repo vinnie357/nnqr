@@ -40,35 +40,64 @@ type ExtState = GameState & {
 
 type Area = "row" | "column" | "radial";
 
-/** Pieces in the given area, excluding the activating piece itself. */
+/** Read the grow_quadradius level from a piece (0 if not set). */
+function growLevel(piece: Piece): number {
+  return (piece as Piece & { growQuadradiusLevel?: number }).growQuadradiusLevel ?? 0;
+}
+
+/** Pieces in the given area, excluding the activating piece itself.
+ *
+ *  grow_quadradius expansion (level L = growQuadradiusLevel ?? 0):
+ *  - radial: Chebyshev distance 1+L (L=0 → dist 1 = 3×3 ring, L=1 → dist 2 = 5×5 ring, …)
+ *  - row:    band [r-L, r+L] (2L+1 rows), full board width
+ *  - column: band [c-L, c+L], full board height
+ */
 function areaPieces(state: GameState, piece: Piece, area: Area): Piece[] {
+  const L = growLevel(piece);
+  const dist = 1 + L;
   return state.pieces.filter((p) => {
     if (p.id === piece.id) return false;
-    if (area === "row") return p.row === piece.row;
-    if (area === "column") return p.col === piece.col;
-    // radial: 3x3 around piece (abs delta ≤ 1 on both axes)
-    return Math.abs(p.row - piece.row) <= 1 && Math.abs(p.col - piece.col) <= 1;
+    if (area === "row") return Math.abs(p.row - piece.row) <= L;
+    if (area === "column") return Math.abs(p.col - piece.col) <= L;
+    // radial: Chebyshev distance ≤ dist (Chebyshev = max(|Δr|, |Δc|))
+    return Math.abs(p.row - piece.row) <= dist && Math.abs(p.col - piece.col) <= dist;
   });
 }
 
-/** Tile coordinates in the given area, excluding the activating piece's own tile. */
+/** Tile coordinates in the given area, excluding the activating piece's own tile.
+ *
+ *  grow_quadradius expansion follows the same rules as areaPieces above.
+ *  All coordinates are clamped to [1..rows] × [1..cols].
+ */
 function areaTileCoords(
   state: GameState,
   piece: Piece,
   area: Area,
 ): Array<{ row: number; col: number }> {
+  const L = growLevel(piece);
+  const dist = 1 + L;
   const tiles: Array<{ row: number; col: number }> = [];
   if (area === "row") {
-    for (let c = 1; c <= state.cols; c++) {
-      if (c !== piece.col) tiles.push({ row: piece.row, col: c });
+    const rMin = Math.max(1, piece.row - L);
+    const rMax = Math.min(state.rows, piece.row + L);
+    for (let r = rMin; r <= rMax; r++) {
+      for (let c = 1; c <= state.cols; c++) {
+        if (r === piece.row && c === piece.col) continue;
+        tiles.push({ row: r, col: c });
+      }
     }
   } else if (area === "column") {
+    const cMin = Math.max(1, piece.col - L);
+    const cMax = Math.min(state.cols, piece.col + L);
     for (let r = 1; r <= state.rows; r++) {
-      if (r !== piece.row) tiles.push({ row: r, col: piece.col });
+      for (let c = cMin; c <= cMax; c++) {
+        if (r === piece.row && c === piece.col) continue;
+        tiles.push({ row: r, col: c });
+      }
     }
   } else {
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
+    for (let dr = -dist; dr <= dist; dr++) {
+      for (let dc = -dist; dc <= dist; dc++) {
         if (dr === 0 && dc === 0) continue;
         const r = piece.row + dr;
         const c = piece.col + dc;
@@ -204,11 +233,12 @@ function scrambleColumn(state: GameState, piece: Piece, powerId: string): GameSt
   return { ...state, pieces: replacePiece(pieces, updated) };
 }
 
-/** Core: scramble radial (shuffle {row,col} pairs in 3x3). */
+/** Core: scramble radial (shuffle {row,col} pairs in grow-aware radial area). */
 function scrambleRadial(state: GameState, piece: Piece, powerId: string): GameState {
   const rng = makeRng(state.seed + state.turn);
+  const dist = 1 + growLevel(piece);
   const inArea = state.pieces.filter(
-    (p) => Math.abs(p.row - piece.row) <= 1 && Math.abs(p.col - piece.col) <= 1,
+    (p) => Math.abs(p.row - piece.row) <= dist && Math.abs(p.col - piece.col) <= dist,
   );
   const positions = inArea.map((p) => ({ row: p.row, col: p.col }));
   for (let i = positions.length - 1; i > 0; i--) {
@@ -538,15 +568,17 @@ export function activateDestroyRadial(state: GameState, piece: Piece): GameState
 }
 
 export function activateBomb(state: GameState, piece: Piece): GameState {
-  // Bomb: destroy pieces in 3x3 (excluding self) + lower terrain by 1 in 3x3.
+  // Bomb: destroy pieces in radial area (excluding self) + lower terrain by 1 in same area.
   // Tiles reaching height ≤ 0 become destroyed.
+  // grow_quadradius expands the radial distance (dist = 1 + L).
+  const dist = 1 + growLevel(piece);
   const targets = areaPieces(state, piece, "radial");
   const targetIds = new Set(targets.map((t) => t.id));
   const pieces = state.pieces.filter((p) => !targetIds.has(p.id));
   let heightMap = state.heightMap.map((r) => [...r]);
   const destroyedTiles = { ...state.destroyedTiles } as Record<string, true>;
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
+  for (let dr = -dist; dr <= dist; dr++) {
+    for (let dc = -dist; dc <= dist; dc++) {
       const r = piece.row + dr;
       const c = piece.col + dc;
       if (!inBounds(r, c)) continue;
@@ -566,20 +598,32 @@ export function activateBomb(state: GameState, piece: Piece): GameState {
 }
 
 export function activateKamikazeRadial(state: GameState, piece: Piece): GameState {
-  // Kamikaze includes self — don't use destroyArea which excludes self
+  // Kamikaze includes self — don't use destroyArea which excludes self.
+  // grow_quadradius expands the radial distance (dist = 1 + L).
+  const dist = 1 + growLevel(piece);
   const inArea = state.pieces.filter(
-    (p) => Math.abs(p.row - piece.row) <= 1 && Math.abs(p.col - piece.col) <= 1,
+    (p) => Math.abs(p.row - piece.row) <= dist && Math.abs(p.col - piece.col) <= dist,
   );
   const targetIds = new Set(inArea.map((t) => t.id));
   return { ...state, pieces: state.pieces.filter((p) => !targetIds.has(p.id)) };
 }
 
 export function activateKamikazeRow(state: GameState, piece: Piece): GameState {
-  return { ...state, pieces: state.pieces.filter((p) => p.row !== piece.row) };
+  // grow_quadradius expands the row band to [r-L, r+L].
+  const L = growLevel(piece);
+  return {
+    ...state,
+    pieces: state.pieces.filter((p) => Math.abs(p.row - piece.row) > L),
+  };
 }
 
 export function activateKamikazeColumn(state: GameState, piece: Piece): GameState {
-  return { ...state, pieces: state.pieces.filter((p) => p.col !== piece.col) };
+  // grow_quadradius expands the column band to [c-L, c+L].
+  const L = growLevel(piece);
+  return {
+    ...state,
+    pieces: state.pieces.filter((p) => Math.abs(p.col - piece.col) > L),
+  };
 }
 
 export function activateSmartBombs(state: GameState, piece: Piece): GameState {
@@ -926,9 +970,11 @@ export function activateSpywareColumn(state: GameState, piece: Piece): GameState
 }
 
 export function activateOrbSpyRadial(state: GameState, piece: Piece): GameState {
-  // Mark orbs in 3x3 area as revealed (flag on orb via extended state)
+  // Mark orbs in radial area as revealed (flag on orb via extended state).
+  // grow_quadradius expands the radial distance (dist = 1 + L).
+  const dist = 1 + growLevel(piece);
   const orbs = state.orbs.map((o) => {
-    if (Math.abs(o.row - piece.row) <= 1 && Math.abs(o.col - piece.col) <= 1) {
+    if (Math.abs(o.row - piece.row) <= dist && Math.abs(o.col - piece.col) <= dist) {
       return { ...o, revealed: true };
     }
     return o;
