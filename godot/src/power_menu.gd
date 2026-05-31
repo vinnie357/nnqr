@@ -11,6 +11,10 @@
 ##   - Targeting instruction line ("Click a highlighted tile · Esc to cancel")
 ##     when a power is armed (_active_power_id != "").
 ##
+## C7 enhancements (responsive):
+##   - Panel positioned in the reserved right strip via the renderer's
+##     get_menu_x() / get_menu_y() — follows live viewport size.
+##
 ## Usage:
 ##   const PowerMenu = preload("res://src/power_menu.gd")
 ##   var menu = PowerMenu.new()
@@ -28,12 +32,9 @@ const Defs      = preload("res://src/powers/definitions.gd")
 signal power_chosen(power_id: String)
 
 # ---------------------------------------------------------------------------
-# Layout
+# Layout constants (panel-relative dimensions — position is dynamic)
 # ---------------------------------------------------------------------------
 
-const BOARD_W      : int = 10 * Renderer.TILE
-const MENU_X       : int = Renderer.MARGIN + BOARD_W + 16
-const MENU_Y       : int = Renderer.MARGIN
 const MENU_W       : int = 210
 const ROW_H        : int = 24
 const HEADER_H     : int = 28
@@ -64,11 +65,19 @@ var _entries: Array = []
 var _active_power_id: String = ""
 ## Track hover row index for visual feedback (-1 = none).
 var _hover_row: int = -1
+## Reference to the renderer node so we can read its computed menu position.
+var _renderer: Node2D = null
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+## Set the renderer reference so this menu can query its computed layout.
+## Call this once after adding both nodes to the scene.
+func set_renderer(r: Node2D) -> void:
+	_renderer = r
+
 
 ## Update the menu from the current GameState.
 ## Call this after every state transition.
@@ -111,6 +120,25 @@ func set_active_power(power_id: String) -> void:
 
 
 # ---------------------------------------------------------------------------
+# Dynamic position helpers
+# ---------------------------------------------------------------------------
+
+## Return the current menu X from the renderer's computed layout, or a fallback.
+func _menu_x() -> float:
+	if _renderer != null and _renderer.has_method("get_menu_x"):
+		return _renderer.get_menu_x()
+	# Fallback: right of a default-sized viewport.
+	return get_viewport_rect().size.x - float(MENU_W) - 16.0
+
+
+## Return the current menu Y from the renderer's computed layout, or a fallback.
+func _menu_y() -> float:
+	if _renderer != null and _renderer.has_method("get_menu_y"):
+		return _renderer.get_menu_y()
+	return 20.0
+
+
+# ---------------------------------------------------------------------------
 # Input
 # ---------------------------------------------------------------------------
 
@@ -150,12 +178,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func _row_at(px: Vector2) -> int:
 	if _entries.is_empty():
 		return -1
+	var mx: float = _menu_x()
+	var my: float = _menu_y()
 	var rows_h := HEADER_H + _entries.size() * ROW_H + PAD
-	if px.x < MENU_X or px.x > MENU_X + MENU_W:
+	if px.x < mx or px.x > mx + float(MENU_W):
 		return -1
-	if px.y < MENU_Y + HEADER_H or px.y > MENU_Y + rows_h:
+	if px.y < my + float(HEADER_H) or px.y > my + rows_h:
 		return -1
-	var rel_y := px.y - (MENU_Y + HEADER_H)
+	var rel_y := px.y - (my + float(HEADER_H))
 	return int(rel_y / ROW_H)
 
 
@@ -167,17 +197,20 @@ func _draw() -> void:
 	if _entries.is_empty():
 		return
 
+	var mx: float = _menu_x()
+	var my: float = _menu_y()
+
 	# Total panel height: add instruction row when a power is armed.
 	var instruct_extra: int = INSTRUCT_H if _active_power_id != "" else 0
 	var total_h: int = HEADER_H + _entries.size() * ROW_H + PAD + instruct_extra
 	# Background panel.
-	draw_rect(Rect2(MENU_X, MENU_Y, MENU_W, total_h), COL_BG)
-	draw_rect(Rect2(MENU_X, MENU_Y, MENU_W, total_h), COL_BORDER, false, 1.0)
+	draw_rect(Rect2(mx, my, float(MENU_W), float(total_h)), COL_BG)
+	draw_rect(Rect2(mx, my, float(MENU_W), float(total_h)), COL_BORDER, false, 1.0)
 
 	# Header.
 	draw_string(
 		ThemeDB.fallback_font,
-		Vector2(MENU_X + PAD, MENU_Y + HEADER_H - 6.0),
+		Vector2(mx + float(PAD), my + float(HEADER_H) - 6.0),
 		"Powers",
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
@@ -188,12 +221,12 @@ func _draw() -> void:
 	# Rows.
 	for i: int in range(_entries.size()):
 		var entry: Dictionary = _entries[i]
-		var ry := MENU_Y + HEADER_H + i * ROW_H
+		var ry := my + float(HEADER_H) + float(i * ROW_H)
 		# Row background: active or hover.
 		if entry.power_id == _active_power_id:
-			draw_rect(Rect2(MENU_X + 1, ry, MENU_W - 2, ROW_H), COL_ACTIVE)
+			draw_rect(Rect2(mx + 1.0, ry, float(MENU_W) - 2.0, float(ROW_H)), COL_ACTIVE)
 		elif i == _hover_row:
-			draw_rect(Rect2(MENU_X + 1, ry, MENU_W - 2, ROW_H), COL_ITEM_HOVER)
+			draw_rect(Rect2(mx + 1.0, ry, float(MENU_W) - 2.0, float(ROW_H)), COL_ITEM_HOVER)
 
 		# Number prefix (1-based).
 		var label: String = "%d. %s" % [i + 1, entry.name]
@@ -208,7 +241,7 @@ func _draw() -> void:
 
 		draw_string(
 			ThemeDB.fallback_font,
-			Vector2(MENU_X + PAD, ry + ROW_H - 6.0),
+			Vector2(mx + float(PAD), ry + float(ROW_H) - 6.0),
 			label,
 			HORIZONTAL_ALIGNMENT_LEFT,
 			MENU_W - PAD * 2,
@@ -218,10 +251,10 @@ func _draw() -> void:
 
 	# Targeting instruction line when a power is armed.
 	if _active_power_id != "":
-		var iy: float = float(MENU_Y + HEADER_H + _entries.size() * ROW_H + PAD + 2)
+		var iy: float = my + float(HEADER_H) + float(_entries.size() * ROW_H + PAD) + 2.0
 		draw_string(
 			ThemeDB.fallback_font,
-			Vector2(MENU_X + PAD, iy + 14.0),
+			Vector2(mx + float(PAD), iy + 14.0),
 			"Click a highlighted tile",
 			HORIZONTAL_ALIGNMENT_LEFT,
 			MENU_W - PAD * 2,
@@ -230,7 +263,7 @@ func _draw() -> void:
 		)
 		draw_string(
 			ThemeDB.fallback_font,
-			Vector2(MENU_X + PAD, iy + 28.0),
+			Vector2(mx + float(PAD), iy + 28.0),
 			"Esc to cancel",
 			HORIZONTAL_ALIGNMENT_LEFT,
 			MENU_W - PAD * 2,

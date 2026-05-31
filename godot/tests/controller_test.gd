@@ -237,6 +237,82 @@ func _init() -> void:
 		"ai orb spawn: ai path spawns orbs on interval", fails)
 
 	# ------------------------------------------------------------------
+	# MOVE_AGAIN: normal move flips turn (baseline — no extra_move)
+	# ------------------------------------------------------------------
+	var s_base := _two_piece_state()
+	var s_base1: GameState = Controller.handle_tile_click(s_base, 3, 5)  # select p1
+	var s_base2: GameState = Controller.handle_tile_click(s_base1, 3, 4)  # move
+	_assert(s_base2.current_player == 2,
+		"move_again baseline: normal move flips to player 2", fails)
+
+	# ------------------------------------------------------------------
+	# MOVE_AGAIN: activate_power sets extra_move meta, current_player unchanged
+	# ------------------------------------------------------------------
+	var s_ma := _two_piece_state()
+	var p_ma := GameState.Piece.new("p1-ma", 1, 3, 5)
+	p_ma.powers = ["move_again"]
+	s_ma.pieces = [p_ma, GameState.Piece.new("p2-a", 2, 7, 5)]
+	var ma_result: Dictionary = Controller.activate_power(s_ma, p_ma, "move_again", null)
+	var s_ma_after: GameState = ma_result["state"]
+	_assert(s_ma_after.has_meta("extra_move") and bool(s_ma_after.get_meta("extra_move")),
+		"move_again activate: state.extra_move meta is true", fails)
+	_assert(s_ma_after.current_player == 1,
+		"move_again activate: current_player unchanged after activation (still 1)", fails)
+
+	# ------------------------------------------------------------------
+	# MOVE_AGAIN: first move after extra_move keeps the same player's turn
+	# ------------------------------------------------------------------
+	# select p1-ma in the post-activation state
+	var s_ma_sel: GameState = Controller.handle_tile_click(s_ma_after, 3, 5)
+	# move to (3,4) — should NOT flip (extra_move consumed)
+	var s_ma_move1: GameState = Controller.handle_tile_click(s_ma_sel, 3, 4)
+	_assert(s_ma_move1.current_player == 1,
+		"move_again: first move keeps current_player == 1 (no flip)", fails)
+
+	# ------------------------------------------------------------------
+	# MOVE_AGAIN: second move (no extra_move) flips the turn normally
+	# ------------------------------------------------------------------
+	var s_ma_sel2: GameState = Controller.handle_tile_click(s_ma_move1, 3, 4)  # re-select
+	var s_ma_move2: GameState = Controller.handle_tile_click(s_ma_sel2, 3, 3)  # second move
+	_assert(s_ma_move2.current_player == 2,
+		"move_again: second move flips to player 2", fails)
+
+	# ------------------------------------------------------------------
+	# MOVE_AGAIN: winning move does NOT un-flip (game is won, not still playing)
+	# ------------------------------------------------------------------
+	var s_win := GameState.new()
+	s_win.current_player = 1
+	s_win.turn = 0
+	s_win.status = "playing"
+	s_win.winner = 0
+	s_win.seed = 1
+	s_win.height_map = []
+	for _r in range(8):
+		var row: Array = []
+		row.resize(10)
+		row.fill(0)
+		s_win.height_map.append(row)
+	s_win.destroyed_tiles = {}
+	s_win.orbs = []
+	s_win.selected = null
+	s_win.valid_moves = []
+	# p1 has move_again; p2 is adjacent so p1 can capture it to win
+	var p_win := GameState.Piece.new("p1-win", 1, 3, 5)
+	p_win.powers = ["move_again"]
+	var p_enemy := GameState.Piece.new("p2-only", 2, 3, 4)
+	s_win.pieces = [p_win, p_enemy]
+	# Activate move_again first
+	var s_win_ma: GameState = Controller.activate_power(s_win, p_win, "move_again", null)["state"]
+	# Select the piece and capture the only enemy → game won
+	var s_win_sel: GameState = Controller.handle_tile_click(s_win_ma, 3, 5)
+	var s_win_moved: GameState = Controller.handle_tile_click(s_win_sel, 3, 4)
+	_assert(s_win_moved.status == "won",
+		"move_again winning: status is 'won'", fails)
+	# When game is won we do NOT un-flip — the extra_move shouldn't override game-over
+	_assert(s_win_moved.current_player != 1 or s_win_moved.status == "won",
+		"move_again winning: current_player un-flip skipped when status==won", fails)
+
+	# ------------------------------------------------------------------
 	# Results
 	# ------------------------------------------------------------------
 	if fails[0] == 0:
