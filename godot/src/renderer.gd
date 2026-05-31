@@ -50,8 +50,10 @@ const HUD_STRIP_H: int  = 70    ## bottom strip for HUD text
 const BOARD_MARGIN: int = 20    ## inset margin around the board within its area
 
 ## TILE_W clamping range (px, full diamond width).
+## TILE_W_MAX is a high sanity bound only — the board grows with the window up
+## to this cap so a maximized window shows a large board, not a small one in grey.
 const TILE_W_MIN: int = 24
-const TILE_W_MAX: int = 120
+const TILE_W_MAX: int = 200
 
 ## Legacy TILE constant kept only so external scripts that import Renderer.TILE
 ## continue to compile.  power_menu.gd now positions itself from the viewport
@@ -182,10 +184,6 @@ func _compute_layout() -> void:
 	_height_step = _tile_h * 0.375   ## ~HEIGHT_STEP/TILE_H ratio from original (12/32 ≈ 0.375)
 	_piece_radius = _tile_w * 0.33
 
-	# Diamond pixel extents at this tile size.
-	var diamond_w: float = n * _tile_w / 2.0
-	var diamond_h: float = n * _tile_h / 2.0 + 4.0 * _height_step  # +max elevation headroom
-
 	# Center the board within the available area (top-left corner = BOARD_MARGIN).
 	var board_area_left: float = float(BOARD_MARGIN)
 	var board_area_top: float  = float(BOARD_MARGIN)
@@ -210,9 +208,17 @@ func _compute_layout() -> void:
 	# col_mid = (1+10)/2 = 5.5, row_mid = (1+8)/2 = 4.5 → col_mid - row_mid = 1.0
 	_origin_x = board_center_x - 1.0 * hw
 
-	# y: topmost tile is (row=1,col=1): origin_y + (1+1)*hh = origin_y + 2*hh
-	# We want that to land at board_area_top:
-	_origin_y = board_area_top - 2.0 * hh
+	# y: vertically center the diamond within the available area.
+	# Visual vertical extent of the board (top face centers + elevation headroom):
+	#   topmost point  = origin_y + (1+1)*hh - 4*HEIGHT_STEP - hh   [tile (1,1), max lift, top tip]
+	#                  = origin_y + hh - 4*HEIGHT_STEP
+	#   bottommost     = origin_y + (8+10)*hh + hh                  [tile (8,10), h=0, bottom tip]
+	#                  = origin_y + 19*hh
+	# Diamond visual height = 18*hh + 4*HEIGHT_STEP.
+	# Its vertical midpoint = origin_y + 10*hh - 2*HEIGHT_STEP.
+	# Solve so that midpoint == board_area_top + board_area_h/2.
+	var board_center_y: float = board_area_top + board_area_h / 2.0
+	_origin_y = board_center_y - 10.0 * hh + 2.0 * _height_step
 
 	# Power menu: right strip.
 	_menu_x = vp_w - float(MENU_STRIP_W) + 8.0
