@@ -17,6 +17,17 @@ export interface Piece {
   canClimbAny?: boolean;
   canWrap?: boolean;
   isInvisible?: boolean;
+  // Flags set by debuff / control powers — consumed by board.ts and orbs.ts.
+  /** Set by scavenger power: this piece inherits powers from enemies it captures. */
+  isScavenger?: boolean;
+  /** Set by beneficiary power: allied pieces' powers transfer here on death. */
+  isBeneficiary?: boolean;
+  /** Set by tripwire power: this piece is removed from the board when it moves. */
+  isTripwired?: boolean;
+  /** Set by inhibit power: this piece cannot collect orb powers. */
+  isInhibited?: boolean;
+  /** Set by parasite power: orb powers collected by this piece go to the named piece id instead. */
+  parasitizedBy?: string;
 }
 
 export interface Move {

@@ -55,13 +55,35 @@ export function spawnOrbs(state: GameState, powerIds: readonly string[], rng: Rn
 /**
  * The piece at (row, col) collects any orb there: the power id is added to its
  * inventory and the orb removed. Returns the new state and the collected id.
+ *
+ * Extended-state consumers wired here:
+ *   isInhibited  — inhibited piece cannot collect the power (orb is still removed).
+ *   parasitizedBy — the collected power is redirected to the parasite owner piece.
  */
 export function collectOrb(state: GameState, row: number, col: number): { state: GameState; collected: string | null } {
   const orb = state.orbs.find((o) => o.row === row && o.col === col);
   if (!orb) return { state, collected: null };
   const piece = pieceAt(state, row, col);
   if (!piece) return { state, collected: null };
-  const pieces = state.pieces.map((p) => (p.id === piece.id ? { ...p, powers: [...p.powers, orb.powerId] } : p));
+
+  // Always remove the orb from the board.
   const orbs = state.orbs.filter((o) => o !== orb);
+
+  // Inhibited: orb is consumed (removed) but the power is NOT granted to the piece.
+  if (piece.isInhibited) {
+    return { state: { ...state, orbs }, collected: null };
+  }
+
+  // Parasitized: the power goes to the parasite owner instead of this piece.
+  if (piece.parasitizedBy) {
+    const parasiteId = piece.parasitizedBy;
+    const pieces = state.pieces.map((p) =>
+      p.id === parasiteId ? { ...p, powers: [...p.powers, orb.powerId] } : p,
+    );
+    return { state: { ...state, pieces, orbs }, collected: orb.powerId };
+  }
+
+  // Normal collection.
+  const pieces = state.pieces.map((p) => (p.id === piece.id ? { ...p, powers: [...p.powers, orb.powerId] } : p));
   return { state: { ...state, pieces, orbs }, collected: orb.powerId };
 }
