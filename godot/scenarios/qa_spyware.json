@@ -1,0 +1,29 @@
+{
+	"_comment": "qa_spyware.json — nnqr-43 visual QA: render-layer power consumers. P1 piece at (4,5) holds spyware_row. An enemy P2 piece at (4,7) has powers=['jump_proof','shield'] and the powers_revealed meta flag pre-set (simulates post-activation state so the renderer shows the spy badge + power label). A revealed orb at (4,3) has power_id='raise_tile' and revealed=true. No inputs — this is a static visual state; lead validates the PNG. Expected visuals: (1) P2 piece at (4,7) has a purple tint ring + 'jump_proof +1' label below it. (2) Orb at (4,3) shows a small 'raise_tile' label beneath the gold circle.",
+	"current_player": 1,
+	"turn": 3,
+	"status": "playing",
+	"winner": 0,
+	"seed": 11,
+	"pieces": [
+		{"id": "p1-spy", "player": 1, "row": 4, "col": 5, "powers": ["spyware_row"], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-revealed", "player": 2, "row": 4, "col": 7, "powers": ["jump_proof", "shield"], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false, "powers_revealed": true},
+		{"id": "p2-normal", "player": 2, "row": 7, "col": 3, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [
+		{"row": 4, "col": 3, "power_id": "raise_tile", "revealed": true},
+		{"row": 2, "col": 8, "power_id": "shield"}
+	],
+	"inputs": []
+}

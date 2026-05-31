@@ -42,6 +42,8 @@ class MainScene extends Phaser.Scene {
   private gfx!: Phaser.GameObjects.Graphics;
   private texts!: RenderTargets["texts"];
   private ctrlState!: ControllerState;
+  /** nnqr-43: Group for per-tile dynamic reveal labels (cleared each frame). */
+  private revealLabels!: Phaser.GameObjects.Group;
 
   // ---- Pause overlay state ----
   private pauseState: PauseOverlayState = createPauseOverlay();
@@ -73,6 +75,8 @@ class MainScene extends Phaser.Scene {
 
   create(): void {
     this.gfx = this.add.graphics();
+    // nnqr-43: group for ephemeral per-tile reveal labels (cleared each renderFrame).
+    this.revealLabels = this.add.group();
 
     const textStyle = {
       fontFamily: "'Courier New', monospace",
@@ -322,6 +326,7 @@ class MainScene extends Phaser.Scene {
       gfx: this.gfx,
       scene: this,
       texts: this.texts,
+      revealLabels: this.revealLabels,
     });
   }
 

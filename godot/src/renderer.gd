@@ -84,6 +84,22 @@ const COL_HB4         := Color(0.353, 0.376, 0.471, 0.9)
 const COL_AI_IND      := Color(0.267, 0.667, 1.000)   ## ai indicator / thinking blue
 const COL_MODE_LABEL  := Color(0.800, 0.850, 0.950, 0.85)  ## mode/difficulty label
 
+## Render-layer power-consumer colours (nnqr-43).
+## COL_SPY_BG: background tint on an enemy piece whose powers are revealed.
+const COL_SPY_BG      := Color(0.600, 0.200, 0.900, 0.35)
+## COL_SPY_TEXT: text colour for the revealed power label drawn on the piece.
+const COL_SPY_TEXT    := Color(1.0, 0.85, 1.0, 1.0)
+## COL_INVISIBLE: fill colour for an opponent's invisible piece (ghost-outline only).
+const COL_INVISIBLE   := Color(1.0, 1.0, 1.0, 0.18)
+## COL_ORB_LABEL: text colour for a revealed orb's power_id label.
+const COL_ORB_LABEL   := Color(0.200, 0.100, 0.000, 0.90)
+
+## The "current viewer" player — pieces that are invisible to the OPPONENT should
+## be rendered ghosted/hidden when viewed from the opponent's perspective.
+## In single-screen (hotseat) mode we always show ghost outlines so both players
+## can see the visual indication.  Override via set_viewer_player().
+var _viewer_player: int = 0   ## 0 = show all (default, used in see-harness scenarios)
+
 
 var _state                = null           ## GameState
 var _power_target_tiles: Array = []        ## [{row,col}] for purple highlight
@@ -147,6 +163,15 @@ func load_state(state, hud_info := {}) -> void:
 ## Overlay power-target highlight tiles (purple). Pass [] to clear.
 func set_power_target_tiles(tiles: Array) -> void:
 	_power_target_tiles = tiles
+	queue_redraw()
+
+
+## Set which player is currently "viewing" the board.
+## When set to 1 or 2, pieces with is_invisible==true that belong to the OTHER
+## player are rendered as ghost outlines instead of solid tokens.
+## Pass 0 (default) to show all pieces normally — used in see-harness scenarios.
+func set_viewer_player(p: int) -> void:
+	_viewer_player = p
 	queue_redraw()
 
 
@@ -397,7 +422,7 @@ func _draw_board_sorted() -> void:
 			_draw_valid_move(move_map[key], ctr)
 
 		if orb_map.has(key):
-			_draw_orb(ctr)
+			_draw_orb(orb_map[key], ctr)
 
 		if piece_map.has(key):
 			_draw_piece(piece_map[key], ctr)
@@ -485,15 +510,54 @@ func _draw_valid_move(m: Dictionary, ctr: Vector2) -> void:
 
 
 ## Draw an orb marker at the tile face center.
-func _draw_orb(ctr: Vector2) -> void:
+## orb: Dictionary with keys row, col, power_id, and optionally revealed:bool.
+## When orb.revealed is true, the power_id label is drawn below the orb circle.
+func _draw_orb(orb: Dictionary, ctr: Vector2) -> void:
 	var orb_r: float = maxf(_tile_w * 0.19, 5.0)
 	draw_circle(ctr, orb_r * 1.7, Color(COL_ORB.r, COL_ORB.g, COL_ORB.b, 0.25))
 	draw_circle(ctr, orb_r, COL_ORB)
 	draw_circle(Vector2(ctr.x - orb_r * 0.28, ctr.y - orb_r * 0.28), orb_r * 0.28, Color(1, 1, 1, 0.8))
 
+	# nnqr-43: orb_spy_* powers set orb["revealed"]=true — show the power_id label.
+	if orb.get("revealed", false):
+		var label: String = str(orb.get("power_id", "?"))
+		var font_size: int = max(int(_tile_w * 0.14), 8)
+		# Draw a small dark background pill so the text is legible over the tile.
+		var bg_w: float = maxf(_tile_w * 0.55, 30.0)
+		var bg_h: float = float(font_size) + 4.0
+		draw_rect(
+			Rect2(ctr.x - bg_w / 2.0, ctr.y + orb_r + 2.0, bg_w, bg_h),
+			Color(0.1, 0.05, 0.0, 0.75)
+		)
+		draw_string(
+			ThemeDB.fallback_font,
+			Vector2(ctr.x - bg_w / 2.0 + 2.0, ctr.y + orb_r + 2.0 + float(font_size) - 1.0),
+			label,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			int(bg_w) - 4,
+			font_size,
+			COL_ORB_LABEL
+		)
+
 
 ## Draw a piece token sitting on its tile surface.
 ## piece may be a GameState.Piece object or a plain Dictionary.
+##
+## nnqr-43 render-layer power consumers:
+##
+##   is_invisible:
+##     Convention for single-screen (hotseat) play — both players share the
+##     screen so we can't fully hide any piece.  Instead we use a clear visual
+##     CONVENTION: an invisible piece owned by the OPPONENT of _viewer_player is
+##     drawn as a faint ghost outline only (no fill, alpha ~18%).  The owning
+##     player's own invisible pieces are drawn normally so they can still see
+##     them.  When _viewer_player == 0 (default / see-harness), the ghost outline
+##     is shown for ALL invisible pieces so the state is visible in screenshots.
+##
+##   powers_revealed (set as object meta by effects.gd / spyware_* powers):
+##     The activating player can see the enemy piece's power inventory.
+##     Draw a faint purple tint circle behind the piece plus a small text label
+##     listing the first revealed power name (or count if multiple).
 func _draw_piece(piece: Variant, ctr: Vector2) -> void:
 	var fill    := COL_P1         if piece.player == 1 else COL_P2
 	var outline := COL_P1_OUTLINE if piece.player == 1 else COL_P2_OUTLINE
@@ -504,9 +568,52 @@ func _draw_piece(piece: Variant, ctr: Vector2) -> void:
 		_state.selected.col == piece.col
 	)
 
+	var pr: float = _piece_radius
+
+	# nnqr-43: is_invisible — ghost rendering for opponent's invisible piece.
+	# piece.is_invisible may be a bool property (GameState.Piece) or dict key.
+	var piece_is_invisible: bool = false
+	if piece is Dictionary:
+		piece_is_invisible = bool(piece.get("is_invisible", false))
+	else:
+		piece_is_invisible = piece.is_invisible
+
+	var render_as_ghost: bool = false
+	if piece_is_invisible:
+		# Ghost the piece when viewed from the opponent's perspective.
+		# _viewer_player == 0 means "show all as ghost" (see-harness mode).
+		if _viewer_player == 0 or _viewer_player != piece.player:
+			render_as_ghost = true
+
+	if render_as_ghost:
+		# Ghost: faint outline only — the piece is invisible to the viewer.
+		draw_arc(ctr, pr, 0.0, TAU, 48, Color(outline.r, outline.g, outline.b, 0.35), 1.5)
+		draw_circle(ctr, pr - 1.0, COL_INVISIBLE)
+		# Small "?" label to signal the invisible state clearly in screenshots.
+		var font_sz: int = max(int(pr * 0.65), 9)
+		draw_string(
+			ThemeDB.fallback_font,
+			Vector2(ctr.x - float(font_sz) * 0.28, ctr.y + float(font_sz) * 0.35),
+			"?",
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			font_sz,
+			Color(1.0, 1.0, 1.0, 0.55)
+		)
+		return  # Skip normal rendering for ghost pieces.
+
+	# nnqr-43: powers_revealed — enemy power list visible to activating player.
+	# The flag is stored as object meta on the Piece (set by spyware_* powers).
+	var powers_revealed: bool = false
+	if piece is Object and piece.has_meta("powers_revealed"):
+		powers_revealed = bool(piece.get_meta("powers_revealed"))
+
+	# Purple tint background ring signals "you can see this enemy's powers".
+	if powers_revealed:
+		draw_circle(ctr, pr + 4.0, COL_SPY_BG)
+
 	# Piece sits on the tile — draw as a slightly flattened token (ellipse via scaled circle).
 	# We use draw_circle for simplicity (Godot 4 built-in ellipse not available here).
-	var pr: float = _piece_radius
 	draw_circle(ctr, pr + 2.0, outline)
 	draw_circle(ctr, pr, fill)
 
@@ -528,6 +635,30 @@ func _draw_piece(piece: Variant, ctr: Vector2) -> void:
 		draw_circle(
 			Vector2(ctr.x + pr - badge_r, ctr.y - pr + badge_r),
 			badge_r, badge_col)
+
+	# nnqr-43: powers_revealed label — show enemy's power inventory as small text.
+	if powers_revealed and piece.powers.size() > 0:
+		var font_size: int = max(int(pr * 0.50), 8)
+		# Build a compact label: first power name + total count.
+		var first_pw: String = str(piece.powers[0])
+		var label: String = first_pw
+		if piece.powers.size() > 1:
+			label = "%s +%d" % [first_pw, piece.powers.size() - 1]
+		var bg_w: float = maxf(_tile_w * 0.75, 40.0)
+		var label_y: float = ctr.y + pr + 2.0
+		draw_rect(
+			Rect2(ctr.x - bg_w / 2.0, label_y, bg_w, float(font_size) + 4.0),
+			Color(0.2, 0.05, 0.35, 0.80)
+		)
+		draw_string(
+			ThemeDB.fallback_font,
+			Vector2(ctr.x - bg_w / 2.0 + 2.0, label_y + float(font_size) - 1.0),
+			label,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			int(bg_w) - 4,
+			font_size,
+			COL_SPY_TEXT
+		)
 
 
 func _draw_hud() -> void:

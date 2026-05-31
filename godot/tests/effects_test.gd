@@ -491,14 +491,46 @@ func _init() -> void:
 	_assert(pgq1.get_meta("grow_quadradius_level", 0) == 1, "grow_quadradius: level 1 after first use", fails)
 
 	# -------------------------------------------------------------------------
-	# BENEFICIARY: sets is_beneficiary flag
+	# BENEFICIARY: activation-time squad transfer — correct semantics (nnqr-42)
+	# All OTHER same-player pieces sacrifice their powers to the activating piece.
+	# Donors are emptied; opponents are untouched; beneficiary power is consumed.
 	# -------------------------------------------------------------------------
 	var s_ben := _empty_state()
-	var p_ben := _make_piece("pben", 1, 3, 3, ["beneficiary"])
-	s_ben.pieces = [p_ben]
+	var p_ben := _make_piece("p_ben", 1, 1, 1, ["beneficiary"])
+	var ben_don1 := _make_piece("ben_don1", 1, 2, 1, ["destroy_row", "bomb"])
+	var ben_don2 := _make_piece("ben_don2", 1, 3, 1, ["relocate"])
+	var ben_don3 := _make_piece("ben_don3", 1, 4, 1, [])
+	var ben_opp := _make_piece("ben_opp", 2, 5, 1, ["jump_proof"])
+	s_ben.pieces = [p_ben, ben_don1, ben_don2, ben_don3, ben_opp]
 	var s_ben_after = Effects.new().activate_beneficiary(s_ben, p_ben)
-	var pben_after = _find_piece(s_ben_after, "pben")
-	_assert(pben_after.get_meta("is_beneficiary", false) == true, "beneficiary: flag set", fails)
+	var ben_act_after = _find_piece(s_ben_after, "p_ben")
+	_assert(ben_act_after != null, "beneficiary: activator still on board", fails)
+	_assert(not ben_act_after.powers.has("beneficiary"), "beneficiary: power consumed from activator", fails)
+	_assert(ben_act_after.powers.has("destroy_row"), "beneficiary: activator gains destroy_row", fails)
+	_assert(ben_act_after.powers.has("bomb"), "beneficiary: activator gains bomb", fails)
+	_assert(ben_act_after.powers.has("relocate"), "beneficiary: activator gains relocate", fails)
+	# Donors are emptied
+	var ben_d1a = _find_piece(s_ben_after, "ben_don1")
+	var ben_d2a = _find_piece(s_ben_after, "ben_don2")
+	var ben_d3a = _find_piece(s_ben_after, "ben_don3")
+	_assert(ben_d1a.powers.size() == 0, "beneficiary: don1 emptied", fails)
+	_assert(ben_d2a.powers.size() == 0, "beneficiary: don2 emptied", fails)
+	_assert(ben_d3a.powers.size() == 0, "beneficiary: don3 emptied (was already empty)", fails)
+	# Opponent untouched
+	var ben_oppa = _find_piece(s_ben_after, "ben_opp")
+	_assert(ben_oppa.powers.has("jump_proof"), "beneficiary: opponent powers untouched", fails)
+	# Activator retains its own non-beneficiary powers
+	var s_ben2 := _empty_state()
+	var p_ben2 := _make_piece("p_ben2", 1, 1, 1, ["beneficiary", "bomb"])
+	var ben2_don := _make_piece("ben2_don", 1, 2, 1, ["relocate"])
+	s_ben2.pieces = [p_ben2, ben2_don]
+	var s_ben2_after = Effects.new().activate_beneficiary(s_ben2, p_ben2)
+	var ben2_act_after = _find_piece(s_ben2_after, "p_ben2")
+	_assert(ben2_act_after.powers.has("bomb"), "beneficiary: activator retains own bomb", fails)
+	_assert(ben2_act_after.powers.has("relocate"), "beneficiary: activator gains donor relocate", fails)
+	_assert(not ben2_act_after.powers.has("beneficiary"), "beneficiary: beneficiary power consumed", fails)
+	# Original state not mutated
+	_assert(s_ben.pieces.size() == 5, "beneficiary: input state not mutated", fails)
 
 	# -------------------------------------------------------------------------
 	# ORB SPY ROW: marks same-row orbs as revealed

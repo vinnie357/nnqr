@@ -117,11 +117,16 @@ static func activate_power(
 ## Apply the AI's move for the current player in `state`.
 ##
 ## Calls AI.choose_move, then dispatches based on result shape:
-##   power_action=true  → execute the power via Executor, flip turn.
+##   power_action=true  → execute the power via Executor, THEN also make a
+##                        normal move on the resulting state (power-then-move,
+##                        matching human player capability — nnqr-44).
 ##   otherwise          → board.select_piece + board.move_to (standard move).
 ## After a move: collects any orb at the destination, checks overheat,
 ## and spawns orbs on the turn interval (mirrors web runAiTurn).
 ## If no move is available (no legal moves), returns the state unchanged.
+## Guard: the second choose_move after a power is checked for another
+## power_action — if it returns one, we fall back to just ending the turn
+## to prevent infinite activation chains.
 ##
 ## @param state      Current game state (AI player must be current_player).
 ## @param difficulty "easy" | "medium" | "hard" | "expert"
@@ -135,26 +140,53 @@ static func ai_take_turn(state: GameState, difficulty: String, rng: Object) -> G
 	if decision == null:
 		return state
 
-	# --- Power activation branch ---
+	# --- Power activation branch (nnqr-44: power THEN move) ---
 	if decision.get("power_action", false):
 		var piece: GameState.Piece = decision["piece"]
 		var power_id: String = decision["power_id"]
-		var result: Dictionary = activate_power(state, piece, power_id, null)
-		var next: GameState = result["state"]
-		# Flip turn and increment counter (power activations end the AI's turn).
-		var after := _copy_state(next)
-		after.current_player = 2 if state.current_player == 1 else 1
-		after.turn = next.turn + 1
-		# Spawn orbs on turn boundary.
-		if Orbs.should_spawn_orbs(after.turn):
-			var spawn_rng := Rng.new(after.seed + after.turn)
-			after = Orbs.spawn_orbs(after, Defs.all_ids(), spawn_rng)
-		return after
+
+		# Apply the power effect WITHOUT advancing the turn.
+		var power_result: GameState = _apply_ai_power_effect(state, piece, power_id)
+		if power_result == null:
+			# Power failed (no valid target or piece gone) — end the turn safely.
+			var aborted := _copy_state(state)
+			aborted.current_player = 2 if state.current_player == 1 else 1
+			aborted.turn = state.turn + 1
+			return aborted
+
+		if power_result.status != "playing":
+			# Power ended the game — commit without a follow-up move.
+			return power_result
+
+		# Choose a follow-up move on the post-power state.  A fresh RNG seed
+		# keeps the choice deterministic yet different from the initial call.
+		var move_rng := Rng.new(power_result.seed + power_result.turn + 1)
+		var move_decision = AI.choose_move(power_result, power_result.current_player, difficulty, move_rng)
+
+		if move_decision == null or move_decision.get("power_action", false):
+			# No legal move, or guard: second call returned another power.
+			# Advance the turn manually and return (no move made).
+			var after := _copy_state(power_result)
+			after.current_player = 2 if power_result.current_player == 1 else 1
+			after.turn = power_result.turn + 1
+			if Orbs.should_spawn_orbs(after.turn):
+				var spawn_rng := Rng.new(after.seed + after.turn)
+				after = Orbs.spawn_orbs(after, Defs.all_ids(), spawn_rng)
+			return after
+
+		# Apply the follow-up move (turn is advanced inside _apply_ai_move).
+		return _apply_ai_move(power_result, move_decision["piece"], move_decision["move"])
 
 	# --- Standard move branch ---
-	var piece: GameState.Piece = decision["piece"]
-	var move: Dictionary = decision["move"]
+	return _apply_ai_move(state, decision["piece"], decision["move"])
 
+
+## Apply a board move for the AI: select piece, move_to, collect orb, check
+## overheat, spawn orbs.  The turn is advanced by Board.move_to internally.
+##
+## Extracted so both the normal move path and the post-power path reuse
+## the same logic.
+static func _apply_ai_move(state: GameState, piece: GameState.Piece, move: Dictionary) -> GameState:
 	# Select the piece (populates valid_moves in the intermediate state)
 	var mid: GameState = Board.select_piece(state, piece.row, piece.col)
 	# Apply the move
@@ -187,6 +219,44 @@ static func ai_take_turn(state: GameState, difficulty: String, rng: Object) -> G
 		next = Orbs.spawn_orbs(next, Defs.all_ids(), spawn_rng)
 
 	return next
+
+
+## Execute a power effect WITHOUT advancing the turn.
+## Returns null if the piece is gone or the power has no valid target.
+## Called by ai_take_turn as step 1 of the power-then-move sequence.
+static func _apply_ai_power_effect(state: GameState, piece: GameState.Piece, power_id: String):  # -> GameState or null
+	# Re-resolve the piece by id in case the state has diverged.
+	var live_piece: GameState.Piece = null
+	for p: GameState.Piece in state.pieces:
+		if p.id == piece.id:
+			live_piece = p
+			break
+	if live_piece == null:
+		return null
+
+	# Resolve target if required.
+	var target = null
+	if Targets.needs_target(power_id):
+		var tiles: Array = Targets.get_target_tiles(state, live_piece, power_id)
+		if tiles.size() == 0:
+			return null
+		# Prefer an enemy-occupied tile for determinism; else first tile.
+		var best = null
+		for t: Dictionary in tiles:
+			for p: GameState.Piece in state.pieces:
+				if p.row == t.row and p.col == t.col and p.player != live_piece.player:
+					best = t
+					break
+			if best != null:
+				break
+		if best == null:
+			best = tiles[0]
+		target = best
+
+	# Execute the power (pure — returns new state with effect + power consumed).
+	# The turn is NOT advanced here; the caller does that after the follow-up move.
+	var executor := Executor.new()
+	return executor.execute(state, live_piece, power_id, target)
 
 
 # ---------------------------------------------------------------------------

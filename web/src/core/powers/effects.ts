@@ -951,8 +951,28 @@ export function activateGrowQuadradius(state: GameState, piece: Piece): GameStat
 }
 
 export function activateBeneficiary(state: GameState, piece: Piece): GameState {
-  const updated = { ...consumePower(piece, "beneficiary"), isBeneficiary: true } as Piece;
-  return { ...state, pieces: replacePiece(state.pieces, updated) };
+  // Correct semantics (research/quadradius/game_details/powers.md):
+  // All OTHER pieces on the activating player's side sacrifice their entire
+  // power inventories to the activating piece.  This is an immediate,
+  // activation-time transfer — no death trigger, no capture trigger.
+  const casterConsumed = consumePower(piece, "beneficiary");
+  const allies = state.pieces.filter(
+    (p) => p.id !== piece.id && p.player === piece.player,
+  );
+  // Collect all donor powers
+  const gained: string[] = [];
+  for (const ally of allies) {
+    for (const pw of ally.powers) {
+      gained.push(pw);
+    }
+  }
+  const donorIds = new Set(allies.map((a) => a.id));
+  const pieces = state.pieces.map((p) => {
+    if (donorIds.has(p.id)) return { ...p, powers: [] };
+    if (p.id === piece.id) return { ...casterConsumed, powers: [...casterConsumed.powers, ...gained] };
+    return p;
+  });
+  return { ...state, pieces };
 }
 
 // --- Intelligence ---

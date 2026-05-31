@@ -144,7 +144,6 @@ type ExtState = GameState & {
  *   bankruptTiles — when the destination tile is bankrupt, the mover loses all powers.
  *   isTripwired  — a piece flagged isTripwired is removed when it moves.
  *   isScavenger  — a scavenger capturing an enemy inherits the enemy's powers.
- *   isBeneficiary — when an ally is captured, a beneficiary on the same team inherits its powers.
  */
 export function moveTo(state: GameState, row: number, col: number): GameState {
   if (state.status !== "playing" || !state.selected) return state;
@@ -187,21 +186,6 @@ export function moveTo(state: GameState, row: number, col: number): GameState {
   const moverAfterMove = pieces.find((p) => p.id === mover.id);
   if (moverAfterMove?.isTripwired) {
     pieces = pieces.filter((p) => p.id !== mover.id);
-  }
-
-  // Beneficiary: if an ally of the captured piece's opponent was just captured,
-  // find a beneficiary on the captured piece's team and grant it the captured powers.
-  if (captured && captured.powers.length > 0) {
-    const beneficiary = pieces.find(
-      (p) => p.player === captured.player && p.isBeneficiary,
-    );
-    if (beneficiary) {
-      pieces = pieces.map((p) =>
-        p.id === beneficiary.id
-          ? { ...p, powers: [...p.powers, ...captured.powers] }
-          : p,
-      );
-    }
   }
 
   // Determine whether this move grants an extra turn.

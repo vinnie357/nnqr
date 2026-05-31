@@ -1166,10 +1166,34 @@ func activate_grow_quadradius(state: GameState, piece: GameState.Piece) -> GameS
 
 
 func activate_beneficiary(state: GameState, piece: GameState.Piece) -> GameState:
-	var updated := _consume_power(piece, "beneficiary")
-	updated.set_meta("is_beneficiary", true)
+	# Correct semantics (research/quadradius/game_details/powers.md):
+	# All OTHER pieces on the activating player's side sacrifice their entire
+	# power inventories to the activating piece.  Immediate, activation-time
+	# transfer — no death trigger, no capture trigger.
+	var caster_consumed := _consume_power(piece, "beneficiary")
+	# Collect all donor powers (same player, not self)
+	var gained: Array = []
+	for p: GameState.Piece in state.pieces:
+		if p.id != piece.id and p.player == piece.player:
+			for pw in p.powers:
+				gained.append(pw)
+	# Build updated pieces: empty donors, fill caster
+	var pieces: Array = []
+	for p: GameState.Piece in state.pieces:
+		if p.id == piece.id:
+			var np := _clone_piece(caster_consumed)
+			np.powers = caster_consumed.powers.duplicate()
+			for pw in gained:
+				np.powers.append(pw)
+			pieces.append(np)
+		elif p.player == piece.player:
+			var np := _clone_piece(p)
+			np.powers = []
+			pieces.append(np)
+		else:
+			pieces.append(p)
 	var dst := _copy_state(state)
-	dst.pieces = _replace_piece(state.pieces, updated)
+	dst.pieces = pieces
 	return dst
 
 

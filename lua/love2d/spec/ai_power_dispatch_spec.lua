@@ -340,4 +340,114 @@ describe("AI Power Dispatch", function()
 			assert.are.equal(2, piece.player, "Hard AI should only move its own pieces")
 		end)
 	end)
+
+	-- -------------------------------------------------------------------------
+	-- nnqr-44: Power-then-move integration
+	-- Simulates the full AI turn (power + follow-up move) using the underlying
+	-- modules, since controller.lua requires the love2d runtime.
+	-- -------------------------------------------------------------------------
+
+	describe("power-then-move turn semantics (nnqr-44)", function()
+		local PowerExecutor
+
+		setup(function()
+			PowerExecutor = require("src.shared.power_executor")
+		end)
+
+		it("after chooseMove returns powerId, a second chooseMove on post-power state returns a move", function()
+			-- Arrange: hard AI piece with destroy_row, ≥2 enemies in same row.
+			local ai = AI.create("hard", 2)
+			local state = emptyState()
+			state.currentPlayer = 2
+			state.pieces = {
+				{ row = 4, col = 8, player = 1, powers = {} }, -- enemy in row 4
+				{ row = 4, col = 9, player = 1, powers = {} }, -- enemy in row 4
+				{ row = 1, col = 1, player = 1, powers = {} }, -- safe p1 so game doesn't end
+				{ row = 4, col = 1, player = 2, powers = { "destroy_row" } }, -- AI piece
+			}
+
+			-- Step 1: first chooseMove returns power activation
+			local powerMove = AI.chooseMove(ai, state, {})
+			assert.is_not_nil(powerMove, "Hard AI should return a power action")
+			assert.is_not_nil(powerMove.powerId, "First chooseMove should return power activation")
+			assert.are.equal("destroy_row", powerMove.powerId)
+
+			-- Step 2: apply the power (no endTurn) to get post-power state
+			local activatingPiece = state.pieces[powerMove.piece]
+			assert.is_not_nil(activatingPiece, "powerMove.piece must be a valid index")
+			local postPowerState = PowerExecutor.execute(state, activatingPiece, powerMove.powerId, nil)
+			assert.is_not_nil(postPowerState, "PowerExecutor.execute should return a state")
+
+			-- Enemies in row 4 should be destroyed
+			local row4Survivors = 0
+			for _, p in ipairs(postPowerState.pieces) do
+				if p.player == 1 and p.row == 4 then
+					row4Survivors = row4Survivors + 1
+				end
+			end
+			assert.are.equal(0, row4Survivors, "destroy_row should eliminate row-4 enemies")
+
+			-- Step 3: second chooseMove on post-power state should return a move (not another power)
+			local followMove = AI.chooseMove(ai, postPowerState, {})
+			assert.is_not_nil(followMove, "AI should return a follow-up move after power activation")
+			assert.is_nil(followMove.powerId, "Second chooseMove should return a board move, not another power")
+			assert.is_not_nil(followMove.target, "Follow-up move should have a target")
+		end)
+
+		it("chooseMove returns a move (not another power) when called on post-power state", function()
+			-- After power fires, AI should have a legal board move available.
+			-- This validates the guard: second call must not chain powers indefinitely.
+			local ai = AI.create("hard", 2)
+			local state = emptyState()
+			state.currentPlayer = 2
+			-- AI piece with destroy_row already used (not in inventory), just a safe state.
+			state.pieces = {
+				{ row = 1, col = 1, player = 1, powers = {} },
+				{ row = 5, col = 5, player = 2, powers = {} }, -- no powers left after activation
+			}
+
+			local move = AI.chooseMove(ai, state, {})
+
+			assert.is_not_nil(move, "AI should return a move on the post-power state")
+			-- No powerId — this is a pure movement
+			assert.is_nil(move.powerId, "No power expected when piece has no powers")
+		end)
+
+		it("turn ends exactly once after power+move (no multi-activation runaway)", function()
+			-- Simulate the full power-then-move sequence manually and verify
+			-- that endTurn is called exactly once.
+			local ai = AI.create("hard", 2)
+			local state = emptyState()
+			state.currentPlayer = 2
+			state.pieces = {
+				{ row = 4, col = 8, player = 1, powers = {} },
+				{ row = 4, col = 9, player = 1, powers = {} },
+				{ row = 1, col = 1, player = 1, powers = {} },
+				{ row = 4, col = 1, player = 2, powers = { "destroy_row" } },
+			}
+
+			-- Power activation
+			local powerMove = AI.chooseMove(ai, state, {})
+			assert.is_not_nil(powerMove.powerId)
+			local piece = state.pieces[powerMove.piece]
+			local postPower = PowerExecutor.execute(state, piece, powerMove.powerId, nil)
+
+			-- Follow-up move
+			local followMove = AI.chooseMove(ai, postPower, {})
+			assert.is_not_nil(followMove)
+
+			-- Apply the follow-up move
+			local movePiece = postPower.pieces[followMove.piece]
+			assert.is_not_nil(movePiece, "Follow move piece must be valid index")
+			GameLogic.movePiece(postPower, movePiece, followMove.target.row, followMove.target.col)
+
+			-- End turn exactly once
+			local turnBefore = postPower.turn
+			local afterTurn = GameLogic.endTurn(postPower)
+			-- Turn should have incremented by 1
+			assert.are.equal(turnBefore + 1, afterTurn.turn, "Turn incremented exactly once")
+			-- Current player should have flipped
+			assert.are.equal(1, afterTurn.currentPlayer, "Current player flipped to 1 after AI turn")
+		end)
+	end)
 end)

@@ -281,6 +281,67 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Story 8: qa_spyware (nnqr-43 — visual only)
+# State: p1-spy at (4,5) with spyware_row; p2-revealed at (4,7) flagged
+#        powers_revealed=true, powers=['jump_proof','shield']; revealed orb
+#        at (4,3) power_id='raise_tile'; unrevealed orb at (2,8).
+# Visual assertions (lead validates PNG):
+#   - p2-revealed piece has purple tint ring + power label beneath token.
+#   - Orb at (4,3) shows 'raise_tile' label; orb at (2,8) shows no label.
+# State assertion: p2-revealed piece has powers_revealed==true in state.json.
+# ---------------------------------------------------------------------------
+STORY="qa_spyware"
+run_scenario "$STORY" "qa_spyware.json"
+STATE="$QA_DIR/state.json"
+if [ ! -f "$STATE" ]; then
+  fail "$STORY" "state.json not produced"
+else
+  HAS_REVEALED=$($JQ '[.pieces[] | select(.id == "p2-revealed")] | .[0].powers_revealed // false' "$STATE")
+
+  ERRORS=""
+  [ "$HAS_REVEALED" = "true" ] || ERRORS="$ERRORS; p2-revealed.powers_revealed=$HAS_REVEALED (expected true)"
+
+  if [ -z "$ERRORS" ]; then
+    pass "$STORY"
+  else
+    fail "$STORY" "${ERRORS#; }"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Story 9: qa_invisible (nnqr-43 — visual only)
+# State: p1-invis at (3,4) is_invisible=true; p2-invis at (6,7) is_invisible=true;
+#        p1-normal at (2,2) and p2-normal at (7,8) are not invisible.
+# Visual assertions (lead validates PNG):
+#   - p1-invis and p2-invis render as ghost outlines with '?' label.
+#   - p1-normal and p2-normal render as solid tokens.
+# State assertion: is_invisible flags preserved in state.json.
+# ---------------------------------------------------------------------------
+STORY="qa_invisible"
+run_scenario "$STORY" "qa_invisible.json"
+STATE="$QA_DIR/state.json"
+if [ ! -f "$STATE" ]; then
+  fail "$STORY" "state.json not produced"
+else
+  P1_INVIS=$($JQ '[.pieces[] | select(.id == "p1-invis")] | .[0].is_invisible' "$STATE")
+  P2_INVIS=$($JQ '[.pieces[] | select(.id == "p2-invis")] | .[0].is_invisible' "$STATE")
+  P1_NORM=$($JQ '[.pieces[] | select(.id == "p1-normal")] | .[0].is_invisible' "$STATE")
+  P2_NORM=$($JQ '[.pieces[] | select(.id == "p2-normal")] | .[0].is_invisible' "$STATE")
+
+  ERRORS=""
+  [ "$P1_INVIS" = "true" ]  || ERRORS="$ERRORS; p1-invis.is_invisible=$P1_INVIS (expected true)"
+  [ "$P2_INVIS" = "true" ]  || ERRORS="$ERRORS; p2-invis.is_invisible=$P2_INVIS (expected true)"
+  [ "$P1_NORM" = "false" ]  || ERRORS="$ERRORS; p1-normal.is_invisible=$P1_NORM (expected false)"
+  [ "$P2_NORM" = "false" ]  || ERRORS="$ERRORS; p2-normal.is_invisible=$P2_NORM (expected false)"
+
+  if [ -z "$ERRORS" ]; then
+    pass "$STORY"
+  else
+    fail "$STORY" "${ERRORS#; }"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

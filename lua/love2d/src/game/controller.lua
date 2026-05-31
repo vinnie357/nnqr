@@ -75,7 +75,13 @@ return function(Game)
 		end
 	end
 
-	--- Execute the AI's chosen move
+	--- Execute the AI's chosen move.
+	--- Implements power-then-move turn semantics (nnqr-44):
+	---   Hard/Expert AI may activate ONE power and THEN also make a normal
+	---   board move in the same turn, matching human player capability.
+	---   Guard: at most one power per turn — the second chooseMove call is
+	---   required to return a board move (if it returns another power, we fall
+	---   back to ending the turn after the first power, no chaining).
 	function Game.executeAIMove()
 		if not Game.ai then
 			return
@@ -90,14 +96,55 @@ return function(Game)
 
 		local activatingPiece = Game.state.pieces[move.piece]
 
-		-- Power-activation path: Hard/Expert AI may return {piece, powerId} instead of a move
+		-- Power-activation path: Hard/Expert AI may return {piece, powerId}.
+		-- Apply the power WITHOUT ending the turn, then make a follow-up move.
 		if move.powerId and activatingPiece then
 			Game.playSoundForPower(move.powerId)
 			Game.spawnPowerParticles(move.powerId, activatingPiece.row, activatingPiece.col)
+			-- Apply power effect — does NOT advance the turn.
 			Game.state = PowerExecutor.execute(Game.state, activatingPiece, move.powerId, nil)
+
+			-- Check if the power ended the game immediately.
+			if Game.state.gameState == "gameover" then
+				Game.state = GameLogic.endTurn(Game.state)
+				Game.recordMatchResult(Game.state.winner)
+				UI.setScreen(Game.uiState, "gameover")
+				return
+			end
+
+			-- Attempt a follow-up move on the post-power state.
+			-- Guard: if the second call returns another power, skip the move
+			-- to prevent infinite activation chains.
+			local followMove = AI.chooseMove(Game.ai, Game.state, Game.orbs)
+			if followMove and not followMove.powerId then
+				-- Apply the follow-up board move.
+				local followPiece = Game.state.pieces[followMove.piece]
+				if followPiece then
+					local followTarget = GameLogic.getPieceAt(Game.state, followMove.target.row, followMove.target.col)
+					Game.state =
+						GameLogic.movePiece(Game.state, followPiece, followMove.target.row, followMove.target.col)
+					if followTarget then
+						Game.playSoundForEvent("capture")
+					else
+						Game.playSoundForEvent("move")
+					end
+
+					-- Collect orb from the move destination.
+					local collectedOrb = Powers.collectOrb(followPiece, Game.orbs)
+					if collectedOrb then
+						Game.spawnOrbParticles(followPiece.row, followPiece.col)
+						local overheatedPower = Powers.checkOverheat(followPiece)
+						if overheatedPower then
+							Game.handlePieceOverheat(followPiece, overheatedPower)
+						end
+					end
+				end
+			end
+
+			-- End the turn exactly once (whether or not a follow-up move was made).
 			Game.state = GameLogic.endTurn(Game.state)
 
-			-- Check for game over
+			-- Check for game over (follow-up move may have captured the last enemy).
 			if Game.state.gameState == "gameover" then
 				Game.recordMatchResult(Game.state.winner)
 				UI.setScreen(Game.uiState, "gameover")
@@ -120,7 +167,7 @@ return function(Game)
 			return
 		end
 
-		-- Regular movement path
+		-- Regular movement path (no power activation).
 		local movingPiece = activatingPiece
 		local targetPiece = GameLogic.getPieceAt(Game.state, move.target.row, move.target.col)
 
@@ -146,7 +193,7 @@ return function(Game)
 			end
 		end
 
-		-- End the turn (AI doesn't use extra moves for now)
+		-- End the turn
 		Game.state = GameLogic.endTurn(Game.state)
 
 		-- Check for game over

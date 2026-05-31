@@ -41,7 +41,7 @@ class Piece extends RefCounted:
 		col = p_col
 
 	func to_dict() -> Dictionary:
-		return {
+		var d: Dictionary = {
 			"id": id,
 			"player": player,
 			"row": row,
@@ -53,6 +53,11 @@ class Piece extends RefCounted:
 			"can_wrap": can_wrap,
 			"is_invisible": is_invisible,
 		}
+		# nnqr-43: persist dynamic meta flags into the serialised dict so
+		# state.json captures them (useful for QA assertions and round-trips).
+		if has_meta("powers_revealed"):
+			d["powers_revealed"] = get_meta("powers_revealed")
+		return d
 
 
 # ---------------------------------------------------------------------------
@@ -162,6 +167,10 @@ func load_dict(d: Dictionary) -> void:
 		piece.can_climb_any = bool(rp.get("can_climb_any", false))
 		piece.can_wrap = bool(rp.get("can_wrap", false))
 		piece.is_invisible = bool(rp.get("is_invisible", false))
+		# nnqr-43: dynamic flags stored as object meta (set by effects.gd at runtime,
+		# also loadable from scenario JSON for see-harness visual QA).
+		if rp.get("powers_revealed", false):
+			piece.set_meta("powers_revealed", true)
 		pieces.append(piece)
 
 	# height_map — default to empty array (caller may rebuild it).
