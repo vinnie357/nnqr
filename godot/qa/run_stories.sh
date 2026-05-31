@@ -220,6 +220,37 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Story 6: qa_move_again
+# Starting: p1-a at (4,5) powers=['move_again'].
+# Inputs: click (4,5) select, activate 'move_again' (immediate, no target),
+#         click (4,4) move — should NOT flip current_player (extra_move consumed).
+# Assert: current_player==1 (turn NOT flipped), p1-a at (4,4), status=='playing'.
+# ---------------------------------------------------------------------------
+STORY="qa_move_again"
+run_scenario "$STORY" "qa_move_again.json"
+STATE="$QA_DIR/state.json"
+if [ ! -f "$STATE" ]; then
+  fail "$STORY" "state.json not produced"
+else
+  CUR_PLAYER=$($JQ '.current_player' "$STATE")
+  STATUS=$($JQ -r '.status' "$STATE")
+  P1_ROW=$($JQ '[.pieces[] | select(.id == "p1-a")] | .[0].row' "$STATE")
+  P1_COL=$($JQ '[.pieces[] | select(.id == "p1-a")] | .[0].col' "$STATE")
+
+  ERRORS=""
+  [ "$CUR_PLAYER" = "1" ]   || ERRORS="$ERRORS; current_player=$CUR_PLAYER (expected 1 — turn must NOT flip on extra_move)"
+  [ "$STATUS" = "playing" ] || ERRORS="$ERRORS; status=$STATUS (expected playing)"
+  [ "$P1_ROW" = "4" ]       || ERRORS="$ERRORS; p1-a row=$P1_ROW (expected 4)"
+  [ "$P1_COL" = "4" ]       || ERRORS="$ERRORS; p1-a col=$P1_COL (expected 4)"
+
+  if [ -z "$ERRORS" ]; then
+    pass "$STORY"
+  else
+    fail "$STORY" "${ERRORS#; }"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

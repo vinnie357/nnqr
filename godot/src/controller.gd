@@ -38,6 +38,10 @@ const MODE_AWAITING_TARGET  : String = "awaiting_target"
 ##      then collect any orb at the destination, check overheat, and spawn orbs.
 ##   3. Otherwise → (re)select or deselect via board.select_piece.
 ##
+## Note: Board.select_piece uses board.gd's _copy_state which does not copy
+## Object metas.  We manually re-attach extra_move (if present) onto the
+## selection result so _apply_move can still read it on the subsequent move click.
+##
 ## Returns a new GameState (immutable pattern — never mutates input).
 static func handle_tile_click(state: GameState, row: int, col: int) -> GameState:
 	if state.status != "playing":
@@ -51,7 +55,16 @@ static func handle_tile_click(state: GameState, row: int, col: int) -> GameState
 
 	# Otherwise (re)select: board.select_piece handles empty tiles, enemy pieces,
 	# and clicking the same tile (clears selection).
-	return Board.select_piece(state, row, col)
+	var selected_state: GameState = Board.select_piece(state, row, col)
+
+	# Re-propagate extra_move meta across the selection boundary.
+	# Board._copy_state does not copy metas, so activate_move_again's flag
+	# would be silently dropped on the selection step.  Re-attach it here so
+	# _apply_move can read it on the next click.
+	if state.has_meta("extra_move") and bool(state.get_meta("extra_move")):
+		selected_state.set_meta("extra_move", true)
+
+	return selected_state
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +173,14 @@ static func ai_take_turn(state: GameState, difficulty: String, rng: Object) -> G
 
 ## Apply a validated move: move_to, collect orb, check overheat, spawn orbs.
 ## Mirrors web controller.ts applyMove.
+## If state carries extra_move meta (set by activate_move_again), the same
+## player keeps the turn after this move — the flag is on the PRE-move state
+## and does not survive into the fresh `next` state produced by Board.move_to.
 static func _apply_move(state: GameState, row: int, col: int) -> GameState:
+	# Capture the mover's player and extra_move flag BEFORE the move.
+	var mover_player: int = state.current_player
+	var had_extra: bool = state.has_meta("extra_move") and bool(state.get_meta("extra_move"))
+
 	# Capture moving piece id before the move.
 	var moving_piece_id: String = ""
 	if state.selected != null:
@@ -197,6 +217,15 @@ static func _apply_move(state: GameState, row: int, col: int) -> GameState:
 	if Orbs.should_spawn_orbs(next.turn):
 		var spawn_rng := Rng.new(next.seed + next.turn)
 		next = Orbs.spawn_orbs(next, Defs.all_ids(), spawn_rng)
+
+	# Consume extra_move: if the pre-move state had it set AND the game is
+	# still in progress, restore current_player to the mover so they move
+	# again.  The flag does not carry forward into `next` (fresh state from
+	# Board.move_to), so no explicit clear is needed.
+	if had_extra and next.status == "playing":
+		var unlocked := _copy_state(next)
+		unlocked.current_player = mover_player
+		next = unlocked
 
 	return next
 
