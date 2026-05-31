@@ -14,6 +14,7 @@ UI.SCREENS = {
 	gameover = true,
 	paused = true,
 	confirm = true,
+	history = true, -- Match history screen
 	-- Multiplayer screens
 	mpconnect = true, -- Enter server address
 	mplobby = true, -- Browse/create games
@@ -23,7 +24,7 @@ UI.SCREENS = {
 
 -- Menu items for each screen
 UI.MENU_ITEMS = {
-	menu = { "New Game", "Settings", "Quit" },
+	menu = { "New Game", "Match History", "Settings", "Quit" },
 	gamemode = { "Local 2-Player", "VS AI", "Multiplayer", "Back" },
 	aiselect = { "Easy", "Medium", "Hard", "Expert", "Back" },
 	settings = { "Master Volume", "SFX Volume", "Music Volume", "Sound Enabled", "Back" },
@@ -43,6 +44,7 @@ UI.MENU_ITEMS = {
 		"AI Practice - Expert",
 		"Cancel",
 	},
+	history = { "Back" },
 }
 
 --- Create initial UI state
@@ -57,6 +59,7 @@ function UI.createState()
 		musicVolume = 0.5,
 		muted = false,
 		confirmAction = nil,
+		historyScrollOffset = 0, -- rows scrolled in the history screen
 	}
 end
 

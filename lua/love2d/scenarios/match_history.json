@@ -1,0 +1,9 @@
+{
+  "description": "Match history screen with seeded history rows — renders the history screen to .qa/frame.png",
+  "screen": "history",
+  "seed_history": true,
+  "rows": 8,
+  "cols": 10,
+  "current_player": 1,
+  "turn": 0
+}

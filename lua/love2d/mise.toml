@@ -84,3 +84,7 @@ run = "love . --scenario scenarios/initial.json"
 [tasks."scenario:midgame"]
 description = "Run mid-game scenario harness"
 run = "love . --scenario scenarios/midgame.json"
+
+[tasks."scenario:history"]
+description = "Render match-history screen with seeded rows to .qa/frame.png then quit"
+run = "love . --scenario scenarios/match_history.json"
