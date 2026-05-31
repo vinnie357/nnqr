@@ -1,0 +1,7 @@
+{
+  "description": "Standard initial board — Player 1 pieces on rows 1-2, Player 2 on rows 7-8, no powers, flat terrain.",
+  "rows": 8,
+  "cols": 10,
+  "current_player": 1,
+  "turn": 0
+}

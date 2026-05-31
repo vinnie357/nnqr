@@ -72,3 +72,15 @@ run = "love ."
 description = "Run NNQR multiplayer server with GUI"
 dir = "server"
 run = "love . --gui"
+
+[tasks.scenario]
+description = "Run scenario see-harness (saves .qa/frame.png + .qa/state.json then quits)"
+run = "love . --scenario ${SCENARIO:-scenarios/initial.json}"
+
+[tasks."scenario:initial"]
+description = "Run initial-board scenario harness"
+run = "love . --scenario scenarios/initial.json"
+
+[tasks."scenario:midgame"]
+description = "Run mid-game scenario harness"
+run = "love . --scenario scenarios/midgame.json"
