@@ -133,6 +133,54 @@ static func get_target_tiles(state: GameState, piece: GameState.Piece, power_id:
 			return []
 
 
+## Returns all tile coordinates in the area for an area-type power activated by
+## `piece`, honouring the piece's grow_quadradius_level (0..3).
+##
+## area: "radial" | "row" | "column"
+##
+## Radial: all tiles within Chebyshev distance (1 + L), excluding the
+##   activating piece's own tile, clamped to board bounds.
+## Row: all tiles in row band [piece.row - L, piece.row + L], full width,
+##   excluding the activating piece's own tile.
+## Column: all tiles in column band [piece.col - L, piece.col + L], full
+##   height, excluding the activating piece's own tile.
+##
+## L = 0 reproduces the original ±1 / single-row / single-column behaviour.
+static func get_area_tiles(state: GameState, piece: GameState.Piece, area: String) -> Array:
+	var L: int = piece.get_meta("grow_quadradius_level", 0)
+	var tiles: Array = []
+	match area:
+		"radial":
+			var dist: int = 1 + L
+			for dr in range(-dist, dist + 1):
+				for dc in range(-dist, dist + 1):
+					if dr == 0 and dc == 0:
+						continue
+					var r := piece.row + dr
+					var c := piece.col + dc
+					if r >= 1 and r <= state.rows and c >= 1 and c <= state.cols:
+						tiles.append({"row": r, "col": c})
+		"row":
+			for dr in range(-L, L + 1):
+				var r := piece.row + dr
+				if r < 1 or r > state.rows:
+					continue
+				for c in range(1, state.cols + 1):
+					if r == piece.row and c == piece.col:
+						continue
+					tiles.append({"row": r, "col": c})
+		"column":
+			for dc in range(-L, L + 1):
+				var c := piece.col + dc
+				if c < 1 or c > state.cols:
+					continue
+				for r in range(1, state.rows + 1):
+					if r == piece.row and c == piece.col:
+						continue
+					tiles.append({"row": r, "col": c})
+	return tiles
+
+
 ## Returns true when this power needs the player to click a target tile/piece
 ## before execution.
 static func needs_target(power_id: String) -> bool:

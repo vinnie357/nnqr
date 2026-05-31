@@ -3211,4 +3211,384 @@ describe("PowerEffects", function()
 			assert.are.equal(0, #piece.powers)
 		end)
 	end)
+
+	-- grow_quadradius range extension tests (nnqr-41)
+	describe("grow_quadradius range extension", function()
+		-- Helper: build a minimal state with explicit rows/cols
+		local function makeState(rows, cols, pieces)
+			local state = {
+				rows = rows,
+				cols = cols,
+				pieces = pieces or {},
+				heightMap = {},
+			}
+			for r = 1, rows do
+				state.heightMap[r] = {}
+				for c = 1, cols do
+					state.heightMap[r][c] = 0
+				end
+			end
+			return state
+		end
+
+		describe("areaPieceTargets radial expansion", function()
+			it("L=0: radial hits exactly 8 surrounding tiles (no extras)", function()
+				-- Place activator at center (5,5), enemies at radius 1 and radius 2
+				local state = makeState(10, 10, {
+					{ row = 5, col = 5, player = 1, powers = {}, growQuadradiusLevel = 0 },
+					{ row = 4, col = 4, player = 2, powers = {} }, -- radius 1
+					{ row = 4, col = 5, player = 2, powers = {} }, -- radius 1
+					{ row = 4, col = 6, player = 2, powers = {} }, -- radius 1
+					{ row = 5, col = 4, player = 2, powers = {} }, -- radius 1
+					{ row = 5, col = 6, player = 2, powers = {} }, -- radius 1
+					{ row = 6, col = 4, player = 2, powers = {} }, -- radius 1
+					{ row = 6, col = 5, player = 2, powers = {} }, -- radius 1
+					{ row = 6, col = 6, player = 2, powers = {} }, -- radius 1
+					{ row = 3, col = 5, player = 2, powers = {} }, -- radius 2 -- should NOT match
+					{ row = 7, col = 5, player = 2, powers = {} }, -- radius 2 -- should NOT match
+				})
+				local piece = state.pieces[1]
+
+				local targets = PowerEffects.getAreaPieceTargets(state, piece, "radial")
+				assert.are.equal(8, #targets)
+			end)
+
+			it("L=1: radial hits 5x5 minus center (24 tiles worth of targets)", function()
+				-- Place activator at center (5,5), enemy at radius 2 that L0 would miss
+				local pieces = {
+					{ row = 5, col = 5, player = 1, powers = {}, growQuadradiusLevel = 1 },
+				}
+				-- Fill radius-2 ring with enemies (should be caught)
+				local expected = 0
+				for dr = -2, 2 do
+					for dc = -2, 2 do
+						if not (dr == 0 and dc == 0) then
+							table.insert(pieces, { row = 5 + dr, col = 5 + dc, player = 2, powers = {} })
+							expected = expected + 1
+						end
+					end
+				end
+				local state = makeState(10, 10, pieces)
+				local activator = state.pieces[1]
+
+				local targets = PowerEffects.getAreaPieceTargets(state, activator, "radial")
+				assert.are.equal(expected, #targets) -- 24
+			end)
+
+			it("L=1: radial reaches enemy at distance 2 that L=0 would miss", function()
+				local state = makeState(10, 10, {
+					{ row = 5, col = 5, player = 1, powers = {}, growQuadradiusLevel = 1 },
+					{ row = 3, col = 5, player = 2, powers = {} }, -- dr=2, dc=0 -- L0 misses, L1 hits
+				})
+				local piece = state.pieces[1]
+
+				local targets = PowerEffects.getAreaPieceTargets(state, piece, "radial")
+				local found = false
+				for _, t in ipairs(targets) do
+					if t.row == 3 and t.col == 5 then
+						found = true
+					end
+				end
+				assert.is_true(found)
+			end)
+
+			it("L=2: radial hits 7x7 minus center (48 tiles worth of targets)", function()
+				local pieces = {
+					{ row = 5, col = 5, player = 1, powers = {}, growQuadradiusLevel = 2 },
+				}
+				local expected = 0
+				for dr = -3, 3 do
+					for dc = -3, 3 do
+						if not (dr == 0 and dc == 0) then
+							table.insert(pieces, { row = 5 + dr, col = 5 + dc, player = 2, powers = {} })
+							expected = expected + 1
+						end
+					end
+				end
+				local state = makeState(15, 15, pieces)
+				local activator = state.pieces[1]
+
+				local targets = PowerEffects.getAreaPieceTargets(state, activator, "radial")
+				assert.are.equal(expected, #targets) -- 48
+			end)
+
+			it("L=0 still excludes the activator itself", function()
+				local state = makeState(10, 10, {
+					{ row = 5, col = 5, player = 1, powers = {}, growQuadradiusLevel = 0 },
+					{ row = 5, col = 6, player = 2, powers = {} },
+				})
+				local piece = state.pieces[1]
+
+				local targets = PowerEffects.getAreaPieceTargets(state, piece, "radial")
+				for _, t in ipairs(targets) do
+					assert.are_not.equal(t, piece)
+				end
+			end)
+
+			it("board-edge clamping: L=1 near corner (1,1) stays in bounds", function()
+				-- Activator at corner (1,1), enemy at (1,2) -- all out-of-bounds positions ignored
+				local state = makeState(10, 10, {
+					{ row = 1, col = 1, player = 1, powers = {}, growQuadradiusLevel = 1 },
+					{ row = 1, col = 2, player = 2, powers = {} },
+					{ row = 2, col = 1, player = 2, powers = {} },
+					{ row = 2, col = 2, player = 2, powers = {} },
+					{ row = 3, col = 1, player = 2, powers = {} }, -- radius 2 from (1,1), in bounds
+					{ row = 1, col = 3, player = 2, powers = {} }, -- radius 2 from (1,1), in bounds
+				})
+				local piece = state.pieces[1]
+
+				local targets = PowerEffects.getAreaPieceTargets(state, piece, "radial")
+				-- All returned targets must be within bounds
+				for _, t in ipairs(targets) do
+					assert.is_true(t.row >= 1 and t.row <= 10)
+					assert.is_true(t.col >= 1 and t.col <= 10)
+				end
+				-- Should hit the radius-2 enemies (row=3,col=1) and (row=1,col=3)
+				local foundR2 = false
+				for _, t in ipairs(targets) do
+					if (t.row == 3 and t.col == 1) or (t.row == 1 and t.col == 3) then
+						foundR2 = true
+					end
+				end
+				assert.is_true(foundR2)
+			end)
+		end)
+
+		describe("areaTiles radial expansion", function()
+			it("L=0 radial returns 8 tile positions (3x3 minus center)", function()
+				local state = makeState(10, 10, {
+					{ row = 5, col = 5, player = 1, powers = {}, growQuadradiusLevel = 0 },
+				})
+				local piece = state.pieces[1]
+				local tiles = PowerEffects.getAreaTiles(state, piece, "radial")
+				assert.are.equal(8, #tiles)
+			end)
+
+			it("L=1 radial returns 24 tile positions (5x5 minus center, interior board)", function()
+				local state = makeState(10, 10, {
+					{ row = 5, col = 5, player = 1, powers = {}, growQuadradiusLevel = 1 },
+				})
+				local piece = state.pieces[1]
+				local tiles = PowerEffects.getAreaTiles(state, piece, "radial")
+				assert.are.equal(24, #tiles)
+			end)
+
+			it("L=2 radial returns 48 tile positions (7x7 minus center, interior board)", function()
+				local state = makeState(15, 15, {
+					{ row = 8, col = 8, player = 1, powers = {}, growQuadradiusLevel = 2 },
+				})
+				local piece = state.pieces[1]
+				local tiles = PowerEffects.getAreaTiles(state, piece, "radial")
+				assert.are.equal(48, #tiles)
+			end)
+
+			it("does not include the activator own tile", function()
+				local state = makeState(10, 10, {
+					{ row = 5, col = 5, player = 1, powers = {}, growQuadradiusLevel = 1 },
+				})
+				local piece = state.pieces[1]
+				local tiles = PowerEffects.getAreaTiles(state, piece, "radial")
+				for _, t in ipairs(tiles) do
+					local isSelf = t.row == piece.row and t.col == piece.col
+					assert.is_false(isSelf)
+				end
+			end)
+		end)
+
+		describe("areaTiles row expansion", function()
+			it("L=0 row affects only the activator row", function()
+				local state = makeState(10, 10, {
+					{ row = 4, col = 5, player = 1, powers = {}, growQuadradiusLevel = 0 },
+				})
+				local piece = state.pieces[1]
+				local tiles = PowerEffects.getAreaTiles(state, piece, "row")
+				for _, t in ipairs(tiles) do
+					assert.are.equal(4, t.row)
+				end
+			end)
+
+			it("L=1 row affects 3 rows (rows 3, 4, 5 for activator at row 4)", function()
+				local state = makeState(10, 10, {
+					{ row = 4, col = 5, player = 1, powers = {}, growQuadradiusLevel = 1 },
+				})
+				local piece = state.pieces[1]
+				local tiles = PowerEffects.getAreaTiles(state, piece, "row")
+				local rowSet = {}
+				for _, t in ipairs(tiles) do
+					rowSet[t.row] = true
+				end
+				-- Should cover rows 3, 4, 5
+				assert.is_true(rowSet[3] == true)
+				assert.is_true(rowSet[4] == true)
+				assert.is_true(rowSet[5] == true)
+				-- Should NOT cover row 2 or row 6
+				assert.is_nil(rowSet[2])
+				assert.is_nil(rowSet[6])
+			end)
+
+			it("L=1 row tile count = 3 rows x cols minus own tile", function()
+				local state = makeState(10, 10, {
+					{ row = 4, col = 5, player = 1, powers = {}, growQuadradiusLevel = 1 },
+				})
+				local piece = state.pieces[1]
+				local tiles = PowerEffects.getAreaTiles(state, piece, "row")
+				-- 3 rows * 10 cols - 1 (own tile) = 29
+				assert.are.equal(29, #tiles)
+			end)
+
+			it("L=1 row clamps at board top (row 1)", function()
+				local state = makeState(10, 10, {
+					{ row = 1, col = 5, player = 1, powers = {}, growQuadradiusLevel = 1 },
+				})
+				local piece = state.pieces[1]
+				local tiles = PowerEffects.getAreaTiles(state, piece, "row")
+				for _, t in ipairs(tiles) do
+					assert.is_true(t.row >= 1)
+				end
+				-- Should cover rows 1 and 2 only (clamped), not row 0
+				local rowSet = {}
+				for _, t in ipairs(tiles) do
+					rowSet[t.row] = true
+				end
+				assert.is_nil(rowSet[0])
+			end)
+		end)
+
+		describe("areaTiles column expansion", function()
+			it("L=0 column affects only the activator column", function()
+				local state = makeState(10, 10, {
+					{ row = 4, col = 5, player = 1, powers = {}, growQuadradiusLevel = 0 },
+				})
+				local piece = state.pieces[1]
+				local tiles = PowerEffects.getAreaTiles(state, piece, "column")
+				for _, t in ipairs(tiles) do
+					assert.are.equal(5, t.col)
+				end
+			end)
+
+			it("L=1 column affects 3 columns (cols 4, 5, 6 for activator at col 5)", function()
+				local state = makeState(10, 10, {
+					{ row = 4, col = 5, player = 1, powers = {}, growQuadradiusLevel = 1 },
+				})
+				local piece = state.pieces[1]
+				local tiles = PowerEffects.getAreaTiles(state, piece, "column")
+				local colSet = {}
+				for _, t in ipairs(tiles) do
+					colSet[t.col] = true
+				end
+				assert.is_true(colSet[4] == true)
+				assert.is_true(colSet[5] == true)
+				assert.is_true(colSet[6] == true)
+				assert.is_nil(colSet[3])
+				assert.is_nil(colSet[7])
+			end)
+		end)
+
+		describe("integration: destroy_radial respects growQuadradiusLevel", function()
+			it("L=1 destroy_radial destroys enemy at distance 2 that L=0 would miss", function()
+				local state = makeState(10, 10, {
+					{
+						row = 5,
+						col = 5,
+						player = 1,
+						powers = { "destroy_radial" },
+						growQuadradiusLevel = 1,
+					},
+					{ row = 3, col = 5, player = 2, powers = {} }, -- dr=2 -- L0 misses, L1 hits
+					{ row = 5, col = 3, player = 2, powers = {} }, -- dc=2 -- L0 misses, L1 hits
+				})
+				local activator = state.pieces[1]
+
+				state = PowerEffects.activateDestroyRadial(state, activator)
+
+				-- Both distant enemies should be gone
+				local found3_5 = false
+				local found5_3 = false
+				for _, p in ipairs(state.pieces) do
+					if p.row == 3 and p.col == 5 then
+						found3_5 = true
+					end
+					if p.row == 5 and p.col == 3 then
+						found5_3 = true
+					end
+				end
+				assert.is_false(found3_5)
+				assert.is_false(found5_3)
+			end)
+
+			it("L=0 destroy_radial does NOT destroy enemy at distance 2", function()
+				local state = makeState(10, 10, {
+					{
+						row = 5,
+						col = 5,
+						player = 1,
+						powers = { "destroy_radial" },
+						growQuadradiusLevel = 0,
+					},
+					{ row = 3, col = 5, player = 2, powers = {} }, -- dr=2 -- L0 misses
+				})
+				local activator = state.pieces[1]
+
+				state = PowerEffects.activateDestroyRadial(state, activator)
+
+				local found = false
+				for _, p in ipairs(state.pieces) do
+					if p.row == 3 and p.col == 5 then
+						found = true
+					end
+				end
+				assert.is_true(found) -- still alive
+			end)
+		end)
+
+		describe("kamikaze_radial respects growQuadradiusLevel", function()
+			it("L=1 kamikaze_radial destroys piece at distance 2", function()
+				local state = makeState(10, 10, {
+					{
+						row = 5,
+						col = 5,
+						player = 1,
+						powers = { "kamikaze_radial" },
+						growQuadradiusLevel = 1,
+					},
+					{ row = 3, col = 5, player = 2, powers = {} }, -- distance 2
+				})
+				local activator = state.pieces[1]
+
+				state = PowerEffects.activateKamikazeRadial(state, activator)
+
+				local found = false
+				for _, p in ipairs(state.pieces) do
+					if p.row == 3 and p.col == 5 then
+						found = true
+					end
+				end
+				assert.is_false(found)
+			end)
+
+			it("L=0 kamikaze_radial does NOT reach distance 2", function()
+				local state = makeState(10, 10, {
+					{
+						row = 5,
+						col = 5,
+						player = 1,
+						powers = { "kamikaze_radial" },
+						growQuadradiusLevel = 0,
+					},
+					{ row = 3, col = 5, player = 2, powers = {} }, -- distance 2 -- should survive
+				})
+				local activator = state.pieces[1]
+
+				state = PowerEffects.activateKamikazeRadial(state, activator)
+
+				local found = false
+				for _, p in ipairs(state.pieces) do
+					if p.row == 3 and p.col == 5 then
+						found = true
+					end
+				end
+				assert.is_true(found) -- still alive
+			end)
+		end)
+	end)
 end)

@@ -4,6 +4,7 @@ import { describe, it, expect } from "vitest";
 import { createInitialState } from "../board";
 import {
   getTargetTiles,
+  getAreaPreviewTiles,
   needsTarget,
   overheatPower,
   powerCounts,
@@ -310,5 +311,96 @@ describe("tileColor", () => {
     const low = tileColor(1, 1, 0) >> 16;
     const high = tileColor(1, 1, 4) >> 16;
     expect(high).toBeGreaterThan(low);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getAreaPreviewTiles — grow_quadradius-aware area preview for UI/AI targeting
+// ---------------------------------------------------------------------------
+
+describe("getAreaPreviewTiles — radial", () => {
+  it("L=0: returns 8 tiles of 3×3 ring (center excluded)", () => {
+    const state = freshState();
+    const piece = makePiece({ id: "p1", player: 1, row: 5, col: 5 });
+    const tiles = getAreaPreviewTiles(state, piece, "radial");
+    expect(tiles.length).toBe(8);
+    // Includes all 8 neighbours
+    expect(tiles).toContainEqual({ row: 4, col: 4 });
+    expect(tiles).toContainEqual({ row: 6, col: 6 });
+    // Does not include center
+    expect(tiles.some((t) => t.row === 5 && t.col === 5)).toBe(false);
+  });
+
+  it("L=1: returns 24 tiles of 5×5 ring (center excluded, interior piece)", () => {
+    const state = freshState();
+    const piece = makePiece({ id: "p1", player: 1, row: 5, col: 5, growQuadradiusLevel: 1 } as Parameters<typeof makePiece>[0]);
+    const tiles = getAreaPreviewTiles(state, piece, "radial");
+    expect(tiles.length).toBe(24);
+    // Dist-2 tile included
+    expect(tiles).toContainEqual({ row: 5, col: 7 });
+    // Center excluded
+    expect(tiles.some((t) => t.row === 5 && t.col === 5)).toBe(false);
+  });
+
+  it("L=1: clamps at board edge (top-left corner)", () => {
+    const state = freshState();
+    // Piece at (1,1): 5×5 area would go to rows -1..3, cols -1..3 → clamped to 1..3
+    const piece = makePiece({ id: "p1", player: 1, row: 1, col: 1, growQuadradiusLevel: 1 } as Parameters<typeof makePiece>[0]);
+    const tiles = getAreaPreviewTiles(state, piece, "radial");
+    // All returned tiles are within board bounds
+    for (const t of tiles) {
+      expect(t.row).toBeGreaterThanOrEqual(1);
+      expect(t.row).toBeLessThanOrEqual(8);
+      expect(t.col).toBeGreaterThanOrEqual(1);
+      expect(t.col).toBeLessThanOrEqual(10);
+    }
+    // No tile is the center
+    expect(tiles.some((t) => t.row === 1 && t.col === 1)).toBe(false);
+  });
+});
+
+describe("getAreaPreviewTiles — row", () => {
+  it("L=0: returns all columns in the activating row, center excluded", () => {
+    const state = freshState();
+    const piece = makePiece({ id: "p1", player: 1, row: 4, col: 5 });
+    const tiles = getAreaPreviewTiles(state, piece, "row");
+    expect(tiles.length).toBe(9); // 10 cols - 1 (center)
+    expect(tiles.every((t) => t.row === 4)).toBe(true);
+    expect(tiles.some((t) => t.row === 4 && t.col === 5)).toBe(false);
+  });
+
+  it("L=1: returns 3 rows of tiles, center excluded (29 tiles)", () => {
+    const state = freshState();
+    const piece = makePiece({ id: "p1", player: 1, row: 4, col: 5, growQuadradiusLevel: 1 } as Parameters<typeof makePiece>[0]);
+    const tiles = getAreaPreviewTiles(state, piece, "row");
+    expect(tiles.length).toBe(29); // 3 rows × 10 cols - 1 center
+    // Rows 3, 4, 5 all present
+    expect(tiles.some((t) => t.row === 3)).toBe(true);
+    expect(tiles.some((t) => t.row === 5)).toBe(true);
+    // Row 2 absent
+    expect(tiles.some((t) => t.row === 2)).toBe(false);
+  });
+});
+
+describe("getAreaPreviewTiles — column", () => {
+  it("L=0: returns all rows in the activating column, center excluded", () => {
+    const state = freshState();
+    const piece = makePiece({ id: "p1", player: 1, row: 4, col: 5 });
+    const tiles = getAreaPreviewTiles(state, piece, "column");
+    expect(tiles.length).toBe(7); // 8 rows - 1 center
+    expect(tiles.every((t) => t.col === 5)).toBe(true);
+    expect(tiles.some((t) => t.row === 4 && t.col === 5)).toBe(false);
+  });
+
+  it("L=1: returns 3 columns of tiles, center excluded (23 tiles)", () => {
+    const state = freshState();
+    const piece = makePiece({ id: "p1", player: 1, row: 4, col: 5, growQuadradiusLevel: 1 } as Parameters<typeof makePiece>[0]);
+    const tiles = getAreaPreviewTiles(state, piece, "column");
+    expect(tiles.length).toBe(23); // 3 cols × 8 rows - 1 center
+    // Cols 4, 5, 6 all present
+    expect(tiles.some((t) => t.col === 4)).toBe(true);
+    expect(tiles.some((t) => t.col === 6)).toBe(true);
+    // Col 3 absent
+    expect(tiles.some((t) => t.col === 3)).toBe(false);
   });
 });

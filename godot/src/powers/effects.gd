@@ -134,39 +134,65 @@ static func _empty_tiles(state: GameState) -> Array:
 
 
 ## Returns all pieces in the given area (excluding the activating piece).
+##
+## Honoured grow_quadradius_level on the activating piece:
+##   radial: Chebyshev distance 1+L
+##   row:    band [row-L, row+L]  (2L+1 rows)
+##   column: band [col-L, col+L]  (2L+1 cols)
+## L=0 reproduces the original behaviour exactly.
 static func _area_pieces(state: GameState, piece: GameState.Piece, area: String) -> Array:
+	var L: int = piece.get_meta("grow_quadradius_level", 0)
 	var result: Array = []
 	for p: GameState.Piece in state.pieces:
 		if p.id == piece.id:
 			continue
 		match area:
 			"row":
-				if p.row == piece.row:
+				if abs(p.row - piece.row) <= L:
 					result.append(p)
 			"column":
-				if p.col == piece.col:
+				if abs(p.col - piece.col) <= L:
 					result.append(p)
 			"radial":
-				if abs(p.row - piece.row) <= 1 and abs(p.col - piece.col) <= 1:
+				var dist: int = 1 + L
+				if abs(p.row - piece.row) <= dist and abs(p.col - piece.col) <= dist:
 					result.append(p)
 	return result
 
 
 ## Returns all tile coords in the given area, excluding the activating piece's own tile.
+##
+## Honoured grow_quadradius_level on the activating piece:
+##   radial: Chebyshev distance 1+L
+##   row:    band [row-L, row+L]  (2L+1 rows)
+##   column: band [col-L, col+L]  (2L+1 cols)
+## L=0 reproduces the original behaviour exactly.
 static func _area_tile_coords(state: GameState, piece: GameState.Piece, area: String) -> Array:
+	var L: int = piece.get_meta("grow_quadradius_level", 0)
 	var tiles: Array = []
 	match area:
 		"row":
-			for c in range(1, state.cols + 1):
-				if c != piece.col:
-					tiles.append({"row": piece.row, "col": c})
+			for dr in range(-L, L + 1):
+				var r := piece.row + dr
+				if r < 1 or r > state.rows:
+					continue
+				for c in range(1, state.cols + 1):
+					if r == piece.row and c == piece.col:
+						continue
+					tiles.append({"row": r, "col": c})
 		"column":
-			for r in range(1, state.rows + 1):
-				if r != piece.row:
-					tiles.append({"row": r, "col": piece.col})
+			for dc in range(-L, L + 1):
+				var c := piece.col + dc
+				if c < 1 or c > state.cols:
+					continue
+				for r in range(1, state.rows + 1):
+					if r == piece.row and c == piece.col:
+						continue
+					tiles.append({"row": r, "col": c})
 		"radial":
-			for dr in range(-1, 2):
-				for dc in range(-1, 2):
+			var dist: int = 1 + L
+			for dr in range(-dist, dist + 1):
+				for dc in range(-dist, dist + 1):
 					if dr == 0 and dc == 0:
 						continue
 					var r := piece.row + dr
@@ -304,12 +330,15 @@ static func _scramble_column(state: GameState, piece: GameState.Piece, power_id:
 	return dst
 
 
-## Core: scramble radial (shuffle {row,col} pairs in 3x3).
+## Core: scramble radial (shuffle {row,col} pairs in area).
+## Respects grow_quadradius_level on the activating piece.
 static func _scramble_radial(state: GameState, piece: GameState.Piece, power_id: String) -> GameState:
+	var L: int = piece.get_meta("grow_quadradius_level", 0)
+	var dist: int = 1 + L
 	var rng := RNG.new(state.seed + state.turn)
 	var in_area: Array = []
 	for p: GameState.Piece in state.pieces:
-		if abs(p.row - piece.row) <= 1 and abs(p.col - piece.col) <= 1:
+		if abs(p.row - piece.row) <= dist and abs(p.col - piece.col) <= dist:
 			in_area.append(p)
 	var positions: Array = []
 	for p: GameState.Piece in in_area:
@@ -745,10 +774,12 @@ func activate_bomb(state: GameState, piece: GameState.Piece) -> GameState:
 
 
 func activate_kamikaze_radial(state: GameState, piece: GameState.Piece) -> GameState:
-	# Kamikaze includes self
+	# Kamikaze includes self; respects grow_quadradius_level.
+	var L: int = piece.get_meta("grow_quadradius_level", 0)
+	var dist: int = 1 + L
 	var pieces: Array = []
 	for p: GameState.Piece in state.pieces:
-		if abs(p.row - piece.row) > 1 or abs(p.col - piece.col) > 1:
+		if abs(p.row - piece.row) > dist or abs(p.col - piece.col) > dist:
 			pieces.append(p)
 	var dst := _copy_state(state)
 	dst.pieces = pieces
@@ -756,9 +787,11 @@ func activate_kamikaze_radial(state: GameState, piece: GameState.Piece) -> GameS
 
 
 func activate_kamikaze_row(state: GameState, piece: GameState.Piece) -> GameState:
+	# Respects grow_quadradius_level: destroys 2L+1 rows including self.
+	var L: int = piece.get_meta("grow_quadradius_level", 0)
 	var pieces: Array = []
 	for p: GameState.Piece in state.pieces:
-		if p.row != piece.row:
+		if abs(p.row - piece.row) > L:
 			pieces.append(p)
 	var dst := _copy_state(state)
 	dst.pieces = pieces
@@ -766,9 +799,11 @@ func activate_kamikaze_row(state: GameState, piece: GameState.Piece) -> GameStat
 
 
 func activate_kamikaze_column(state: GameState, piece: GameState.Piece) -> GameState:
+	# Respects grow_quadradius_level: destroys 2L+1 columns including self.
+	var L: int = piece.get_meta("grow_quadradius_level", 0)
 	var pieces: Array = []
 	for p: GameState.Piece in state.pieces:
-		if p.col != piece.col:
+		if abs(p.col - piece.col) > L:
 			pieces.append(p)
 	var dst := _copy_state(state)
 	dst.pieces = pieces
@@ -1153,9 +1188,11 @@ func activate_spyware_column(state: GameState, piece: GameState.Piece) -> GameSt
 
 
 func activate_orb_spy_radial(state: GameState, piece: GameState.Piece) -> GameState:
+	var L: int = piece.get_meta("grow_quadradius_level", 0)
+	var dist: int = 1 + L
 	var orbs: Array = []
 	for o in state.orbs:
-		if abs(o.row - piece.row) <= 1 and abs(o.col - piece.col) <= 1:
+		if abs(o.row - piece.row) <= dist and abs(o.col - piece.col) <= dist:
 			var no: Dictionary = o.duplicate()
 			no["revealed"] = true
 			orbs.append(no)

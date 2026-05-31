@@ -71,23 +71,28 @@ local function wrapPosition(row, col, rows, cols)
 end
 
 --- Return pieces in the given area (row/column/radial) excluding the activator.
+--- Respects piece.growQuadradiusLevel (0..3) to expand radial/row/column reach.
 ---@param state table Game state
 ---@param piece table Activating piece (excluded from results)
 ---@param area string "row" | "column" | "radial"
 ---@return table Array of matching pieces
 local function areaPieceTargets(state, piece, area)
+	local L = piece.growQuadradiusLevel or 0
 	local targets = {}
 	for _, p in ipairs(state.pieces) do
 		if p ~= piece then
 			local match = false
 			if area == "row" then
-				match = p.row == piece.row
+				-- Band of (2L+1) rows centred on piece.row
+				match = p.row >= piece.row - L and p.row <= piece.row + L
 			elseif area == "column" then
-				match = p.col == piece.col
+				-- Band of (2L+1) columns centred on piece.col
+				match = p.col >= piece.col - L and p.col <= piece.col + L
 			elseif area == "radial" then
+				-- Chebyshev distance <= 1+L
 				local dr = math.abs(p.row - piece.row)
 				local dc = math.abs(p.col - piece.col)
-				match = dr <= 1 and dc <= 1
+				match = dr <= 1 + L and dc <= 1 + L
 			end
 			if match then
 				table.insert(targets, p)
@@ -98,31 +103,45 @@ local function areaPieceTargets(state, piece, area)
 end
 
 --- Return tile coordinates in the given area (row/column/radial) excluding the activator's own tile.
+--- Respects piece.growQuadradiusLevel (0..3) to expand radial/row/column reach.
 ---@param state table Game state
 ---@param piece table Activating piece (own tile excluded)
 ---@param area string "row" | "column" | "radial"
 ---@return table Array of {row, col} tables
 local function areaTiles(state, piece, area)
+	local L = piece.growQuadradiusLevel or 0
 	local tiles = {}
 	if area == "row" then
-		for c = 1, state.cols do
-			if c ~= piece.col then
-				table.insert(tiles, { row = piece.row, col = c })
+		-- Band of (2L+1) rows, full width, excluding own tile
+		local rMin = math.max(1, piece.row - L)
+		local rMax = math.min(state.rows, piece.row + L)
+		for r = rMin, rMax do
+			for c = 1, state.cols do
+				if not (r == piece.row and c == piece.col) then
+					table.insert(tiles, { row = r, col = c })
+				end
 			end
 		end
 	elseif area == "column" then
-		for r = 1, state.rows do
-			if r ~= piece.row then
-				table.insert(tiles, { row = r, col = piece.col })
+		-- Band of (2L+1) columns, full height, excluding own tile
+		local cMin = math.max(1, piece.col - L)
+		local cMax = math.min(state.cols, piece.col + L)
+		for c = cMin, cMax do
+			for r = 1, state.rows do
+				if not (r == piece.row and c == piece.col) then
+					table.insert(tiles, { row = r, col = c })
+				end
 			end
 		end
 	elseif area == "radial" then
-		for dr = -1, 1 do
-			for dc = -1, 1 do
+		-- Chebyshev distance <= 1+L, excluding own tile, clamped to state board bounds
+		local radius = 1 + L
+		for dr = -radius, radius do
+			for dc = -radius, radius do
 				if not (dr == 0 and dc == 0) then
 					local r = piece.row + dr
 					local c = piece.col + dc
-					if Logic.isValidPosition(r, c) then
+					if r >= 1 and r <= state.rows and c >= 1 and c <= state.cols then
 						table.insert(tiles, { row = r, col = c })
 					end
 				end
@@ -130,6 +149,24 @@ local function areaTiles(state, piece, area)
 		end
 	end
 	return tiles
+end
+
+--- Public accessor for areaPieceTargets (used by tests and external callers).
+---@param state table Game state
+---@param piece table Activating piece (excluded from results)
+---@param area string "row" | "column" | "radial"
+---@return table Array of matching pieces
+function PowerEffects.getAreaPieceTargets(state, piece, area)
+	return areaPieceTargets(state, piece, area)
+end
+
+--- Public accessor for areaTiles (used by tests and external callers).
+---@param state table Game state
+---@param piece table Activating piece (own tile excluded)
+---@param area string "row" | "column" | "radial"
+---@return table Array of {row, col} tables
+function PowerEffects.getAreaTiles(state, piece, area)
+	return areaTiles(state, piece, area)
 end
 
 --- Get valid moves considering powers (especially move_diagonal)
@@ -433,24 +470,12 @@ function PowerEffects.activateMultiply(state, piece, target)
 	return state
 end
 
---- Get targets for bomb power (pieces in 3x3 area)
+--- Get targets for bomb power (pieces in radial area, respects growQuadradiusLevel)
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Array of pieces in area
 function PowerEffects.getBombTargets(state, piece)
-	local targets = {}
-
-	for _, p in ipairs(state.pieces) do
-		if p ~= piece then
-			local dr = math.abs(p.row - piece.row)
-			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
-				table.insert(targets, p)
-			end
-		end
-	end
-
-	return targets
+	return areaPieceTargets(state, piece, "radial")
 end
 
 --- Activate bomb power
@@ -469,26 +494,25 @@ function PowerEffects.activateBomb(state, piece)
 		end
 	end
 
-	-- Lower terrain in 3x3 area and destroy tiles at min height
-	for dr = -1, 1 do
-		for dc = -1, 1 do
-			local row = piece.row + dr
-			local col = piece.col + dc
-			if Logic.isValidPosition(row, col) then
-				local h = Height.getHeight(state.heightMap, row, col)
-				local newHeight = h - 1
-				Height.setHeight(state.heightMap, row, col, newHeight)
+	-- Lower terrain in area (respects growQuadradiusLevel) and destroy tiles at min height
+	local terrainTiles = areaTiles(state, piece, "radial")
+	-- Also include the activator's own tile for terrain effect
+	table.insert(terrainTiles, { row = piece.row, col = piece.col })
+	for _, tile in ipairs(terrainTiles) do
+		local row = tile.row
+		local col = tile.col
+		local h = Height.getHeight(state.heightMap, row, col)
+		local newHeight = h - 1
+		Height.setHeight(state.heightMap, row, col, newHeight)
 
-				-- Destroy tile if it reaches minimum height (0 or below)
-				if newHeight <= 0 then
-					-- Initialize destroyedTiles if not present
-					if not state.destroyedTiles then
-						state.destroyedTiles = {}
-					end
-					local key = row .. "," .. col
-					state.destroyedTiles[key] = true
-				end
+		-- Destroy tile if it reaches minimum height (0 or below)
+		if newHeight <= 0 then
+			-- Initialize destroyedTiles if not present
+			if not state.destroyedTiles then
+				state.destroyedTiles = {}
 			end
+			local key = row .. "," .. col
+			state.destroyedTiles[key] = true
 		end
 	end
 
@@ -632,18 +656,21 @@ end
 -- NOTE: Kamikaze includes SELF in the destruction — cannot use areaPieceTargets (which excludes self).
 -- Each variant uses its own inline loop to remove all matching pieces including the activator.
 
---- Activate kamikaze_radial power (destroys pieces in 3x3 INCLUDING self)
+--- Activate kamikaze_radial power (destroys pieces in radial area INCLUDING self)
+--- Range respects growQuadradiusLevel: Chebyshev distance <= 1+L.
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateKamikazeRadial(state, piece)
-	-- Get all pieces in 3x3 area INCLUDING activator
+	-- Get all pieces in radial area INCLUDING activator
+	local L = piece.growQuadradiusLevel or 0
+	local radius = 1 + L
 	local targets = {}
 
 	for _, p in ipairs(state.pieces) do
 		local dr = math.abs(p.row - piece.row)
 		local dc = math.abs(p.col - piece.col)
-		if dr <= 1 and dc <= 1 then
+		if dr <= radius and dc <= radius then
 			table.insert(targets, p)
 		end
 	end
@@ -661,16 +688,20 @@ function PowerEffects.activateKamikazeRadial(state, piece)
 	return state
 end
 
---- Activate kamikaze_row power (destroys all pieces in row INCLUDING self)
+--- Activate kamikaze_row power (destroys all pieces in row band INCLUDING self)
+--- Range respects growQuadradiusLevel: band of (2L+1) rows.
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateKamikazeRow(state, piece)
-	local targetRow = piece.row
+	local L = piece.growQuadradiusLevel or 0
+	local rowMin = piece.row - L
+	local rowMax = piece.row + L
 
-	-- Remove all pieces in the row (including self)
+	-- Remove all pieces in the row band (including self)
 	for i = #state.pieces, 1, -1 do
-		if state.pieces[i].row == targetRow then
+		local r = state.pieces[i].row
+		if r >= rowMin and r <= rowMax then
 			table.remove(state.pieces, i)
 		end
 	end
@@ -678,16 +709,20 @@ function PowerEffects.activateKamikazeRow(state, piece)
 	return state
 end
 
---- Activate kamikaze_column power (destroys all pieces in column INCLUDING self)
+--- Activate kamikaze_column power (destroys all pieces in column band INCLUDING self)
+--- Range respects growQuadradiusLevel: band of (2L+1) columns.
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activateKamikazeColumn(state, piece)
-	local targetCol = piece.col
+	local L = piece.growQuadradiusLevel or 0
+	local colMin = piece.col - L
+	local colMax = piece.col + L
 
-	-- Remove all pieces in the column (including self)
+	-- Remove all pieces in the column band (including self)
 	for i = #state.pieces, 1, -1 do
-		if state.pieces[i].col == targetCol then
+		local c = state.pieces[i].col
+		if c >= colMin and c <= colMax then
 			table.remove(state.pieces, i)
 		end
 	end
@@ -828,18 +863,21 @@ local function scrambleColumn(state, piece, powerId)
 end
 
 --- Core scramble implementation for radial area (shuffles {row,col} pairs).
+--- Range respects growQuadradiusLevel: Chebyshev distance <= 1+L (includes activator).
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@param powerId string Power identifier to remove
 ---@return table Updated game state
 local function scrambleRadial(state, piece, powerId)
+	local L = piece.growQuadradiusLevel or 0
+	local radius = 1 + L
 	local piecesInArea = {}
 	local positions = {}
 
 	for _, p in ipairs(state.pieces) do
 		local dr = math.abs(p.row - piece.row)
 		local dc = math.abs(p.col - piece.col)
-		if dr <= 1 and dc <= 1 then
+		if dr <= radius and dc <= radius then
 			table.insert(piecesInArea, p)
 			table.insert(positions, { row = p.row, col = p.col })
 		end
@@ -891,13 +929,15 @@ end
 ---@param piece table Piece activating power
 ---@return table Array of enemy pieces in area
 function PowerEffects.getSmartBombsTargets(state, piece)
+	local L = piece.growQuadradiusLevel or 0
+	local radius = 1 + L
 	local targets = {}
 
 	for _, p in ipairs(state.pieces) do
 		if p ~= piece and p.player ~= piece.player then
 			local dr = math.abs(p.row - piece.row)
 			local dc = math.abs(p.col - piece.col)
-			if dr <= 1 and dc <= 1 then
+			if dr <= radius and dc <= radius then
 				table.insert(targets, p)
 			end
 		end
@@ -993,13 +1033,15 @@ end
 
 -- 9B.1 Area Effects
 
---- Activate plateau power (raise 3x3 area to max height)
+--- Activate plateau power (raise radial area to max height, respects growQuadradiusLevel)
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
 function PowerEffects.activatePlateau(state, piece)
-	for dr = -1, 1 do
-		for dc = -1, 1 do
+	local L = piece.growQuadradiusLevel or 0
+	local radius = 1 + L
+	for dr = -radius, radius do
+		for dc = -radius, radius do
 			local row = piece.row + dr
 			local col = piece.col + dc
 			if Logic.isValidPosition(row, col) then
@@ -1013,7 +1055,7 @@ function PowerEffects.activatePlateau(state, piece)
 	return state
 end
 
---- Activate moat power (raise center to max, lower surrounding ring)
+--- Activate moat power (raise center to max, lower surrounding ring, respects growQuadradiusLevel)
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@return table Updated game state
@@ -1021,18 +1063,11 @@ function PowerEffects.activateMoat(state, piece)
 	-- Raise center to max
 	Height.setHeight(state.heightMap, piece.row, piece.col, Height.MAX_HEIGHT)
 
-	-- Lower surrounding ring by 1
-	for dr = -1, 1 do
-		for dc = -1, 1 do
-			if not (dr == 0 and dc == 0) then
-				local row = piece.row + dr
-				local col = piece.col + dc
-				if Logic.isValidPosition(row, col) then
-					local currentHeight = Height.getHeight(state.heightMap, row, col)
-					Height.setHeight(state.heightMap, row, col, currentHeight - 1)
-				end
-			end
-		end
+	-- Lower surrounding ring (expanded by growQuadradiusLevel) by 1
+	local tiles = areaTiles(state, piece, "radial")
+	for _, tile in ipairs(tiles) do
+		local currentHeight = Height.getHeight(state.heightMap, tile.row, tile.col)
+		Height.setHeight(state.heightMap, tile.row, tile.col, currentHeight - 1)
 	end
 
 	removePower(piece, "moat")
@@ -1145,33 +1180,19 @@ local function invertHeight(height)
 end
 
 --- Core invert implementation: flip tile heights in area.
+--- Respects piece.growQuadradiusLevel to expand radial/row/column reach.
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@param area string "row" | "column" | "radial"
 ---@param powerId string Power identifier to remove
 ---@return table Updated game state
 local function invertArea(state, piece, area, powerId)
-	if area == "radial" then
-		for dr = -1, 1 do
-			for dc = -1, 1 do
-				local row = piece.row + dr
-				local col = piece.col + dc
-				if Logic.isValidPosition(row, col) then
-					local currentHeight = Height.getHeight(state.heightMap, row, col)
-					Height.setHeight(state.heightMap, row, col, invertHeight(currentHeight))
-				end
-			end
-		end
-	elseif area == "row" then
-		for col = 1, state.cols do
-			local currentHeight = Height.getHeight(state.heightMap, piece.row, col)
-			Height.setHeight(state.heightMap, piece.row, col, invertHeight(currentHeight))
-		end
-	else
-		for row = 1, state.rows do
-			local currentHeight = Height.getHeight(state.heightMap, row, piece.col)
-			Height.setHeight(state.heightMap, row, piece.col, invertHeight(currentHeight))
-		end
+	local tiles = areaTiles(state, piece, area)
+	-- For radial/row/column, also include the activator's own tile
+	table.insert(tiles, { row = piece.row, col = piece.col })
+	for _, tile in ipairs(tiles) do
+		local currentHeight = Height.getHeight(state.heightMap, tile.row, tile.col)
+		Height.setHeight(state.heightMap, tile.row, tile.col, invertHeight(currentHeight))
 	end
 
 	removePower(piece, powerId)
@@ -1220,52 +1241,24 @@ local function getPieceAtPosition(state, row, col)
 end
 
 --- Core dredge implementation: raise friendly tiles, lower enemy tiles in area.
+--- Respects piece.growQuadradiusLevel to expand radial/row/column reach.
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@param area string "row" | "column" | "radial"
 ---@param powerId string Power identifier to remove
 ---@return table Updated game state
 local function dredgeArea(state, piece, area, powerId)
-	if area == "radial" then
-		for dr = -1, 1 do
-			for dc = -1, 1 do
-				local row = piece.row + dr
-				local col = piece.col + dc
-				if Logic.isValidPosition(row, col) then
-					local pieceOnTile = getPieceAtPosition(state, row, col)
-					if pieceOnTile then
-						local currentHeight = Height.getHeight(state.heightMap, row, col)
-						if pieceOnTile.player == piece.player then
-							Height.setHeight(state.heightMap, row, col, currentHeight + 1)
-						else
-							Height.setHeight(state.heightMap, row, col, currentHeight - 1)
-						end
-					end
-				end
-			end
-		end
-	elseif area == "row" then
-		for col = 1, state.cols do
-			local pieceOnTile = getPieceAtPosition(state, piece.row, col)
-			if pieceOnTile then
-				local currentHeight = Height.getHeight(state.heightMap, piece.row, col)
-				if pieceOnTile.player == piece.player then
-					Height.setHeight(state.heightMap, piece.row, col, currentHeight + 1)
-				else
-					Height.setHeight(state.heightMap, piece.row, col, currentHeight - 1)
-				end
-			end
-		end
-	else
-		for row = 1, state.rows do
-			local pieceOnTile = getPieceAtPosition(state, row, piece.col)
-			if pieceOnTile then
-				local currentHeight = Height.getHeight(state.heightMap, row, piece.col)
-				if pieceOnTile.player == piece.player then
-					Height.setHeight(state.heightMap, row, piece.col, currentHeight + 1)
-				else
-					Height.setHeight(state.heightMap, row, piece.col, currentHeight - 1)
-				end
+	local tiles = areaTiles(state, piece, area)
+	-- Also include the activator's own tile (activator counts as friendly)
+	table.insert(tiles, { row = piece.row, col = piece.col })
+	for _, tile in ipairs(tiles) do
+		local pieceOnTile = getPieceAtPosition(state, tile.row, tile.col)
+		if pieceOnTile then
+			local currentHeight = Height.getHeight(state.heightMap, tile.row, tile.col)
+			if pieceOnTile.player == piece.player then
+				Height.setHeight(state.heightMap, tile.row, tile.col, currentHeight + 1)
+			else
+				Height.setHeight(state.heightMap, tile.row, tile.col, currentHeight - 1)
 			end
 		end
 	end
@@ -1753,6 +1746,7 @@ function PowerEffects.activateSpywareColumn(state, piece)
 end
 
 --- Core orb_spy implementation: reveal orb contents in area.
+--- Respects piece.growQuadradiusLevel to expand radial/row/column reach.
 ---@param state table Game state
 ---@param piece table Piece activating power
 ---@param orbs table Array of orbs
@@ -1760,16 +1754,17 @@ end
 ---@param powerId string Power identifier to remove
 ---@return table Updated game state, table Updated orbs
 local function orbSpyArea(state, piece, orbs, area, powerId)
+	local L = piece.growQuadradiusLevel or 0
 	for _, orb in ipairs(orbs) do
 		local match = false
 		if area == "radial" then
 			local dr = math.abs(orb.row - piece.row)
 			local dc = math.abs(orb.col - piece.col)
-			match = dr <= 1 and dc <= 1
+			match = dr <= 1 + L and dc <= 1 + L
 		elseif area == "row" then
-			match = orb.row == piece.row
+			match = orb.row >= piece.row - L and orb.row <= piece.row + L
 		elseif area == "column" then
-			match = orb.col == piece.col
+			match = orb.col >= piece.col - L and orb.col <= piece.col + L
 		end
 		if match then
 			orb.revealed = true
