@@ -13,6 +13,7 @@ local UI = require("src.shared.ui")
 local Particles = require("src.shared.particles")
 local ParticleConfig = require("src.shared.particle_config")
 local AI = require("src.shared.ai.ai")
+local MatchHistory = require("src.shared.match_history")
 
 -- Multiplayer modules (optional - may not have luasocket)
 local Multiplayer
@@ -98,6 +99,7 @@ return function(Game)
 
 			-- Check for game over
 			if Game.state.gameState == "gameover" then
+				Game.recordMatchResult(Game.state.winner)
 				UI.setScreen(Game.uiState, "gameover")
 			else
 				Game.showTurnBanner(Game.state.currentPlayer)
@@ -149,6 +151,7 @@ return function(Game)
 
 		-- Check for game over
 		if Game.state.gameState == "gameover" then
+			Game.recordMatchResult(Game.state.winner)
 			UI.setScreen(Game.uiState, "gameover")
 		else
 			-- Show turn banner for new player
@@ -174,6 +177,63 @@ return function(Game)
 		Game.turnBanner.active = true
 		Game.turnBanner.timer = 0
 		Game.turnBanner.player = player
+	end
+
+	--- Record a match result exactly once at game-over, guarded against double-calls.
+	--- @param winnerPlayer number|nil 1 or 2 (nil = draw)
+	function Game.recordMatchResult(winnerPlayer)
+		if not Game._matchRecordGuard then
+			return
+		end
+		-- Determine result from the perspective of "Player 1" (the local human seat).
+		local resultStr
+		if winnerPlayer == nil then
+			resultStr = "draw"
+		elseif winnerPlayer == 1 then
+			resultStr = "win"
+		else
+			resultStr = "loss"
+		end
+
+		-- Mode detection
+		local mode
+		if Game.multiplayer and type(Game.multiplayer) == "table" then
+			mode = "multiplayer"
+		elseif Game.ai then
+			mode = "vsai"
+		else
+			mode = "twoplayer"
+		end
+
+		-- Opponent name
+		local opponent
+		if mode == "vsai" and Game.ai then
+			opponent = "AI-" .. (Game.ai.difficulty or "easy")
+		elseif mode == "multiplayer" then
+			opponent = "Online opponent"
+		else
+			opponent = "Player 2"
+		end
+
+		-- Date string (Love2D provides os.date in its environment)
+		local dateStr = os.date and os.date("%Y-%m-%d") or "unknown"
+
+		-- Duration in seconds
+		local duration = 0
+		if Game._matchStartTime and love and love.timer then
+			duration = math.floor(love.timer.getTime() - Game._matchStartTime)
+		end
+
+		local entry = {
+			date = dateStr,
+			opponent = opponent,
+			mode = mode,
+			result = resultStr,
+			duration_seconds = duration,
+			player_name = "Player",
+		}
+
+		MatchHistory.recordOnce(Game._matchRecordGuard, entry)
 	end
 
 	function Game.startNewGame()
@@ -426,6 +486,7 @@ return function(Game)
 				end
 				-- Check for game over
 				if Game.state.gameState == "gameover" then
+					Game.recordMatchResult(Game.state.winner)
 					UI.setScreen(Game.uiState, "gameover")
 				end
 			end
@@ -454,6 +515,7 @@ return function(Game)
 				Game.state.gameState = "gameover"
 				Game.state.winner = Game.multiplayer.gameState.winner
 			end
+			Game.recordMatchResult(Game.state.winner)
 			UI.setScreen(Game.uiState, "gameover")
 		elseif event == "disconnected" then
 			-- Lost connection to server

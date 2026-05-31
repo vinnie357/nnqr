@@ -218,6 +218,9 @@ return function(Game)
 		elseif screen == "mpopponent" then
 			Game.handleMPOpponentInput(key)
 			return
+		elseif screen == "history" then
+			Game.handleHistoryInput(key)
+			return
 		end
 
 		-- Playing screen input
@@ -281,12 +284,34 @@ return function(Game)
 			local selected = UI.getSelectedMenuItem(Game.uiState)
 			if selected == "New Game" then
 				UI.setScreen(Game.uiState, "gamemode")
+			elseif selected == "Match History" then
+				Game.uiState.historyScrollOffset = 0
+				UI.setScreen(Game.uiState, "history")
 			elseif selected == "Settings" then
 				Game.settingsReturnScreen = "menu"
 				UI.setScreen(Game.uiState, "settings")
 			elseif selected == "Quit" then
 				love.event.quit()
 			end
+		end
+	end
+
+	function Game.handleHistoryInput(key)
+		if key == "escape" or key == "backspace" then
+			Game.playSoundForEvent("menu_back")
+			UI.setScreen(Game.uiState, "menu")
+		elseif key == "return" or key == "space" then
+			Game.playSoundForEvent("menu_confirm")
+			local selected = UI.getSelectedMenuItem(Game.uiState)
+			if selected == "Back" then
+				UI.setScreen(Game.uiState, "menu")
+			end
+		elseif key == "up" then
+			if Game.uiState.historyScrollOffset > 0 then
+				Game.uiState.historyScrollOffset = Game.uiState.historyScrollOffset - 1
+			end
+		elseif key == "down" then
+			Game.uiState.historyScrollOffset = Game.uiState.historyScrollOffset + 1
 		end
 	end
 
@@ -476,7 +501,17 @@ return function(Game)
 		end
 	end
 
-	function Game.wheelmoved(x, y) end
+	function Game.wheelmoved(x, y)
+		local screen = UI.getScreen(Game.uiState)
+		if screen == "history" then
+			-- Scroll up (y > 0) decreases offset; scroll down increases it
+			local newOffset = Game.uiState.historyScrollOffset - y
+			if newOffset < 0 then
+				newOffset = 0
+			end
+			Game.uiState.historyScrollOffset = newOffset
+		end
+	end
 
 	-- Multiplayer Connect Input Handler
 	function Game.handleMPConnectInput(key)

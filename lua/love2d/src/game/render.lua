@@ -12,6 +12,7 @@ local UI = require("src.shared.ui")
 local Tooltip = require("src.shared.tooltip")
 local Particles = require("src.shared.particles")
 local AI = require("src.shared.ai.ai")
+local MatchHistory = require("src.shared.match_history")
 
 -- Multiplayer modules (optional - may not have luasocket)
 local Multiplayer
@@ -50,6 +51,8 @@ return function(Game)
 			Game.drawMPWaitingScreen()
 		elseif screen == "mpopponent" then
 			Game.drawMPOpponentScreen()
+		elseif screen == "history" then
+			Game.drawHistoryScreen()
 		end
 	end
 
@@ -1993,5 +1996,134 @@ return function(Game)
 		love.graphics.setColor(0.5, 0.5, 0.5)
 		local hint = "Up/Down to navigate, Enter to select, Escape to cancel"
 		love.graphics.print(hint, (screenW - font:getWidth(hint)) / 2, screenH - 50)
+	end
+
+	function Game.drawHistoryScreen()
+		local screenW = love.graphics.getWidth()
+		local screenH = love.graphics.getHeight()
+		local font = love.graphics.getFont()
+
+		-- Background
+		love.graphics.setColor(0.08, 0.10, 0.13)
+		love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+		-- Title bar
+		love.graphics.setColor(0.15, 0.18, 0.22)
+		love.graphics.rectangle("fill", 0, 0, screenW, 60)
+		love.graphics.setColor(1, 0.9, 0.3)
+		local title = "MATCH HISTORY"
+		love.graphics.print(title, (screenW - font:getWidth(title)) / 2, 18)
+
+		-- Load records (use injected IO adapter for scenario harness, default otherwise)
+		local histIO = Game._scenarioHistoryIO or nil
+		local records = MatchHistory.load(histIO)
+		local stats = MatchHistory.stats("Player", histIO)
+
+		-- Stats summary bar
+		local summaryY = 70
+		love.graphics.setColor(0.12, 0.15, 0.20)
+		love.graphics.rectangle("fill", 0, summaryY, screenW, 48)
+		local totalText =
+			string.format("Total: %d  |  W: %d  |  L: %d  |  D: %d", stats.total, stats.wins, stats.losses, stats.draws)
+		if stats.total > 0 then
+			local winPct = math.floor(stats.wins / stats.total * 100)
+			totalText = totalText .. string.format("  |  Win rate: %d%%", winPct)
+		end
+		love.graphics.setColor(0.8, 0.8, 0.8)
+		love.graphics.print(totalText, 20, summaryY + 14)
+
+		-- Column headers
+		local headerY = 128
+		love.graphics.setColor(0.4, 0.5, 0.6)
+		love.graphics.print("Date", 20, headerY)
+		love.graphics.print("Opponent", 140, headerY)
+		love.graphics.print("Mode", 320, headerY)
+		love.graphics.print("Result", 460, headerY)
+		love.graphics.print("Duration", 560, headerY)
+		love.graphics.setColor(0.2, 0.25, 0.3)
+		love.graphics.rectangle("fill", 0, headerY + 18, screenW, 1)
+
+		-- Scrollable list
+		local listTop = 154
+		local listBottom = screenH - 60
+		local rowHeight = 28
+		local visibleRows = math.floor((listBottom - listTop) / rowHeight)
+		local scrollOffset = Game.uiState.historyScrollOffset or 0
+		local totalRecords = #records
+
+		-- Clamp scroll
+		local maxScroll = math.max(0, totalRecords - visibleRows)
+		if scrollOffset > maxScroll then
+			scrollOffset = maxScroll
+			Game.uiState.historyScrollOffset = scrollOffset
+		end
+
+		-- Draw rows newest-first (reverse order)
+		for i = 1, visibleRows do
+			local recordIdx = totalRecords - (scrollOffset + i - 1)
+			if recordIdx < 1 then
+				break
+			end
+			local r = records[recordIdx]
+			local rowY = listTop + (i - 1) * rowHeight
+
+			-- Alternating row background
+			if i % 2 == 0 then
+				love.graphics.setColor(0.10, 0.12, 0.16)
+				love.graphics.rectangle("fill", 0, rowY, screenW, rowHeight)
+			end
+
+			-- Result color
+			local resultColor
+			if r.result == "win" then
+				resultColor = { 0.3, 0.9, 0.4 }
+			elseif r.result == "loss" then
+				resultColor = { 0.9, 0.35, 0.35 }
+			else
+				resultColor = { 0.7, 0.7, 0.4 }
+			end
+
+			-- Date
+			love.graphics.setColor(0.7, 0.7, 0.7)
+			love.graphics.print(r.date or "?", 20, rowY + 5)
+			-- Opponent
+			love.graphics.setColor(0.9, 0.9, 0.9)
+			love.graphics.print(r.opponent or "?", 140, rowY + 5)
+			-- Mode
+			love.graphics.setColor(0.5, 0.7, 0.9)
+			love.graphics.print(r.mode or "?", 320, rowY + 5)
+			-- Result
+			love.graphics.setColor(resultColor)
+			love.graphics.print(string.upper(r.result or "?"), 460, rowY + 5)
+			-- Duration
+			love.graphics.setColor(0.6, 0.6, 0.6)
+			local dur = r.duration_seconds or 0
+			local durText = string.format("%dm%02ds", math.floor(dur / 60), dur % 60)
+			love.graphics.print(durText, 560, rowY + 5)
+		end
+
+		-- Empty state
+		if totalRecords == 0 then
+			love.graphics.setColor(0.4, 0.4, 0.4)
+			local msg = "No matches recorded yet."
+			love.graphics.print(msg, (screenW - font:getWidth(msg)) / 2, (listTop + listBottom) / 2)
+		end
+
+		-- Scroll indicators
+		if scrollOffset > 0 then
+			love.graphics.setColor(0.6, 0.6, 0.6)
+			love.graphics.print("^ scroll up (Up/Scroll)", screenW - 200, listTop)
+		end
+		if scrollOffset < maxScroll then
+			love.graphics.setColor(0.6, 0.6, 0.6)
+			love.graphics.print("v scroll down (Down/Scroll)", screenW - 200, listBottom - 20)
+		end
+
+		-- Bottom bar with Back action
+		love.graphics.setColor(0.12, 0.15, 0.20)
+		love.graphics.rectangle("fill", 0, screenH - 50, screenW, 50)
+		love.graphics.setColor(0.8, 0.8, 0.8)
+		local backHint = "Esc / Enter on [Back] to return to menu"
+		love.graphics.print(backHint, (screenW - font:getWidth(backHint)) / 2, screenH - 32)
 	end
 end

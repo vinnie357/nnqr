@@ -103,10 +103,12 @@ describe("UI", function()
 		it("getMenuItems returns items for main menu", function()
 			local state = UI.createState()
 			local items = UI.getMenuItems(state)
-			assert.are.equal(3, #items)
+			-- Menu has: New Game, Match History, Settings, Quit
+			assert.are.equal(4, #items)
 			assert.are.equal("New Game", items[1])
-			assert.are.equal("Settings", items[2])
-			assert.are.equal("Quit", items[3])
+			assert.are.equal("Match History", items[2])
+			assert.are.equal("Settings", items[3])
+			assert.are.equal("Quit", items[4])
 		end)
 
 		it("getMenuItems returns items for settings", function()
@@ -195,7 +197,8 @@ describe("UI", function()
 
 		it("selectNext wraps to 1 at end", function()
 			local state = UI.createState()
-			state.selectedIndex = 3 -- Last item in main menu
+			local items = UI.getMenuItems(state)
+			state.selectedIndex = #items -- Last item in main menu
 			UI.selectNext(state)
 			assert.are.equal(1, state.selectedIndex)
 		end)
@@ -209,16 +212,22 @@ describe("UI", function()
 
 		it("selectPrev wraps to end at 1", function()
 			local state = UI.createState()
+			local items = UI.getMenuItems(state)
 			state.selectedIndex = 1
 			UI.selectPrev(state)
-			assert.are.equal(3, state.selectedIndex) -- Wraps to last item
+			assert.are.equal(#items, state.selectedIndex) -- Wraps to last item
 		end)
 
-		it("getSelectedMenuItem returns current item", function()
+		it("getSelectedMenuItem returns first item (New Game)", function()
 			local state = UI.createState()
 			assert.are.equal("New Game", UI.getSelectedMenuItem(state))
+		end)
+
+		it("getSelectedMenuItem returns second item when navigated", function()
+			local state = UI.createState()
 			UI.selectNext(state)
-			assert.are.equal("Settings", UI.getSelectedMenuItem(state))
+			local items = UI.getMenuItems(state)
+			assert.are.equal(items[2], UI.getSelectedMenuItem(state))
 		end)
 	end)
 

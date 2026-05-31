@@ -16,6 +16,7 @@ local SoundManager = require("src.shared.sound_manager")
 local Particles = require("src.shared.particles")
 local ParticleConfig = require("src.shared.particle_config")
 local AI = require("src.shared.ai.ai")
+local MatchHistory = require("src.shared.match_history")
 
 -- Multiplayer modules (optional - may not have luasocket)
 local Multiplayer
@@ -131,6 +132,10 @@ function Game.init()
 
 	-- Reset multiplayer state
 	Game.multiplayer = nil
+
+	-- Match history: reset per-game guard and record start time
+	Game._matchRecordGuard = MatchHistory.createRecordGuard()
+	Game._matchStartTime = love.timer.getTime()
 end
 
 --- Start a new game against AI

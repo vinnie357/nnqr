@@ -417,8 +417,90 @@ function ScenarioRunner.run(arg, Game)
 	love.graphics.setBackgroundColor(Game.colors.background)
 	Game.boardOffsetX = love.graphics.getWidth() / 2
 	Game.boardOffsetY = 120
-	Game.uiState = require("src.shared.ui").createState()
-	require("src.shared.ui").setScreen(Game.uiState, "playing")
+	local UI = require("src.shared.ui")
+	Game.uiState = UI.createState()
+
+	-- Allow scenario to specify a non-playing screen (e.g. history)
+	local targetScreen = dict.screen or "playing"
+	if not UI.SCREENS[targetScreen] then
+		targetScreen = "playing"
+	end
+	UI.setScreen(Game.uiState, targetScreen)
+
+	-- Seed match history data for history-screen scenarios
+	if dict.seed_history then
+		local MatchHistory = require("src.shared.match_history")
+		-- Build a temporary in-memory IO adapter that writes to the Love2D save dir
+		-- We use a known temp name so we can pre-populate it before the draw call.
+		local seedPath = "scenario_seed_history.json"
+		local seedIO = {
+			path = seedPath,
+			write = function(content)
+				local ok, err = love.filesystem.write(seedPath, content)
+				return ok, err
+			end,
+			read = function()
+				local data, _ = love.filesystem.read(seedPath)
+				return data
+			end,
+		}
+		local sampleGames = {
+			{
+				date = "2026-05-28",
+				opponent = "AI-easy",
+				mode = "vsai",
+				result = "win",
+				duration_seconds = 142,
+				player_name = "Player",
+			},
+			{
+				date = "2026-05-28",
+				opponent = "Player 2",
+				mode = "twoplayer",
+				result = "loss",
+				duration_seconds = 87,
+				player_name = "Player",
+			},
+			{
+				date = "2026-05-29",
+				opponent = "AI-hard",
+				mode = "vsai",
+				result = "loss",
+				duration_seconds = 310,
+				player_name = "Player",
+			},
+			{
+				date = "2026-05-29",
+				opponent = "Online opponent",
+				mode = "multiplayer",
+				result = "win",
+				duration_seconds = 203,
+				player_name = "Player",
+			},
+			{
+				date = "2026-05-30",
+				opponent = "AI-medium",
+				mode = "vsai",
+				result = "win",
+				duration_seconds = 178,
+				player_name = "Player",
+			},
+			{
+				date = "2026-05-30",
+				opponent = "Player 2",
+				mode = "twoplayer",
+				result = "draw",
+				duration_seconds = 410,
+				player_name = "Player",
+			},
+		}
+		for _, entry in ipairs(sampleGames) do
+			MatchHistory.record(entry, seedIO)
+		end
+		-- Override the default IO so the history screen reads from our seed
+		Game._scenarioHistoryIO = seedIO
+	end
+
 	Game.state = state
 	Game.hoveredTile = nil
 	Game.orbs = {}
