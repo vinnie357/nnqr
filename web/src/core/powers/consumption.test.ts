@@ -293,15 +293,20 @@ describe("scavenger: isScavenger consumed by moveTo (capture)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 7. beneficiary — isBeneficiary consumed by moveTo (capture of an allied
-// piece): beneficiary inherits allies' powers when they are captured/destroyed.
+// 7. beneficiary — capture-based transfer REMOVED (nnqr-42 parity fix).
 //
-// When an allied piece is captured by an enemy AND the current player has a
-// beneficiary, the beneficiary inherits the slain ally's powers.
+// The correct semantics (per research/quadradius/game_details/powers.md) are
+// activation-time transfer via activateBeneficiary() in effects.ts.  The old
+// capture-based path in board.ts moveTo was incorrect and has been removed.
+// These tests confirm that ordinary captures do NOT trigger power inheritance
+// regardless of whether any piece has the isBeneficiary flag set.
 // ---------------------------------------------------------------------------
 
-describe("beneficiary: isBeneficiary consumed by moveTo (ally captured by enemy)", () => {
-  it("beneficiary inherits powers of an allied piece captured by the enemy", () => {
+describe("beneficiary: capture-based transfer is ABSENT from moveTo", () => {
+  it("capturing an ally does NOT transfer powers to a piece with isBeneficiary", () => {
+    // Setup: player1 has a piece flagged isBeneficiary; player2 captures player1's ally.
+    // Under the old (wrong) behavior the beneficiary would inherit the ally's powers.
+    // Under the correct behavior nothing special happens during a capture.
     const beneficiary = makePiece("p1-b", 1, 1, 1, [], { isBeneficiary: true } as Partial<Piece>);
     const ally = makePiece("p1-a", 1, 4, 6, ["bomb", "relocate"]);
     const enemy = makePiece("e1", 2, 4, 5, []);
@@ -313,14 +318,14 @@ describe("beneficiary: isBeneficiary consumed by moveTo (ally captured by enemy)
     });
     const next = moveTo(state, 4, 6);
     const benAfter = next.pieces.find((p) => p.id === "p1-b")!;
-    // The ally was player 1; beneficiary is player 1 — should inherit ally's powers
-    expect(benAfter.powers).toContain("bomb");
-    expect(benAfter.powers).toContain("relocate");
-    // Ally is gone
+    // Capture should NOT trigger power inheritance via moveTo any more
+    expect(benAfter.powers).not.toContain("bomb");
+    expect(benAfter.powers).not.toContain("relocate");
+    // Ally is gone (capture still happens normally)
     expect(next.pieces.find((p) => p.id === "p1-a")).toBeUndefined();
   });
 
-  it("beneficiary does NOT inherit powers when a non-allied piece is captured", () => {
+  it("capturing an enemy does not grant powers to a piece with isBeneficiary", () => {
     const beneficiary = makePiece("p1-b", 1, 1, 1, [], { isBeneficiary: true } as Partial<Piece>);
     const enemy = makePiece("e1", 2, 4, 6, ["bomb"]);
     const attacker = makePiece("p1", 1, 4, 5, []);
@@ -330,7 +335,6 @@ describe("beneficiary: isBeneficiary consumed by moveTo (ally captured by enemy)
       selected: { row: 4, col: 5 },
       validMoves: [{ row: 4, col: 6, capture: true }],
     });
-    // Player 1 captures an enemy: beneficiary should NOT get the enemy's powers
     const next = moveTo(state, 4, 6);
     const benAfter = next.pieces.find((p) => p.id === "p1-b")!;
     expect(benAfter.powers).not.toContain("bomb");

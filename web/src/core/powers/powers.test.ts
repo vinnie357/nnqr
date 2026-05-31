@@ -5,6 +5,7 @@ import { createHeightMap, getHeight, MAX_HEIGHT } from "../height";
 import type { GameState, Piece, Player } from "../types";
 import { definitions, POWER_IDS } from "./definitions";
 import {
+  activateBeneficiary,
   activateBomb,
   activateDestroyRadial,
   activateDestroyRow,
@@ -338,7 +339,81 @@ describe("immutability", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 10. execute() returns state unchanged for unknown power id
+// 10. beneficiary effect: immediate activation-time squad transfer (correct semantics)
+// ---------------------------------------------------------------------------
+
+describe("beneficiary effect", () => {
+  it("transfers all powers from other same-player pieces to the activator", () => {
+    // Activator has 1 power; donor1 has [a, b]; donor2 has [c]; donor3 has []
+    const activator = makePiece("p1", 1, 1, 1, ["beneficiary"]);
+    const donor1 = makePiece("d1", 1, 2, 1, ["destroy_row", "bomb"]);
+    const donor2 = makePiece("d2", 1, 3, 1, ["relocate"]);
+    const donor3 = makePiece("d3", 1, 4, 1, []);
+    const enemy = makePiece("e1", 2, 5, 1, ["jump_proof"]); // opponent — untouched
+    const state = baseState({ pieces: [activator, donor1, donor2, donor3, enemy] });
+
+    const next = activateBeneficiary(state, activator);
+
+    const updated = next.pieces.find((p) => p.id === "p1")!;
+    // Activator gains donor powers; beneficiary power itself is consumed
+    expect(updated.powers).not.toContain("beneficiary");
+    expect(updated.powers).toContain("destroy_row");
+    expect(updated.powers).toContain("bomb");
+    expect(updated.powers).toContain("relocate");
+  });
+
+  it("empties the power inventory of every other same-player piece", () => {
+    const activator = makePiece("p1", 1, 1, 1, ["beneficiary"]);
+    const donor1 = makePiece("d1", 1, 2, 1, ["destroy_row", "bomb"]);
+    const donor2 = makePiece("d2", 1, 3, 1, ["relocate"]);
+    const state = baseState({ pieces: [activator, donor1, donor2] });
+
+    const next = activateBeneficiary(state, activator);
+
+    const d1After = next.pieces.find((p) => p.id === "d1")!;
+    const d2After = next.pieces.find((p) => p.id === "d2")!;
+    expect(d1After.powers).toHaveLength(0);
+    expect(d2After.powers).toHaveLength(0);
+  });
+
+  it("does not touch opponent pieces", () => {
+    const activator = makePiece("p1", 1, 1, 1, ["beneficiary"]);
+    const enemy = makePiece("e1", 2, 2, 1, ["bomb"]);
+    const state = baseState({ pieces: [activator, enemy] });
+
+    const next = activateBeneficiary(state, activator);
+
+    const enemyAfter = next.pieces.find((p) => p.id === "e1")!;
+    expect(enemyAfter.powers).toContain("bomb");
+  });
+
+  it("consumes the beneficiary power from the activator", () => {
+    const activator = makePiece("p1", 1, 1, 1, ["beneficiary", "bomb"]);
+    const state = baseState({ pieces: [activator] });
+
+    const next = activateBeneficiary(state, activator);
+
+    const updated = next.pieces.find((p) => p.id === "p1")!;
+    expect(updated.powers).not.toContain("beneficiary");
+    expect(updated.powers).toContain("bomb"); // retains own existing powers
+  });
+
+  it("activator retains its own non-beneficiary powers alongside gained ones", () => {
+    const activator = makePiece("p1", 1, 1, 1, ["beneficiary", "bomb"]);
+    const donor = makePiece("d1", 1, 2, 1, ["relocate"]);
+    const state = baseState({ pieces: [activator, donor] });
+
+    const next = activateBeneficiary(state, activator);
+
+    const updated = next.pieces.find((p) => p.id === "p1")!;
+    expect(updated.powers).toContain("bomb");
+    expect(updated.powers).toContain("relocate");
+    expect(updated.powers).not.toContain("beneficiary");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 11. execute() returns state unchanged for unknown power id
 // ---------------------------------------------------------------------------
 
 describe("execute with unknown power", () => {

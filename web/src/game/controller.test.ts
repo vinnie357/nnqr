@@ -116,3 +116,91 @@ describe("GameController – AI power activation is applied", () => {
     expect(latest.currentPlayer).toBe(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// nnqr-44: AI power-then-move (power AND a subsequent move in same turn)
+// ---------------------------------------------------------------------------
+describe("GameController – AI activates power THEN makes a move (nnqr-44)", () => {
+  it("AI activates destroy_row AND then also moves its piece — both effects in one turn", () => {
+    // Setup: AI (player 2) piece at (4,1) has destroy_row. Two p1 enemies in row 4
+    // (cols 8, 9) trigger the destroy_row condition. There is also a p1 piece at
+    // (1,1) so the game doesn't end. After destroy_row fires, the AI piece should
+    // ALSO have moved (not stayed at 4,1).
+    const initial = makeState(
+      [
+        { row: 4, col: 8 },
+        { row: 4, col: 9 },
+        { row: 1, col: 1 }, // off-row survivor so game continues
+      ],
+      [{ row: 4, col: 1, extra: { powers: ["destroy_row"] } }],
+      { currentPlayer: 2 },
+    );
+
+    let latest: GameState = initial;
+    const controller = new GameController(initial, "vsai", "medium", (s) => {
+      latest = s.game;
+    });
+
+    controller.runAiTurnNow();
+
+    // Power must have fired: 2 row-4 enemies gone.
+    const enemiesAfter = latest.pieces.filter((p) => p.player === 1).length;
+    expect(enemiesAfter).toBe(1);
+
+    // The AI piece must also have moved (power + move in same turn).
+    const aiPiece = latest.pieces.find((p) => p.player === 2);
+    expect(aiPiece).toBeDefined();
+    const didMove = aiPiece!.row !== 4 || aiPiece!.col !== 1;
+    expect(didMove).toBe(true);
+
+    // Turn must still have passed to the human.
+    expect(latest.currentPlayer).toBe(1);
+  });
+
+  it("turn passes to opponent exactly once — no multi-turn runaway", () => {
+    // Even after power+move, the turn flips exactly once to the human (player 1).
+    const initial = makeState(
+      [
+        { row: 4, col: 8 },
+        { row: 4, col: 9 },
+        { row: 1, col: 1 },
+      ],
+      [{ row: 4, col: 1, extra: { powers: ["destroy_row"] } }],
+      { currentPlayer: 2 },
+    );
+
+    let callCount = 0;
+    let latest: GameState = initial;
+    const controller = new GameController(initial, "vsai", "medium", (s) => {
+      latest = s.game;
+      callCount++;
+    });
+
+    controller.runAiTurnNow();
+
+    // currentPlayer should be 1 (human) — AI's turn ended.
+    expect(latest.currentPlayer).toBe(1);
+    // onChange was called (at least once); game status still playing (game not won with 1 p1 piece).
+    expect(latest.status).toBe("playing");
+  });
+
+  it("when AI has no worthwhile power, it just moves (unchanged behavior)", () => {
+    // No powers — AI should still make a valid move.
+    const initial = makeState(
+      [{ row: 7, col: 7 }],
+      [{ row: 4, col: 4 }],
+      { currentPlayer: 2 },
+    );
+
+    let latest: GameState = initial;
+    const controller = new GameController(initial, "vsai", "medium", (s) => {
+      latest = s.game;
+    });
+
+    controller.runAiTurnNow();
+
+    const aiPiece = latest.pieces.find((p) => p.player === 2)!;
+    expect(aiPiece.row !== 4 || aiPiece.col !== 4).toBe(true);
+    expect(latest.currentPlayer).toBe(1);
+  });
+});

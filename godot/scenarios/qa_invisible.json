@@ -1,0 +1,27 @@
+{
+	"_comment": "qa_invisible.json — nnqr-43 visual QA: is_invisible render convention. P1 piece at (3,4) is flagged is_invisible=true. P2 piece at (6,7) is flagged is_invisible=true. P1 piece at (2,2) and P2 piece at (7,8) are normal (visible). With _viewer_player==0 (default see-harness mode) all invisible pieces render as ghost outlines with a '?' label. Expected visuals: (1) P1 at (3,4) and P2 at (6,7) both show as faint ghost circles with '?' instead of solid tokens. (2) P1 at (2,2) and P2 at (7,8) render normally. No inputs — static visual state.",
+	"current_player": 1,
+	"turn": 5,
+	"status": "playing",
+	"winner": 0,
+	"seed": 17,
+	"pieces": [
+		{"id": "p1-normal", "player": 1, "row": 2, "col": 2, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p1-invis", "player": 1, "row": 3, "col": 4, "powers": ["invisible"], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": true},
+		{"id": "p2-normal", "player": 2, "row": 7, "col": 8, "powers": [], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": false},
+		{"id": "p2-invis", "player": 2, "row": 6, "col": 7, "powers": ["invisible"], "is_jump_proof": false, "can_move_diagonally": false, "can_climb_any": false, "can_wrap": false, "is_invisible": true}
+	],
+	"height_map": [
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0]
+	],
+	"destroyed_tiles": {},
+	"orbs": [],
+	"inputs": []
+}

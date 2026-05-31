@@ -313,6 +313,84 @@ func _init() -> void:
 		"move_again winning: current_player un-flip skipped when status==won", fails)
 
 	# ------------------------------------------------------------------
+	# nnqr-44: AI power-then-move — power activates AND piece also moves
+	#   in the same turn.
+	# Setup: AI (player 2) piece at (4,1) has destroy_row.
+	#   Two p1 enemies at (4,7) and (4,8) → trigger condition (≥2 enemies,
+	#   no allies in row 4). p1 also has a piece at (1,1) so the game does
+	#   not end from the power alone.
+	# Expected:
+	#   (a) Both row-4 p1 pieces are gone (power fired).
+	#   (b) The AI piece has moved (not still at (4,1)).
+	#   (c) current_player is now 1 (turn passed).
+	# ------------------------------------------------------------------
+	var s_pwr_move := GameState.new()
+	s_pwr_move.current_player = 2
+	s_pwr_move.turn = 0
+	s_pwr_move.status = "playing"
+	s_pwr_move.winner = 0
+	s_pwr_move.seed = 7
+	s_pwr_move.height_map = []
+	for _r44 in range(8):
+		var row44: Array = []
+		row44.resize(10)
+		row44.fill(0)
+		s_pwr_move.height_map.append(row44)
+	s_pwr_move.destroyed_tiles = {}
+	s_pwr_move.orbs = []
+	s_pwr_move.selected = null
+	s_pwr_move.valid_moves = []
+	# p1 pieces: two in row 4 (targets for destroy_row), one safe at (1,1)
+	var pp1a := GameState.Piece.new("p1-r4a", 1, 4, 7)
+	var pp1b := GameState.Piece.new("p1-r4b", 1, 4, 8)
+	var pp1c := GameState.Piece.new("p1-safe", 1, 1, 1)
+	# p2 piece: has destroy_row, located at (4,1) — same row as enemies
+	var pp2 := GameState.Piece.new("p2-dr", 2, 4, 1)
+	pp2.powers = ["destroy_row"]
+	s_pwr_move.pieces = [pp1a, pp1b, pp1c, pp2]
+
+	var rng44 := RNG.new(7)
+	var ai_pwr_next: GameState = Controller.ai_take_turn(s_pwr_move, "medium", rng44)
+
+	# (a) Both row-4 p1 pieces should be destroyed.
+	var row4_survivors: int = 0
+	for p44: GameState.Piece in ai_pwr_next.pieces:
+		if p44.player == 1 and p44.row == 4:
+			row4_survivors += 1
+	_assert(row4_survivors == 0,
+		"nnqr-44 power+move: row-4 p1 pieces destroyed by destroy_row", fails)
+
+	# (b) The AI piece must have moved from (4,1).
+	var ai_piece_pos_ok := false
+	for p44: GameState.Piece in ai_pwr_next.pieces:
+		if p44.player == 2:
+			if p44.row != 4 or p44.col != 1:
+				ai_piece_pos_ok = true
+			break
+	_assert(ai_piece_pos_ok,
+		"nnqr-44 power+move: AI piece moved after activating power", fails)
+
+	# (c) Turn passed to player 1.
+	_assert(ai_pwr_next.current_player == 1 or ai_pwr_next.status == "won",
+		"nnqr-44 power+move: turn passed to player 1 after power+move", fails)
+
+	# ------------------------------------------------------------------
+	# nnqr-44: Turn passes exactly once (no multi-turn runaway).
+	# Verify turn counter incremented by 1 (not 2).
+	# ------------------------------------------------------------------
+	_assert(ai_pwr_next.turn == s_pwr_move.turn + 1,
+		"nnqr-44: turn incremented by exactly 1 (power+move = one turn)", fails)
+
+	# ------------------------------------------------------------------
+	# nnqr-44: When AI has no worthwhile power, it just moves (no change).
+	# ------------------------------------------------------------------
+	var s_no_pwr := _ai_state()
+	var rng_np := RNG.new(99)
+	var ai_no_pwr: GameState = Controller.ai_take_turn(s_no_pwr, "easy", rng_np)
+	_assert(ai_no_pwr.current_player == 1 or ai_no_pwr.status == "won",
+		"nnqr-44 no-power: normal move still works", fails)
+
+	# ------------------------------------------------------------------
 	# Results
 	# ------------------------------------------------------------------
 	if fails[0] == 0:

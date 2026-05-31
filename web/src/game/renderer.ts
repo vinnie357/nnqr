@@ -52,6 +52,10 @@ const C = {
   overheatWarning: 0xff4422,
   heightBar0: 0x2a2f3e,
   heightBar4: 0x5a6080,
+  // nnqr-43: render-layer power consumers
+  spyBg: 0x9933ee,        // tint ring behind a powers_revealed enemy piece
+  invisibleFill: 0xffffff, // ghost fill for an opponent's invisible piece
+  orbLabel: 0x331100,     // text colour for revealed orb power_id label
 };
 
 // ---------------------------------------------------------------------------
@@ -88,15 +92,54 @@ function drawHeightBar(g: Phaser.GameObjects.Graphics, x: number, y: number, hei
   g.fillRect(barX, barY, fillW, barH);
 }
 
+// Extended piece type used by nnqr-43 render features.
+// powersRevealed and isInvisible are dynamic flags set by effects.ts on the piece object.
+type ExtPiece = Piece & {
+  powersRevealed?: boolean;
+};
+
 function drawPiece(
   g: Phaser.GameObjects.Graphics,
-  piece: Piece,
+  scene: Phaser.Scene,
+  revealLabels: Phaser.GameObjects.Group,
+  piece: ExtPiece,
   selected: boolean,
+  viewerPlayer: 1 | 2 | 0 = 0,
 ): void {
   const { x, y } = tileXY(piece.row, piece.col);
   const cx = x + TILE / 2;
   const cy = y + TILE / 2;
   const r = TILE / 2 - 8;
+
+  // nnqr-43: is_invisible — ghost rendering for an opponent's invisible piece.
+  // Convention: in single-screen (hotseat) play both players share the same
+  // viewport.  We cannot fully hide either player's piece.  Instead we render
+  // invisible pieces owned by the OPPONENT (relative to viewerPlayer) as a
+  // faint ghost circle with a "?" label.  viewerPlayer==0 means "show all as
+  // ghost" (used by QA scripts that render the full board state).
+  const isInvis = !!piece.isInvisible;
+  const isOpponentInvis = isInvis && (viewerPlayer === 0 || viewerPlayer !== piece.player);
+  if (isOpponentInvis) {
+    // Ghost: thin outline + very faint fill, no solid circle.
+    const strokeColor = piece.player === 1 ? C.p1Dark : C.p2Dark;
+    g.lineStyle(1, strokeColor, 0.35);
+    g.strokeCircle(cx, cy, r);
+    g.fillStyle(C.invisibleFill, 0.10);
+    g.fillCircle(cx, cy, r - 1);
+    // "?" label centred on the ghost circle.
+    revealLabels.add(scene.add.text(cx, cy, "?", {
+      fontFamily: "system-ui, sans-serif",
+      fontSize: "12px",
+      color: "rgba(255,255,255,0.45)",
+    }).setOrigin(0.5));
+    return; // Skip normal rendering.
+  }
+
+  // nnqr-43: powers_revealed — draw a purple tint ring behind the piece.
+  if (piece.powersRevealed) {
+    g.fillStyle(C.spyBg, 0.35);
+    g.fillCircle(cx, cy, r + 4);
+  }
 
   const color = pieceColor(piece.player);
   g.fillStyle(color, 1);
@@ -123,9 +166,22 @@ function drawPiece(
     const badgeColor = maxCount >= 7 ? C.overheatWarning : C.orb;
     g.fillStyle(badgeColor, 1);
     g.fillCircle(cx + r - 3, cy - r + 3, 5);
+  }
 
-    // Show count if > 1.
-    // (Text is added separately in the scene layer.)
+  // nnqr-43: powers_revealed label — show the enemy's power inventory below the piece.
+  if (piece.powersRevealed && piece.powers.length > 0) {
+    const firstPow = piece.powers[0]!;
+    const label = piece.powers.length > 1 ? `${firstPow} +${piece.powers.length - 1}` : firstPow;
+    // Small text beneath the piece token.
+    const lx = x;
+    const ly = y + TILE - 14;
+    revealLabels.add(scene.add.text(lx, ly, label, {
+      fontFamily: "system-ui, monospace",
+      fontSize: "9px",
+      color: "#ffccff",
+      backgroundColor: "#330055cc",
+      padding: { x: 2, y: 1 },
+    }).setOrigin(0, 0));
   }
 }
 
@@ -142,6 +198,13 @@ export interface RenderTargets {
     aiIndicator: Phaser.GameObjects.Text;
     winBanner: Phaser.GameObjects.Text;
   };
+  /**
+   * nnqr-43: Group to hold ephemeral per-tile labels (revealed orb power_id,
+   * revealed enemy power list, invisible ghost label).  Cleared each frame so
+   * labels don't accumulate.  Created once in MainScene.create(); the renderer
+   * uses it for dynamic text overlays that vary with game state.
+   */
+  revealLabels: Phaser.GameObjects.Group;
 }
 
 export function renderFrame(
@@ -149,14 +212,16 @@ export function renderFrame(
   targets: RenderTargets,
 ): void {
   const { game, powerMode, aiThinking, mode, difficulty } = ctrl;
-  const { gfx, texts } = targets;
+  const { gfx, scene, texts, revealLabels } = targets;
   gfx.clear();
+  // Clear per-tile dynamic labels (reveal overlays) each frame so they don't pile up.
+  revealLabels.clear(true, true);
 
   renderBoard(gfx, game);
-  renderOrbs(gfx, game);
+  renderOrbs(gfx, scene, revealLabels, game);
   renderMoveMarkers(gfx, game);
   renderPowerTargets(gfx, powerMode);
-  renderPieces(gfx, game);
+  renderPieces(gfx, scene, revealLabels, game);
 
   renderStatusText(texts.status, game, aiThinking, mode, difficulty);
   renderPowerMenu(texts.powerMenu, game, powerMode, ctrl);
@@ -207,12 +272,21 @@ function renderBoard(g: Phaser.GameObjects.Graphics, game: GameState): void {
   }
 }
 
+// Extended orb type: orb_spy_* powers add `revealed: true` to the orb object.
+type ExtOrb = { row: number; col: number; powerId: string; revealed?: boolean };
+
 // ---------------------------------------------------------------------------
 // Orbs
 // ---------------------------------------------------------------------------
 
-function renderOrbs(g: Phaser.GameObjects.Graphics, game: GameState): void {
-  for (const orb of game.orbs) {
+function renderOrbs(
+  g: Phaser.GameObjects.Graphics,
+  scene: Phaser.Scene,
+  revealLabels: Phaser.GameObjects.Group,
+  game: GameState,
+): void {
+  for (const rawOrb of game.orbs) {
+    const orb = rawOrb as ExtOrb;
     const { x, y } = tileXY(orb.row, orb.col);
     const cx = x + TILE / 2;
     const cy = y + TILE / 2;
@@ -228,6 +302,17 @@ function renderOrbs(g: Phaser.GameObjects.Graphics, game: GameState): void {
     // White shine dot.
     g.fillStyle(0xffffff, 0.8);
     g.fillCircle(cx - 2, cy - 2, 2);
+
+    // nnqr-43: orb_spy_* powers set orb.revealed=true — show the power_id label.
+    if (orb.revealed) {
+      revealLabels.add(scene.add.text(cx, cy + 12, orb.powerId, {
+        fontFamily: "system-ui, monospace",
+        fontSize: "9px",
+        color: "#331100",
+        backgroundColor: "#ffe44dcc",
+        padding: { x: 2, y: 1 },
+      }).setOrigin(0.5, 0));
+    }
   }
 }
 
@@ -278,7 +363,13 @@ function renderPowerTargets(
 // Pieces
 // ---------------------------------------------------------------------------
 
-function renderPieces(g: Phaser.GameObjects.Graphics, game: GameState): void {
+function renderPieces(
+  g: Phaser.GameObjects.Graphics,
+  scene: Phaser.Scene,
+  revealLabels: Phaser.GameObjects.Group,
+  game: GameState,
+  viewerPlayer: 1 | 2 | 0 = 0,
+): void {
   const selectedId = game.selected
     ? game.pieces.find(
         (p) => p.row === game.selected!.row && p.col === game.selected!.col,
@@ -286,7 +377,7 @@ function renderPieces(g: Phaser.GameObjects.Graphics, game: GameState): void {
     : undefined;
 
   for (const piece of game.pieces) {
-    drawPiece(g, piece, piece.id === selectedId);
+    drawPiece(g, scene, revealLabels, piece as ExtPiece, piece.id === selectedId, viewerPlayer);
   }
 }
 
