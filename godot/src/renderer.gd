@@ -23,6 +23,13 @@
 ##   - Height renders as visible elevation (side face, painter's depth order).
 ##   - pixel_to_tile inverts the iso transform (base-plane pick).
 ##
+## C7 enhancements (responsive layout):
+##   - Layout computed from live viewport size each _draw.
+##   - Board fills the available area (minus right power-menu strip + bottom HUD strip).
+##   - Reconnects on viewport size_changed to redraw on resize.
+##   - TILE_W clamped [24..120] for legibility.
+##   - Pieces sized proportionally (PIECE_RADIUS = TILE_W * 0.33).
+##
 ## Usage:
 ##   const Renderer = preload("res://src/renderer.gd")
 ##   var renderer = Renderer.new()
@@ -33,29 +40,23 @@ extends Node2D
 
 const Height = preload("res://src/height.gd")
 
-## Legacy TILE constant kept for power_menu.gd layout compatibility.
-## power_menu.gd uses Renderer.TILE to compute BOARD_W (10*TILE) and MENU_X.
-## With the iso board the horizontal half-step is TILE_W/2 = 32 = old TILE/2,
-## but the board pixel width is (cols + rows)*TILE_W/2 = 576 rather than 10*TILE.
-## We keep TILE=56 so that MENU_X = MARGIN + 10*TILE + 16 = 40+560+16 = 616
-## which sits safely to the right of the iso board (rightmost tile tip ≈ 584).
-const TILE: int = 56           ## legacy constant — kept for power_menu layout
-const MARGIN: int = 40         ## px border / iso origin_y base
+## Board dimensions (board cols x rows: 10 wide, 8 tall).
+const BOARD_COLS: int = 10
+const BOARD_ROWS: int = 8
 
-## Isometric tile dimensions.
-const TILE_W: int = 64         ## full diamond width  (half-step = 32)
-const TILE_H: int = 32         ## full diamond height (half-step = 16)
-const HEIGHT_STEP: int = 12    ## px of vertical lift per height level
+## Strips reserved for the power menu (right) and HUD (bottom), in px.
+const MENU_STRIP_W: int = 240   ## right strip for power menu
+const HUD_STRIP_H: int  = 70    ## bottom strip for HUD text
+const BOARD_MARGIN: int = 20    ## inset margin around the board within its area
 
-## Iso origin: the screen point where tile (row=0, col=0) would sit (virtual).
-## Board uses 1-indexed rows/cols (1..8, 1..10).
-## origin_x chosen so leftmost board edge (col=1,row=8) lands at ≥ MARGIN.
-## Leftmost tip offset from origin: (1-8)*(TILE_W/2) = -7*32 = -224.
-## → origin_x = MARGIN + 224 = 264.  Add a bit of breathing room: 280.
-const ISO_ORIGIN_X: int = 280
-const ISO_ORIGIN_Y: int = 40   ## top of board rows
+## TILE_W clamping range (px, full diamond width).
+const TILE_W_MIN: int = 24
+const TILE_W_MAX: int = 120
 
-const PIECE_RADIUS: float = 14.0
+## Legacy TILE constant kept only so external scripts that import Renderer.TILE
+## continue to compile.  power_menu.gd now positions itself from the viewport
+## directly and no longer reads this field.
+const TILE: int = 56
 
 # ---------------------------------------------------------------------------
 # Color palette (mirroring web renderer.ts / targets.ts)
@@ -85,11 +86,40 @@ const COL_MODE_LABEL  := Color(0.800, 0.850, 0.950, 0.85)  ## mode/difficulty la
 var _state                = null           ## GameState
 var _power_target_tiles: Array = []        ## [{row,col}] for purple highlight
 
-
 ## Optional HUD extras, set via load_state. Keys (all optional):
 ##   ai_thinking:bool, mode:String ("hotseat"|"vsai"), difficulty:String.
 ## Empty {} (the default) reproduces the original HUD — scenario_runner relies on this.
 var _hud_info: Dictionary = {}
+
+# ---------------------------------------------------------------------------
+# Computed layout vars — updated by _compute_layout() before each draw.
+# ---------------------------------------------------------------------------
+
+## Computed each draw from viewport size.  Do NOT read these as compile-time constants.
+var _tile_w: float     = 64.0   ## full diamond width
+var _tile_h: float     = 32.0   ## full diamond height (= _tile_w / 2)
+var _height_step: float = 12.0  ## px vertical lift per height level
+var _origin_x: float   = 280.0  ## iso projection origin x
+var _origin_y: float   = 40.0   ## iso projection origin y
+var _piece_radius: float = 14.0 ## piece token radius
+## Power menu left edge and top — used by power_menu.gd via get_menu_x() / get_menu_y().
+var _menu_x: float = 600.0
+var _menu_y: float = 20.0
+
+
+func _enter_tree() -> void:
+	# Connect viewport resize so the board stays filled when the window changes.
+	get_viewport().size_changed.connect(_on_viewport_resized)
+
+
+func _exit_tree() -> void:
+	if get_viewport().size_changed.is_connected(_on_viewport_resized):
+		get_viewport().size_changed.disconnect(_on_viewport_resized)
+
+
+func _on_viewport_resized() -> void:
+	queue_redraw()
+
 
 ## Set or replace the state and request a redraw.
 ## hud_info carries HUD extras (piece counts are derived from state directly).
@@ -105,6 +135,95 @@ func set_power_target_tiles(tiles: Array) -> void:
 	queue_redraw()
 
 
+## Public accessors for power_menu.gd to read computed layout.
+func get_menu_x() -> float:
+	return _menu_x
+
+func get_menu_y() -> float:
+	return _menu_y
+
+
+# ---------------------------------------------------------------------------
+# Responsive layout computation
+# ---------------------------------------------------------------------------
+
+## Compute tile size and iso origin from the current viewport size.
+## Called at the start of _draw so all draw helpers use fresh values.
+## Also prints layout info so the lead can sanity-check the math from CLI output.
+func _compute_layout() -> void:
+	var vp_size: Vector2 = get_viewport_rect().size
+	var vp_w: float = vp_size.x
+	var vp_h: float = vp_size.y
+
+	# Board area excludes the right menu strip and the bottom HUD strip.
+	var avail_w: float = vp_w - float(MENU_STRIP_W) - float(BOARD_MARGIN) * 2.0
+	var avail_h: float = vp_h - float(HUD_STRIP_H) - float(BOARD_MARGIN) * 2.0
+
+	# The iso diamond spans:
+	#   width  = (cols + rows) * (TILE_W / 2)
+	#   height = (cols + rows) * (TILE_H / 2)  + max_height * HEIGHT_STEP  [elevation]
+	# With TILE_H = TILE_W / 2 the height equation becomes:
+	#   height = (cols + rows) * (TILE_W / 4) + 4 * HEIGHT_STEP_effective
+	#
+	# We solve for TILE_W that makes the diamond fit in (avail_w, avail_h):
+	#   TILE_W <= avail_w * 2 / (cols + rows)           [width constraint]
+	#   TILE_W <= avail_h * 4 / (cols + rows)  (approx, ignoring small elevation term)
+	#
+	# HEIGHT_STEP is proportional to TILE_H = TILE_W/2, so the elevation term is small
+	# relative to the diamond body; we use the simpler height constraint for the initial
+	# tile size and accept a ~5% overestimate that we cover with BOARD_MARGIN.
+
+	var n: float = float(BOARD_COLS + BOARD_ROWS)   # = 18 for 10x8 board
+	var tw_from_w: float = avail_w * 2.0 / n
+	var tw_from_h: float = avail_h * 4.0 / n
+	var tile_w_raw: float = minf(tw_from_w, tw_from_h)
+	_tile_w = clampf(floor(tile_w_raw), float(TILE_W_MIN), float(TILE_W_MAX))
+	_tile_h = _tile_w / 2.0
+	_height_step = _tile_h * 0.375   ## ~HEIGHT_STEP/TILE_H ratio from original (12/32 ≈ 0.375)
+	_piece_radius = _tile_w * 0.33
+
+	# Diamond pixel extents at this tile size.
+	var diamond_w: float = n * _tile_w / 2.0
+	var diamond_h: float = n * _tile_h / 2.0 + 4.0 * _height_step  # +max elevation headroom
+
+	# Center the board within the available area (top-left corner = BOARD_MARGIN).
+	var board_area_left: float = float(BOARD_MARGIN)
+	var board_area_top: float  = float(BOARD_MARGIN)
+	var board_area_w: float    = avail_w
+	var board_area_h: float    = avail_h
+
+	# The iso origin is the virtual point where (row=0, col=0) would project.
+	# With 1-indexed board (rows 1..8, cols 1..10):
+	#   leftmost tip  = origin_x + (1 - 8) * (TILE_W/2)  = origin_x - 3.5 * TILE_W
+	#   rightmost tip = origin_x + (10 - 1) * (TILE_W/2) = origin_x + 4.5 * TILE_W
+	#   topmost tip   = origin_y + (1 + 1) * (TILE_H/2)  = origin_y + TILE_H
+	#   bottommost tip= origin_y + (8 + 10) * (TILE_H/2) = origin_y + 9 * TILE_H (base)
+	#
+	# Diamond x spans from (origin_x - 3.5 * TILE_W) to (origin_x + 4.5 * TILE_W).
+	# We want the diamond centered in board_area:
+	#   center_x = board_area_left + board_area_w/2
+	#   origin_x = center_x + 0.5 * TILE_W   [because midpoint = (left+right)/2 = origin_x + 0.5*TILE_W]
+	var hw: float = _tile_w / 2.0
+	var hh: float = _tile_h / 2.0
+	var board_center_x: float = board_area_left + board_area_w / 2.0
+	# x midpoint of the diamond = origin_x + (col_mid - row_mid) * hw
+	# col_mid = (1+10)/2 = 5.5, row_mid = (1+8)/2 = 4.5 → col_mid - row_mid = 1.0
+	_origin_x = board_center_x - 1.0 * hw
+
+	# y: topmost tile is (row=1,col=1): origin_y + (1+1)*hh = origin_y + 2*hh
+	# We want that to land at board_area_top:
+	_origin_y = board_area_top - 2.0 * hh
+
+	# Power menu: right strip.
+	_menu_x = vp_w - float(MENU_STRIP_W) + 8.0
+	_menu_y = float(BOARD_MARGIN)
+
+	# Print layout for lead verification (visible in CLI output).
+	print("Renderer layout: vp=%.0fx%.0f  TILE_W=%.0f  TILE_H=%.0f  HEIGHT_STEP=%.1f  origin=(%.0f,%.0f)  piece_r=%.1f  menu_x=%.0f" % [
+		vp_w, vp_h, _tile_w, _tile_h, _height_step, _origin_x, _origin_y, _piece_radius, _menu_x
+	])
+
+
 # ---------------------------------------------------------------------------
 # Isometric projection helpers
 # ---------------------------------------------------------------------------
@@ -112,16 +231,16 @@ func set_power_target_tiles(tiles: Array) -> void:
 ## Compute the screen position of the TOP FACE CENTER of an iso tile.
 ## row/col are 1-indexed.  height shifts the tile upward.
 func tile_iso_center(row: int, col: int, h: int) -> Vector2:
-	var x := float(ISO_ORIGIN_X) + float(col - row) * float(TILE_W / 2)
-	var y := float(ISO_ORIGIN_Y) + float(col + row) * float(TILE_H / 2) - float(h) * float(HEIGHT_STEP)
+	var x := _origin_x + float(col - row) * (_tile_w / 2.0)
+	var y := _origin_y + float(col + row) * (_tile_h / 2.0) - float(h) * _height_step
 	return Vector2(x, y)
 
 
 ## Return the four corners of the top-face diamond for a tile at the given iso center.
 ## Order: top, right, bottom, left.
 func _diamond(cx: float, cy: float) -> PackedVector2Array:
-	var hw: float = float(TILE_W) / 2.0
-	var hh: float = float(TILE_H) / 2.0
+	var hw: float = _tile_w / 2.0
+	var hh: float = _tile_h / 2.0
 	var pts := PackedVector2Array()
 	pts.append(Vector2(cx,        cy - hh))  # top
 	pts.append(Vector2(cx + hw,   cy))       # right
@@ -130,13 +249,12 @@ func _diamond(cx: float, cy: float) -> PackedVector2Array:
 	return pts
 
 
-## Legacy top-left helper — kept for internal use only; not used for iso drawing.
-## Kept so pixel_to_tile callers referencing this indirectly still compile.
+## Legacy top-left helper — kept for any callers that reference it indirectly.
 func tile_top_left(row: int, col: int) -> Vector2:
 	var h: int = 0
 	if _state != null:
 		h = Height.get_height(_state.height_map, row, col)
-	return tile_iso_center(row, col, h) - Vector2(float(TILE_W) / 2.0, float(TILE_H) / 2.0)
+	return tile_iso_center(row, col, h) - Vector2(_tile_w / 2.0, _tile_h / 2.0)
 
 
 ## Convenience: tile iso center using the current state's height_map.
@@ -148,16 +266,18 @@ func tile_center(row: int, col: int) -> Vector2:
 
 
 ## Map pixel position back to board tile using the base-plane inverse.
-## Ignores height for hit-testing (base-plane pick is acceptable per spec).
+## Inverts the same responsive transform used for drawing.
 ## Returns {"row":int,"col":int} or null.
 func pixel_to_tile(px: Vector2) -> Variant:
-	# Inverse of: iso_x = ISO_ORIGIN_X + (col - row) * (TILE_W/2)
-	#             iso_y = ISO_ORIGIN_Y + (col + row) * (TILE_H/2)
-	# (ignoring height offset)
-	var hw: float = float(TILE_W) / 2.0
-	var hh: float = float(TILE_H) / 2.0
-	var dx: float = (px.x - float(ISO_ORIGIN_X)) / hw  # = col - row
-	var dy: float = (px.y - float(ISO_ORIGIN_Y)) / hh  # = col + row
+	# Inverse of: iso_x = _origin_x + (col - row) * (_tile_w/2)
+	#             iso_y = _origin_y + (col + row) * (_tile_h/2)
+	# (ignoring height offset — base-plane pick)
+	var hw: float = _tile_w / 2.0
+	var hh: float = _tile_h / 2.0
+	if hw <= 0.0 or hh <= 0.0:
+		return null
+	var dx: float = (px.x - _origin_x) / hw  # = col - row
+	var dy: float = (px.y - _origin_y) / hh  # = col + row
 	var col_f: float = (dx + dy) / 2.0
 	var row_f: float = (dy - dx) / 2.0
 	var c: int = int(floor(col_f)) + 1
@@ -189,6 +309,8 @@ static func _tile_color(row: int, col: int, h: int) -> Color:
 func _draw() -> void:
 	if _state == null:
 		return
+	# Recompute layout from live viewport size before drawing.
+	_compute_layout()
 	# Painter's order: iterate tiles by (row + col) ascending so back tiles
 	# render first and front tiles occlude them correctly.
 	_draw_board_sorted()
@@ -250,8 +372,8 @@ func _draw_board_sorted() -> void:
 
 ## Draw one isometric tile (top face + optional side face for elevated tiles).
 func _draw_tile(r: int, c: int, h: int, ctr: Vector2) -> void:
-	var hw: float = float(TILE_W) / 2.0
-	var hh: float = float(TILE_H) / 2.0
+	var hw: float = _tile_w / 2.0
+	var hh: float = _tile_h / 2.0
 	var top_pts: PackedVector2Array = _diamond(ctr.x, ctr.y)
 
 	var is_destroyed: bool = _state.destroyed_tiles.has("%d,%d" % [r, c])
@@ -272,7 +394,7 @@ func _draw_tile(r: int, c: int, h: int, ctr: Vector2) -> void:
 	else:
 		# Side face (elevation): only when height > 0.
 		if h > 0:
-			var side_drop: float = float(h) * float(HEIGHT_STEP)
+			var side_drop: float = float(h) * _height_step
 			# Left side face (bottom-left of diamond drops down).
 			var left_face := PackedVector2Array()
 			left_face.append(top_pts[3])             # left tip of top face
@@ -304,8 +426,8 @@ func _draw_tile(r: int, c: int, h: int, ctr: Vector2) -> void:
 
 ## Draw a purple power-target highlight on the tile face center.
 func _draw_power_target_overlay(ctr: Vector2) -> void:
-	var hw: float = float(TILE_W) / 2.0 - 2.0
-	var hh: float = float(TILE_H) / 2.0 - 1.0
+	var hw: float = _tile_w / 2.0 - 2.0
+	var hh: float = _tile_h / 2.0 - 1.0
 	var pts := PackedVector2Array()
 	pts.append(Vector2(ctr.x,       ctr.y - hh))
 	pts.append(Vector2(ctr.x + hw,  ctr.y))
@@ -316,22 +438,25 @@ func _draw_power_target_overlay(ctr: Vector2) -> void:
 
 ## Draw a valid-move indicator at the tile face center.
 func _draw_valid_move(m: Dictionary, ctr: Vector2) -> void:
+	var dot_r: float = maxf(_tile_h / 2.0 - 4.0, 3.0)
 	if m.capture:
-		draw_arc(ctr, float(TILE_H) / 2.0 - 4.0, 0.0, TAU, 32, COL_MOVE_CAP, 3.0)
-		draw_line(Vector2(ctr.x - 7, ctr.y - 7), Vector2(ctr.x + 7, ctr.y + 7),
+		draw_arc(ctr, dot_r, 0.0, TAU, 32, COL_MOVE_CAP, 3.0)
+		var cross: float = minf(7.0, dot_r * 0.6)
+		draw_line(Vector2(ctr.x - cross, ctr.y - cross), Vector2(ctr.x + cross, ctr.y + cross),
 			Color(COL_MOVE_CAP.r, COL_MOVE_CAP.g, COL_MOVE_CAP.b, 0.7), 2.0)
-		draw_line(Vector2(ctr.x + 7, ctr.y - 7), Vector2(ctr.x - 7, ctr.y + 7),
+		draw_line(Vector2(ctr.x + cross, ctr.y - cross), Vector2(ctr.x - cross, ctr.y + cross),
 			Color(COL_MOVE_CAP.r, COL_MOVE_CAP.g, COL_MOVE_CAP.b, 0.7), 2.0)
 	else:
-		draw_circle(ctr, 7.0,
+		draw_circle(ctr, maxf(dot_r * 0.55, 3.0),
 			Color(COL_MOVE_EMPTY.r, COL_MOVE_EMPTY.g, COL_MOVE_EMPTY.b, 0.85))
 
 
 ## Draw an orb marker at the tile face center.
 func _draw_orb(ctr: Vector2) -> void:
-	draw_circle(ctr, 12.0, Color(COL_ORB.r, COL_ORB.g, COL_ORB.b, 0.25))
-	draw_circle(ctr, 7.0, COL_ORB)
-	draw_circle(Vector2(ctr.x - 2, ctr.y - 2), 2.0, Color(1, 1, 1, 0.8))
+	var orb_r: float = maxf(_tile_w * 0.19, 5.0)
+	draw_circle(ctr, orb_r * 1.7, Color(COL_ORB.r, COL_ORB.g, COL_ORB.b, 0.25))
+	draw_circle(ctr, orb_r, COL_ORB)
+	draw_circle(Vector2(ctr.x - orb_r * 0.28, ctr.y - orb_r * 0.28), orb_r * 0.28, Color(1, 1, 1, 0.8))
 
 
 ## Draw a piece token sitting on its tile surface.
@@ -346,13 +471,16 @@ func _draw_piece(piece: Variant, ctr: Vector2) -> void:
 		_state.selected.col == piece.col
 	)
 
-	draw_circle(ctr, PIECE_RADIUS + 2.0, outline)
-	draw_circle(ctr, PIECE_RADIUS, fill)
+	# Piece sits on the tile — draw as a slightly flattened token (ellipse via scaled circle).
+	# We use draw_circle for simplicity (Godot 4 built-in ellipse not available here).
+	var pr: float = _piece_radius
+	draw_circle(ctr, pr + 2.0, outline)
+	draw_circle(ctr, pr, fill)
 
 	if is_sel:
-		draw_arc(ctr, PIECE_RADIUS + 5.0, 0.0, TAU, 48, COL_SEL_OUTLINE, 3.0)
+		draw_arc(ctr, pr + 5.0, 0.0, TAU, 48, COL_SEL_OUTLINE, 3.0)
 
-	# Power badge.
+	# Power badge — positioned at upper-right of the token.
 	if piece.powers.size() > 0:
 		var max_count := 0
 		for pw: String in piece.powers:
@@ -363,18 +491,16 @@ func _draw_piece(piece: Variant, ctr: Vector2) -> void:
 			if cnt > max_count:
 				max_count = cnt
 		var badge_col := COL_BADGE_WARN if max_count >= 7 else COL_BADGE_NORM
+		var badge_r: float = maxf(pr * 0.35, 3.5)
 		draw_circle(
-			Vector2(ctr.x + PIECE_RADIUS - 3.0, ctr.y - PIECE_RADIUS + 3.0),
-			5.0, badge_col)
+			Vector2(ctr.x + pr - badge_r, ctr.y - pr + badge_r),
+			badge_r, badge_col)
 
 
 func _draw_hud() -> void:
-	# Place HUD below the iso board.
-	# Bottom-most tile tip: row=8, col=1 (or row=1, col=10 — same depth sum).
-	# Deepest tile center y (base, h=0): ISO_ORIGIN_Y + (8+10)*(TILE_H/2) = 40 + 18*16 = 328.
-	# Add TILE_H/2 for diamond bottom tip + a few px gap.
-	var board_bottom: float = float(ISO_ORIGIN_Y) + float(_state.rows + _state.cols) * float(TILE_H) / 2.0 + 12.0
-	var y: float = board_bottom + 16.0
+	var vp_h: float = get_viewport_rect().size.y
+	# HUD text sits in the reserved bottom strip.
+	var y: float = vp_h - float(HUD_STRIP_H) + 20.0
 
 	# Line 1: turn + current player.
 	var label: String
@@ -384,7 +510,7 @@ func _draw_hud() -> void:
 		label = "Turn %d — Player %d to move" % [_state.turn, _state.current_player]
 	draw_string(
 		ThemeDB.fallback_font,
-		Vector2(MARGIN, y),
+		Vector2(float(BOARD_MARGIN), y),
 		label,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
@@ -396,7 +522,7 @@ func _draw_hud() -> void:
 	if _state.status == "won":
 		return
 
-	# Line 2 (same y, offset right): piece counts.
+	# Line 2 (same y, 260px right): piece counts P1: N  P2: N
 	var p1_count: int = 0
 	var p2_count: int = 0
 	for piece in _state.pieces:
@@ -407,7 +533,7 @@ func _draw_hud() -> void:
 	var counts_label: String = "P1: %d   P2: %d" % [p1_count, p2_count]
 	draw_string(
 		ThemeDB.fallback_font,
-		Vector2(320, y),
+		Vector2(float(BOARD_MARGIN) + 260.0, y),
 		counts_label,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
@@ -434,7 +560,7 @@ func _draw_hud() -> void:
 			think_label = "%s  |  AI thinking…" % mode_text
 		draw_string(
 			ThemeDB.fallback_font,
-			Vector2(MARGIN, y + 22.0),
+			Vector2(float(BOARD_MARGIN), y + 22.0),
 			think_label,
 			HORIZONTAL_ALIGNMENT_LEFT,
 			-1,
@@ -444,7 +570,7 @@ func _draw_hud() -> void:
 	elif mode_text != "":
 		draw_string(
 			ThemeDB.fallback_font,
-			Vector2(MARGIN, y + 22.0),
+			Vector2(float(BOARD_MARGIN), y + 22.0),
 			mode_text,
 			HORIZONTAL_ALIGNMENT_LEFT,
 			-1,
@@ -458,9 +584,11 @@ func _draw_win_banner() -> void:
 		return
 	var bw := 340.0
 	var bh := 80.0
-	# Center banner on the iso board's visual center.
-	var board_cx: float = float(ISO_ORIGIN_X)
-	var board_cy: float = float(ISO_ORIGIN_Y) + float(_state.rows + _state.cols) * float(TILE_H) / 4.0
+	# Center banner on the iso board's computed visual center.
+	# Board center: origin + (col_mid - row_mid)*hw, origin + (col_mid + row_mid)*hh
+	# col_mid=5.5, row_mid=4.5 → diff=1, sum=10
+	var board_cx: float = _origin_x + 1.0 * (_tile_w / 2.0)
+	var board_cy: float = _origin_y + 10.0 * (_tile_h / 2.0)
 	draw_rect(Rect2(board_cx - bw / 2.0, board_cy - bh / 2.0, bw, bh), COL_WIN_BG)
 	var msg := "PLAYER %d WINS! (turn %d)" % [_state.winner, _state.turn]
 	draw_string(

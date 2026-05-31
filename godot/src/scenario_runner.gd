@@ -36,6 +36,10 @@ var _menu: Node2D = null
 
 
 func _ready() -> void:
+	# Apply optional --size WxH override before rendering so captures are at
+	# the requested resolution.  This lets the lead validate fill at multiple sizes.
+	_apply_size_arg()
+
 	_renderer = Renderer.new()
 	add_child(_renderer)
 
@@ -52,12 +56,39 @@ func _ready() -> void:
 
 	_menu = PowerMenu.new()
 	add_child(_menu)
+	_menu.set_renderer(_renderer)
 	_menu.update(state)
 
 	# Wait for one rendered frame before capturing.
 	await RenderingServer.frame_post_draw
 	_save_artifacts(state)
 	get_tree().quit()
+
+
+# ---------------------------------------------------------------------------
+# Window size override (--size WxH)
+# ---------------------------------------------------------------------------
+
+## Parse --size WxH from user CLI args and resize the window + viewport.
+## Example: --size 1600x1000  → window becomes 1600×1000 before capture.
+## If the arg is absent or malformed the project default is used unchanged.
+func _apply_size_arg() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	for i: int in range(args.size()):
+		if args[i] == "--size" and i + 1 < args.size():
+			var size_str: String = args[i + 1]
+			var parts: PackedStringArray = size_str.split("x")
+			if parts.size() == 2:
+				var w: int = int(parts[0])
+				var h: int = int(parts[1])
+				if w > 0 and h > 0:
+					get_window().size = Vector2i(w, h)
+					print("ScenarioRunner: window resized to %dx%d" % [w, h])
+				else:
+					push_warning("ScenarioRunner: --size has zero/negative values: " + size_str)
+			else:
+				push_warning("ScenarioRunner: --size format must be WxH, got: " + size_str)
+			break
 
 
 # ---------------------------------------------------------------------------
