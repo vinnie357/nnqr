@@ -307,17 +307,13 @@ local function handleJoinGame(server, clientId, payload)
 	-- Check if game started (2 players)
 	game = Lobby.getGame(server.lobby, gameId)
 	if game.status == "playing" then
-		-- Return initial game state
-		-- TODO: Create actual game session with GameLogic
-		return Protocol.createMessage("GAME_STATE", {
-			game_id = gameId,
-			turn = 1,
-			current_player = 1,
-			phase = "move",
-			board = { cols = 10, rows = 8, tiles = {} },
-			pieces = {},
-			winner = nil,
-		})
+		-- Create a real GameLogic-backed PvP session (player1 = creator, player2 = joiner)
+		local player1Id = game.players[1]
+		local player2Id = game.players[2]
+		local session = GameSession.createPvPGame(gameId, player1Id, player2Id)
+		server.gameSessions[gameId] = session
+		-- Return initial game state to the joining player
+		return Protocol.gameStateMessage(GameSession.getState(session))
 	end
 
 	-- Game still waiting for players
@@ -464,6 +460,82 @@ local function handleMove(server, clientId, payload)
 	return Protocol.gameStateMessage(GameSession.getState(session))
 end
 
+--- Handle ACTIVATE_POWER message
+---@param server table Server state
+---@param clientId string Client ID
+---@param payload table Message payload
+---@return table Response message
+local function handleActivatePower(server, clientId, payload)
+	local client = server.clients[clientId]
+
+	-- Find the player's game session
+	local session, gameId = findPlayerGameSession(server, client.playerId)
+	if not session then
+		return Protocol.createMessage("ERROR", {
+			code = "NOT_IN_GAME",
+			message = "Not in a game",
+		})
+	end
+
+	-- Validate payload
+	if not payload.piece_pos or not payload.power_id then
+		return Protocol.createMessage("ERROR", {
+			code = "INVALID_MESSAGE",
+			message = "piece_pos and power_id are required",
+		})
+	end
+
+	-- Delegate validation and execution to GameSession
+	local result = GameSession.handleActivatePower(session, client.playerId, {
+		piece_pos = payload.piece_pos,
+		power_id = payload.power_id,
+		target = payload.target,
+	})
+
+	if not result.success then
+		return Protocol.createMessage("ERROR", {
+			code = result.error,
+			message = result.error,
+		})
+	end
+
+	-- Check if game ended
+	if result.gameOver then
+		Server.recordGameResult(server, gameId)
+		return Protocol.gameOverMessage(gameId, result.winner)
+	end
+
+	-- Return POWER_RESULT followed by updated GAME_STATE
+	-- Clients get POWER_RESULT as primary response; the updated state is embedded
+	return Protocol.powerResultMessage(gameId, true, result.power_id, result.effects)
+end
+
+--- Handle CHAT message
+---@param server table Server state
+---@param clientId string Client ID
+---@param payload table Message payload
+---@return table Response message (CHAT_MESSAGE to broadcast to opponent)
+local function handleChat(server, clientId, payload)
+	local client = server.clients[clientId]
+
+	-- Player must be in a game session to chat
+	local session, gameId = findPlayerGameSession(server, client.playerId)
+	if not session then
+		return Protocol.createMessage("ERROR", {
+			code = "NOT_IN_GAME",
+			message = "Not in a game",
+		})
+	end
+
+	-- Get sender name from lobby
+	local player = server.lobby.players[client.playerId]
+	local senderName = player and player.name or "Player"
+	local text = payload.text or ""
+
+	-- Return the CHAT_MESSAGE (caller is responsible for broadcasting to opponent)
+	return Protocol.chatMessage(gameId, senderName, text)
+end
+
 --- Handle incoming message from client
 ---@param server table Server state
 ---@param clientId string Client ID
@@ -517,17 +589,9 @@ function Server.handleMessage(server, clientId, message)
 	elseif msgType == "MOVE" then
 		return handleMove(server, clientId, payload)
 	elseif msgType == "ACTIVATE_POWER" then
-		-- TODO: Implement in GameSession
-		return Protocol.createMessage("ERROR", {
-			code = "NOT_IMPLEMENTED",
-			message = "ACTIVATE_POWER not yet implemented",
-		})
+		return handleActivatePower(server, clientId, payload)
 	elseif msgType == "CHAT" then
-		-- TODO: Implement chat
-		return Protocol.createMessage("ERROR", {
-			code = "NOT_IMPLEMENTED",
-			message = "CHAT not yet implemented",
-		})
+		return handleChat(server, clientId, payload)
 	else
 		return Protocol.createMessage("ERROR", {
 			code = "UNKNOWN_MESSAGE_TYPE",
@@ -755,6 +819,59 @@ function Server.handleReconnection(server, clientId, playerId)
 		gameId = gameId,
 		opponentName = playerName,
 	}
+end
+
+--- Server update tick — enforces disconnect timeouts using an injectable clock.
+--- Call this from the game loop (or from tests with a fake clock).
+---@param server table Server state
+---@param dt number Delta time in seconds (unused directly, kept for loop compatibility)
+---@param nowFn function|nil Clock function returning current time; defaults to os.time
+---@return table Array of {type="timeout", gameId, winnerClientId, winnerId, winnerNumber}
+function Server.update(server, dt, nowFn)
+	local now = nowFn and nowFn() or os.time()
+	local results = {}
+
+	for gameId, session in pairs(server.gameSessions) do
+		if session.disconnectedPlayer and session.disconnectTime then
+			local elapsed = now - session.disconnectTime
+			if elapsed >= DISCONNECT_TIMEOUT then
+				-- Determine winner (opponent of disconnected player)
+				local winnerId = nil
+				local winnerNumber = nil
+				if session.disconnectedPlayer == 1 then
+					winnerId = session.player2Id
+					winnerNumber = 2
+				else
+					winnerId = session.player1Id
+					winnerNumber = 1
+				end
+
+				local winnerClientId = Server.findClientByPlayerId(server, winnerId)
+
+				-- End the game
+				session.status = "finished"
+				session.state.winner = winnerNumber
+				session.state.gameOver = true
+
+				-- Clear disconnect state
+				session.disconnectedPlayer = nil
+				session.disconnectTime = nil
+
+				-- Record stats
+				Server.recordGameResult(server, gameId)
+
+				table.insert(results, {
+					type = "timeout",
+					gameId = gameId,
+					winnerClientId = winnerClientId,
+					winnerId = winnerId,
+					winnerNumber = winnerNumber,
+				})
+			end
+		end
+	end
+
+	return results
 end
 
 return Server
