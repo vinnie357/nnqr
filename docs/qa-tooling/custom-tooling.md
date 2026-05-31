@@ -2,43 +2,71 @@
 
 Question the operator raised: do we build our own CLI/MCP to help the see-loop?
 
-## Finding so far
+## Current state — three per-engine scripts exist
 
-For the **web** implementation: **no custom tooling needed yet.** The Playwright
-npm library in a ~40-line script (`web/scripts/shot.mjs`) already delivers
-see + drive + read-state, and the agent `Read`s the PNGs. The Playwright MCP would
-be a nicety (turnkey `/qa` integration) but is not required and is not currently
-configured.
+All three see-loops are now built and have produced real `.qa/` output. Their
+invocation styles differ:
 
-## Candidate: a `gameshot` CLI (for native engines)
+| Engine | Invocation | Output dir |
+|---|---|---|
+| **Web** | `node web/scripts/shot.mjs` (Playwright; requires `mise run web-dev` already running) | `web/.qa/` |
+| **Godot** | `bash godot/scripts/godot.sh --path godot/ -- --scenario res://scenarios/<name>.json` | `godot/.qa/` |
+| **Love2D** | `love . --scenario scenarios/<name>.json` (from `lua/love2d/`) or `mise run -C lua/love2d "scenario:initial"` | `lua/love2d/.qa/` |
 
-The case for custom tooling appears with **native engines** (Godot, Bevy, Love2D),
-where there is no browser and each engine has a different screenshot API. A small,
-uniform CLI would pay off if we run native see-loops repeatedly:
+In all three cases the output has the same shape: `frame.png` + `state.json`.
+
+## The case for a `gameshot` CLI
+
+A uniform CLI would collapse the per-engine invocation differences to one command:
 
 ```
-gameshot --engine <godot|love2d|bevy> --scenario <file.json> --out <dir>
-  → launch the engine in a scripted scenario mode
-  → set the known state from the scenario file
+gameshot --engine <web|godot|love2d> --scenario <file.json> --out <dir>
+  → launch the engine in scenario mode
   → render one frame, save <dir>/frame.png
   → dump the resulting state to <dir>/state.json
   → exit non-zero on engine error
 ```
 
 The agent then `Read`s `frame.png` and asserts on `state.json` — identical loop
-shape across engines. Each engine implements a thin `--scenario` entry point
-(Godot: viewport→PNG; Love2D: `love . --scenario` + `captureScreenshot`).
+shape regardless of engine. Each engine already implements its side of this contract.
 
-### Decision criteria
+### What a CLI would actually unify
 
-- **Build it** once two native engines (e.g. Godot + Love2D-rescue) each need a
-  scenario runner — extract the shared CLI rather than duplicating launch/IO glue.
-- **Wrap it in an MCP** only if the CLI is invoked often enough that the per-call
-  Bash ceremony becomes friction, AND multiple sessions/agents need it. An MCP buys
-  nothing over a Bash CLI for a single agent that can already run scripts.
+The real friction between the three loops is not the output format (already uniform:
+`frame.png` + `state.json`) but the launch ceremony:
 
-### Recommendation
+- **Web** requires a running dev server before the Playwright script can connect.
+  A CLI would need to start and stop the server, or document the pre-condition.
+- **Godot** uses a non-standard binary resolution path (`godot.sh`), and the
+  `--path` / `--` / `--scenario` flag split is unusual.
+- **Love2D** works directly but `mise run -C lua/love2d` is verbose from the repo
+  root, and there is no root-level `love-scenario` task.
 
-Defer custom tooling until Track C (Godot) lands its scenario runner. At that point
-extract `gameshot` as a CLI shared by Godot + the Love2D rescue (Track D). Hold on
-an MCP unless repeated friction proves it out. The web loop stays script-based.
+A thin nushell wrapper that handles these differences for all three is achievable in
+roughly 100 lines.
+
+### Decision: defer unless friction proves it out
+
+The per-engine scripts suffice for single-agent QA sessions. Three different
+invocation styles are awkward when documenting or scripting cross-engine comparisons,
+but not painful enough to justify a new tool right now.
+
+**Do not build a `gameshot` CLI until:**
+- A cross-engine comparison workflow is needed (e.g. verifying a scenario produces
+  equivalent state in Godot and Love2D), OR
+- An agent session loses time getting the per-engine invocation syntax right more
+  than once.
+
+**Do not wrap it in an MCP** unless the CLI is stable and used across multiple
+sessions. An MCP buys nothing over a shell CLI for a single agent that can already
+run scripts.
+
+## Web: Playwright MCP assessment
+
+The Playwright **MCP server** would make `browser_navigate`, `browser_take_screenshot`,
+and `browser_evaluate` available as first-class tools — no shell script required.
+It is not currently configured in this environment. The npm script approach
+(`web/scripts/shot.mjs`) works today and requires no additional server process.
+Configuring the Playwright MCP is worth doing when the web loop is used in
+multi-session or multi-agent workflows where the shell-script invocation is genuinely
+repetitive friction.
