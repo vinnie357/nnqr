@@ -39,8 +39,10 @@ const MODE_AWAITING_TARGET  : String = "awaiting_target"
 ##   3. Otherwise → (re)select or deselect via board.select_piece.
 ##
 ## Note: Board.select_piece uses board.gd's _copy_state which does not copy
-## Object metas.  We manually re-attach extra_move (if present) onto the
-## selection result so _apply_move can still read it on the subsequent move click.
+## Object metas.  We manually re-attach the extended-state metas onto the
+## selection result so _apply_move can still read them on the subsequent move
+## click.  Extended state metas propagated: extra_move, bankrupt_tiles,
+## hotspot_tiles, multiplied_pieces.
 ##
 ## Returns a new GameState (immutable pattern — never mutates input).
 static func handle_tile_click(state: GameState, row: int, col: int) -> GameState:
@@ -57,12 +59,13 @@ static func handle_tile_click(state: GameState, row: int, col: int) -> GameState
 	# and clicking the same tile (clears selection).
 	var selected_state: GameState = Board.select_piece(state, row, col)
 
-	# Re-propagate extra_move meta across the selection boundary.
-	# Board._copy_state does not copy metas, so activate_move_again's flag
-	# would be silently dropped on the selection step.  Re-attach it here so
-	# _apply_move can read it on the next click.
-	if state.has_meta("extra_move") and bool(state.get_meta("extra_move")):
-		selected_state.set_meta("extra_move", true)
+	# Re-propagate extended-state metas across the selection boundary.
+	# Board._copy_state does not copy metas, so power-set flags would be
+	# silently dropped on the selection step.  Re-attach them here so
+	# _apply_move can read them on the next click.
+	for key in ["extra_move", "bankrupt_tiles", "hotspot_tiles", "multiplied_pieces"]:
+		if state.has_meta(key):
+			selected_state.set_meta(key, state.get_meta(key))
 
 	return selected_state
 
@@ -173,29 +176,107 @@ static func ai_take_turn(state: GameState, difficulty: String, rng: Object) -> G
 
 ## Apply a validated move: move_to, collect orb, check overheat, spawn orbs.
 ## Mirrors web controller.ts applyMove.
-## If state carries extra_move meta (set by activate_move_again), the same
-## player keeps the turn after this move — the flag is on the PRE-move state
-## and does not survive into the fresh `next` state produced by Board.move_to.
+##
+## Power flags read from PRE-move state (before Board.move_to strips metas):
+##   extra_move     — same player moves again (already wired)
+##   is_tripwired   — mover is destroyed after completing the move
+##   is_scavenger   — mover inherits captured enemy's powers
+##   is_inhibited   — mover cannot collect orbs this move
+##   parasitized_by — parasitizer also receives any orb the mover collects
+##   bankrupt_tiles — destination tile strips mover's powers + buff flags
+##
+## These flags live on pieces/state in the PRE-move GameState and are NOT
+## copied by Board.move_to (Board._copy_state does not propagate Object metas),
+## so we capture them BEFORE calling Board.move_to.
 static func _apply_move(state: GameState, row: int, col: int) -> GameState:
 	# Capture the mover's player and extra_move flag BEFORE the move.
 	var mover_player: int = state.current_player
 	var had_extra: bool = state.has_meta("extra_move") and bool(state.get_meta("extra_move"))
 
-	# Capture moving piece id before the move.
+	# Capture moving piece id and pre-move meta flags BEFORE Board.move_to.
 	var moving_piece_id: String = ""
+	var mover_is_tripwired: bool = false
+	var mover_is_scavenger: bool = false
+	var mover_is_inhibited: bool = false
+	var mover_parasitized_by: String = ""       # "" means not parasitized
+	var captured_enemy_powers: Array = []        # powers of the enemy at (row,col)
+
 	if state.selected != null:
 		for p: GameState.Piece in state.pieces:
 			if p.row == state.selected.row and p.col == state.selected.col:
 				moving_piece_id = p.id
+				mover_is_tripwired   = p.has_meta("is_tripwired") and bool(p.get_meta("is_tripwired"))
+				mover_is_scavenger   = p.has_meta("is_scavenger") and bool(p.get_meta("is_scavenger"))
+				mover_is_inhibited   = p.has_meta("is_inhibited") and bool(p.get_meta("is_inhibited"))
+				if p.has_meta("parasitized_by"):
+					mover_parasitized_by = str(p.get_meta("parasitized_by"))
 				break
+
+	# Capture enemy powers at the destination tile (for scavenger).
+	# Only relevant when the move is a capture (enemy present).
+	if mover_is_scavenger:
+		for p: GameState.Piece in state.pieces:
+			if p.row == row and p.col == col and p.player != state.current_player:
+				captured_enemy_powers = p.powers.duplicate()
+				break
+
+	# Capture bankrupt_tiles from the pre-move state (propagated through
+	# handle_tile_click's extended-meta re-propagation).
+	var bankrupt_tiles: Dictionary = {}
+	if state.has_meta("bankrupt_tiles"):
+		bankrupt_tiles = state.get_meta("bankrupt_tiles") as Dictionary
 
 	var next: GameState = Board.move_to(state, row, col)
 
-	# Collect orb at destination.
-	if moving_piece_id != "":
+	# --- Post-move: scavenger — inherit captured enemy's powers.
+	if mover_is_scavenger and moving_piece_id != "" and captured_enemy_powers.size() > 0:
+		var new_pieces: Array = []
+		for p: GameState.Piece in next.pieces:
+			if p.id == moving_piece_id:
+				var np := GameState.Piece.new(p.id, p.player, p.row, p.col)
+				np.powers = p.powers.duplicate()
+				for pw in captured_enemy_powers:
+					np.powers.append(pw)
+				np.is_jump_proof       = p.is_jump_proof
+				np.can_move_diagonally = p.can_move_diagonally
+				np.can_climb_any       = p.can_climb_any
+				np.can_wrap            = p.can_wrap
+				np.is_invisible        = p.is_invisible
+				np.set_meta("is_scavenger", true)   # re-propagate flag
+				new_pieces.append(np)
+			else:
+				new_pieces.append(p)
+		var scav_state := _copy_state(next)
+		scav_state.pieces = new_pieces
+		next = scav_state
+
+	# Collect orb at destination (inhibited pieces skip this).
+	if moving_piece_id != "" and not mover_is_inhibited:
 		var orb_result: Dictionary = Orbs.collect_orb(next, row, col)
 		if orb_result["collected"] != null:
 			next = orb_result["state"]
+			var collected_power: String = orb_result["collected"]
+
+			# --- Parasite: parasitizer also receives a copy of the collected power.
+			if mover_parasitized_by != "":
+				var new_pieces2: Array = []
+				for p: GameState.Piece in next.pieces:
+					if p.id == mover_parasitized_by:
+						var np := GameState.Piece.new(p.id, p.player, p.row, p.col)
+						np.powers = p.powers.duplicate()
+						np.powers.append(collected_power)
+						np.is_jump_proof       = p.is_jump_proof
+						np.can_move_diagonally = p.can_move_diagonally
+						np.can_climb_any       = p.can_climb_any
+						np.can_wrap            = p.can_wrap
+						np.is_invisible        = p.is_invisible
+						new_pieces2.append(np)
+					else:
+						new_pieces2.append(p)
+				var par_state := _copy_state(next)
+				par_state.pieces = new_pieces2
+				next = par_state
+
 			# Check overheat: ≥10 of same power destroys the piece.
 			var moved_piece: GameState.Piece = null
 			for p: GameState.Piece in next.pieces:
@@ -212,6 +293,45 @@ static func _apply_move(state: GameState, row: int, col: int) -> GameState:
 					var pruned := _copy_state(next)
 					pruned.pieces = surviving
 					next = pruned
+
+	# --- Post-move: bankrupt tile — strip powers and positive flags from mover.
+	var dest_key: String = "%d,%d" % [row, col]
+	if moving_piece_id != "" and bankrupt_tiles.get(dest_key, false) == true:
+		var new_pieces3: Array = []
+		for p: GameState.Piece in next.pieces:
+			if p.id == moving_piece_id:
+				var np := GameState.Piece.new(p.id, p.player, p.row, p.col)
+				np.powers = []                  # strip all powers
+				np.is_jump_proof       = false  # strip positive flags
+				np.can_move_diagonally = false
+				np.can_climb_any       = false
+				np.can_wrap            = false
+				np.is_invisible        = false
+				# Debuff flags (is_inhibited, is_tripwired, etc.) are NOT cleared —
+				# bankrupt removes positive capabilities only (per documented semantics).
+				new_pieces3.append(np)
+			else:
+				new_pieces3.append(p)
+		var bk_state := _copy_state(next)
+		bk_state.pieces = new_pieces3
+		next = bk_state
+
+	# --- Post-move: tripwire — destroy the mover after completing the move.
+	# The mover's is_tripwired flag was set by the opponent; the piece is
+	# destroyed when it moves (any move, not just captures).
+	if mover_is_tripwired and moving_piece_id != "":
+		var surviving: Array = []
+		for p: GameState.Piece in next.pieces:
+			if p.id != moving_piece_id:
+				surviving.append(p)
+		var tw_state := _copy_state(next)
+		tw_state.pieces = surviving
+		# Re-check winner (tripwire may have ended the game).
+		var winner := Board.check_winner(tw_state)
+		if winner != 0:
+			tw_state.status = "won"
+			tw_state.winner = winner
+		next = tw_state
 
 	# Spawn orbs on turn boundary.
 	if Orbs.should_spawn_orbs(next.turn):
@@ -230,7 +350,8 @@ static func _apply_move(state: GameState, row: int, col: int) -> GameState:
 	return next
 
 
-## Shallow copy a GameState (same pattern as orbs.gd _copy_state).
+## Shallow copy a GameState, propagating extended-state metas.
+## Mirrors effects.gd _copy_state meta propagation.
 static func _copy_state(src: GameState) -> GameState:
 	var dst := GameState.new()
 	dst.cols = src.cols
@@ -246,4 +367,8 @@ static func _copy_state(src: GameState) -> GameState:
 	dst.orbs = src.orbs
 	dst.selected = src.selected
 	dst.valid_moves = src.valid_moves
+	# Propagate extended-state metas (same list as effects.gd line 46).
+	for key in ["extra_move", "bankrupt_tiles", "hotspot_tiles", "multiplied_pieces"]:
+		if src.has_meta(key):
+			dst.set_meta(key, src.get_meta(key))
 	return dst

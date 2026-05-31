@@ -128,10 +128,23 @@ export function selectPiece(state: GameState, row: number, col: number): GameSta
   return { ...state, selected: { row, col }, validMoves: getValidMoves(state, piece) };
 }
 
+// Extended GameState fields consumed in move resolution (not in the frozen contract).
+type ExtState = GameState & {
+  extraMove?: boolean;
+  bankruptTiles?: Record<string, true>;
+};
+
 /**
  * Move the selected piece to (row, col) if legal: captures an enemy on the
  * target, ends the turn, and resolves a winner. Orb collection is layered on by
  * the orbs module at the call site. Returns state unchanged when illegal.
+ *
+ * Extended-state consumers wired here:
+ *   extraMove    — when true, the current player moves again (no turn flip).
+ *   bankruptTiles — when the destination tile is bankrupt, the mover loses all powers.
+ *   isTripwired  — a piece flagged isTripwired is removed when it moves.
+ *   isScavenger  — a scavenger capturing an enemy inherits the enemy's powers.
+ *   isBeneficiary — when an ally is captured, a beneficiary on the same team inherits its powers.
  */
 export function moveTo(state: GameState, row: number, col: number): GameState {
   if (state.status !== "playing" || !state.selected) return state;
@@ -141,18 +154,70 @@ export function moveTo(state: GameState, row: number, col: number): GameState {
   const mover = pieceAt(state, state.selected.row, state.selected.col);
   if (!mover) return state;
 
-  const pieces = state.pieces
+  const ext = state as ExtState;
+
+  // Determine the captured piece (if any) before mutating pieces.
+  const captured = state.pieces.find(
+    (p) => p.row === row && p.col === col && p.player !== mover.player,
+  ) ?? null;
+
+  // Build updated pieces array:
+  // 1. Remove the captured enemy (if any).
+  // 2. Move the mover to the destination.
+  // 3. Apply bankrupt: if destination tile is bankrupt, mover loses all powers.
+  // 4. Apply tripwire: if the mover itself is tripwired, remove it on move.
+  let pieces = state.pieces
     .filter((p) => !(p.row === row && p.col === col && p.player !== mover.player))
-    .map((p) => (p.id === mover.id ? { ...p, row, col } : p));
+    .map((p) => {
+      if (p.id !== mover.id) return p;
+      const moved = { ...p, row, col };
+      // Bankrupt: landing tile drains powers.
+      const bankruptTiles = ext.bankruptTiles ?? {};
+      if (bankruptTiles[tileKey(row, col)]) {
+        return { ...moved, powers: [] };
+      }
+      // Scavenger: inherit captured enemy's powers.
+      if (moved.isScavenger && captured && captured.powers.length > 0) {
+        return { ...moved, powers: [...moved.powers, ...captured.powers] };
+      }
+      return moved;
+    });
+
+  // Tripwire: remove the mover if it was flagged isTripwired.
+  const moverAfterMove = pieces.find((p) => p.id === mover.id);
+  if (moverAfterMove?.isTripwired) {
+    pieces = pieces.filter((p) => p.id !== mover.id);
+  }
+
+  // Beneficiary: if an ally of the captured piece's opponent was just captured,
+  // find a beneficiary on the captured piece's team and grant it the captured powers.
+  if (captured && captured.powers.length > 0) {
+    const beneficiary = pieces.find(
+      (p) => p.player === captured.player && p.isBeneficiary,
+    );
+    if (beneficiary) {
+      pieces = pieces.map((p) =>
+        p.id === beneficiary.id
+          ? { ...p, powers: [...p.powers, ...captured.powers] }
+          : p,
+      );
+    }
+  }
+
+  // Determine whether this move grants an extra turn.
+  const hasExtraMove = !!(ext.extraMove);
 
   const next: GameState = {
     ...state,
     pieces,
     selected: null,
     validMoves: [],
-    currentPlayer: state.currentPlayer === 1 ? 2 : 1,
+    // Only flip the player if no extra move is pending.
+    currentPlayer: hasExtraMove ? state.currentPlayer : (state.currentPlayer === 1 ? 2 : 1),
     turn: state.turn + 1,
-  };
+    // Clear the extraMove flag once consumed.
+    ...(hasExtraMove ? { extraMove: false } : {}),
+  } as GameState;
 
   const winner = checkWinner(next);
   if (winner) {
