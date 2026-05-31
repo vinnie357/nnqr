@@ -5,6 +5,7 @@
 
 local GameLogic = require("src.shared.game_logic")
 local PowerEffects = require("src.shared.power_effects")
+local PowerExecutor = require("src.shared.power_executor")
 local AI = require("src.shared.ai.ai")
 
 local GameSession = {}
@@ -212,32 +213,23 @@ function GameSession.handlePower(session, playerId, powerData)
 		return { success = false, error = "NO_POWER" }
 	end
 
-	-- Execute the power effect
-	-- For now, we just apply the power flag using PowerEffects
-	-- More complex powers would need additional handling
-	local effects = {}
-
-	-- Apply power effect based on type
-	-- Self-targeting powers that set flags
-	local flagPowers = {
-		move_diagonal = "canMoveDiagonally",
-		jump_proof = "isJumpProof",
-		invisible = "isInvisible",
-		move_again = "canMoveAgain",
-	}
-
-	if flagPowers[powerId] then
-		local flag = flagPowers[powerId]
-		piece[flag] = true
-		table.insert(effects, { type = "flag_set", flag = flag, piece_col = piece.col, piece_row = piece.row })
-	else
-		-- For other powers, use PowerEffects if available
-		-- This is a simplified implementation - full integration would use PowerExecutor
-		table.insert(effects, { type = "power_used", power_id = powerId })
+	-- Execute the power via PowerExecutor (same executor as the local game)
+	local newState = PowerExecutor.execute(session.state, piece, powerId, target)
+	if newState then
+		session.state = newState
+		-- Re-find piece reference after state replacement
+		piece = getPieceAt(session, piecePos.col, piecePos.row)
 	end
 
-	-- Remove power from piece
-	table.remove(piece.powers, powerIndex)
+	local effects = { { type = "power_used", power_id = powerId } }
+
+	-- Remove power from piece (find updated index after state may have changed)
+	if piece then
+		local updatedIndex = findPowerIndex(piece, powerId)
+		if updatedIndex then
+			table.remove(piece.powers, updatedIndex)
+		end
+	end
 
 	-- Update last activity
 	session.lastActivity = os.time()
@@ -254,6 +246,15 @@ function GameSession.handlePower(session, playerId, powerData)
 		gameOver = session.state.gameState == "gameover",
 		winner = session.state.winner,
 	}
+end
+
+--- Handle a power activation request (public alias for handlePower, mirrors handleMove API)
+---@param session table GameSession state
+---@param playerId string Player activating power
+---@param powerData table Power data {piece_pos: {col, row}, power_id: string, target?: {col, row}}
+---@return table Result {success: boolean, error?: string, effects?: table}
+function GameSession.handleActivatePower(session, playerId, powerData)
+	return GameSession.handlePower(session, playerId, powerData)
 end
 
 --- Get serializable game state for network transmission

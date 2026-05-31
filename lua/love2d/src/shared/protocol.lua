@@ -441,6 +441,36 @@ function Protocol.isValidAIGamePayload(payload)
 	return true
 end
 
+-- Power and chat message builders (Phase 10B/nnqr-21)
+
+--- Create POWER_RESULT message
+---@param gameId string Game ID
+---@param success boolean Whether power activation succeeded
+---@param powerId string Power ID that was activated
+---@param effects table Effects produced by the power
+---@return table Message object
+function Protocol.powerResultMessage(gameId, success, powerId, effects)
+	return Protocol.createMessage(Protocol.Types.POWER_RESULT, {
+		game_id = gameId,
+		success = success,
+		power_id = powerId,
+		effects = effects or {},
+	})
+end
+
+--- Create CHAT_MESSAGE message
+---@param gameId string Game ID
+---@param senderName string Name of sender
+---@param text string Chat text
+---@return table Message object
+function Protocol.chatMessage(gameId, senderName, text)
+	return Protocol.createMessage(Protocol.Types.CHAT_MESSAGE, {
+		game_id = gameId,
+		sender_name = senderName,
+		text = text,
+	})
+end
+
 -- Disconnect handling messages (Phase 10C)
 
 --- Create OPPONENT_DISCONNECTED message
