@@ -14,6 +14,7 @@ This project explores how Claude AI can assist in recreating a classic game acro
 |----------------|--------|-------------|
 | [Rust/Bevy](rust/bevy/) | In Development | Advanced 3D isometric with 38+ powers |
 | [Lua/Love2D](lua/love2d/) | In Development | Lightweight 2D/isometric version |
+| [Godot](godot/) | In Development | 2D Godot 4 implementation; title screen with vs AI / Hotseat 2P mode select and Easy–Expert difficulty, power menu, pause/resume/quit-to-title overlay, and a headless QA snapshot harness |
 
 ## Quick Start
 
@@ -29,10 +30,52 @@ cd lua/love2d
 love .
 ```
 
+### Godot (Development)
+
+The Godot implementation uses a bundled run wrapper (`godot/scripts/godot.sh`) that
+downloads and caches the correct Godot binary automatically (Godot 4.6.3-stable by
+default; override with `GODOT_BIN` or `GODOT_VERSION`).
+
+```bash
+cd godot
+bash scripts/godot.sh --path .
+```
+
+Or via the `mise` task defined in `godot/mise.toml`:
+
+```bash
+mise run -C godot godot
+```
+
+#### Godot QA snapshot harness (`ui_shot.gd`)
+
+`godot/tools/ui_shot.gd` is a standalone `SceneTree` script that renders one frame
+of the title screen or pause overlay headlessly and saves it to `.qa/frame.png`
+(860x560 PNG). It backs the visual-verification sections of the Gherkin user stories
+in `godot/docs/user-stories/`.
+
+Run from inside the `godot/` directory (note: run **without** `--headless` so the
+rendering server is active):
+
+```bash
+cd godot
+bash scripts/godot.sh --path . --script res://tools/ui_shot.gd -- title
+bash scripts/godot.sh --path . --script res://tools/ui_shot.gd -- pause
+```
+
+Expected stdout:
+```
+ui_shot: mode=title
+ui_shot: frame.png saved err=0 size=860x560
+```
+
+Output file: `godot/.qa/frame.png`
+
 ### Using mise tasks
 ```bash
 mise run rust-start      # Run Bevy version
 mise run love-start      # Run Love2D version
+mise run -C godot godot  # Run Godot version
 ```
 
 ## Game Overview
