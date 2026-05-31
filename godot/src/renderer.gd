@@ -93,6 +93,9 @@ var _power_target_tiles: Array = []        ## [{row,col}] for purple highlight
 ## Empty {} (the default) reproduces the original HUD — scenario_runner relies on this.
 var _hud_info: Dictionary = {}
 
+## Cached viewport size for the _process resize poll (Bug 2 belt-and-suspenders).
+var _last_vp_size: Vector2 = Vector2.ZERO
+
 # ---------------------------------------------------------------------------
 # Computed layout vars — updated by _compute_layout() before each draw.
 # ---------------------------------------------------------------------------
@@ -123,6 +126,16 @@ func _on_viewport_resized() -> void:
 	queue_redraw()
 
 
+## Belt-and-suspenders: poll the viewport size every frame and trigger a redraw
+## whenever it changes, regardless of whether size_changed fired.  Cheap (one
+## Vector2 comparison per frame) and guards against any signal-delivery quirk.
+func _process(_dt: float) -> void:
+	var current_size: Vector2 = get_viewport_rect().size
+	if current_size != _last_vp_size:
+		_last_vp_size = current_size
+		queue_redraw()
+
+
 ## Set or replace the state and request a redraw.
 ## hud_info carries HUD extras (piece counts are derived from state directly).
 func load_state(state, hud_info := {}) -> void:
@@ -149,13 +162,15 @@ func get_menu_y() -> float:
 # Responsive layout computation
 # ---------------------------------------------------------------------------
 
-## Compute tile size and iso origin from the current viewport size.
-## Called at the start of _draw so all draw helpers use fresh values.
-## Also prints layout info so the lead can sanity-check the math from CLI output.
-func _compute_layout() -> void:
-	var vp_size: Vector2 = get_viewport_rect().size
-	var vp_w: float = vp_size.x
-	var vp_h: float = vp_size.y
+## Compute tile size and iso origin from an ARBITRARY viewport size.
+## Pure math — no call to get_viewport_rect().  This lets unit tests call it
+## with a synthetic size to validate the round-trip headlessly.
+##
+## Sets: _tile_w, _tile_h, _height_step, _origin_x, _origin_y, _piece_radius,
+##       _menu_x, _menu_y.
+func compute_layout_for_size(vp: Vector2) -> void:
+	var vp_w: float = vp.x
+	var vp_h: float = vp.y
 
 	# Board area excludes the right menu strip and the bottom HUD strip.
 	var avail_w: float = vp_w - float(MENU_STRIP_W) - float(BOARD_MARGIN) * 2.0
@@ -230,6 +245,12 @@ func _compute_layout() -> void:
 	])
 
 
+## Compute tile size and iso origin from the current viewport size.
+## Called at the start of _draw so all draw helpers use fresh values.
+func _compute_layout() -> void:
+	compute_layout_for_size(get_viewport_rect().size)
+
+
 # ---------------------------------------------------------------------------
 # Isometric projection helpers
 # ---------------------------------------------------------------------------
@@ -274,6 +295,12 @@ func tile_center(row: int, col: int) -> Vector2:
 ## Map pixel position back to board tile using the base-plane inverse.
 ## Inverts the same responsive transform used for drawing.
 ## Returns {"row":int,"col":int} or null.
+##
+## Fix (was: floor+1 shifted every tile by (+1,+1) so clicking tile (r,c)
+## returned (r+1,c+1) — the off-by-one that made piece selection miss):
+## At a tile center col_f == col and row_f == row exactly (1-indexed integers).
+## round() snaps to the nearest integer, making this the true inverse of
+## tile_iso_center for the base plane (h=0).
 func pixel_to_tile(px: Vector2) -> Variant:
 	# Inverse of: iso_x = _origin_x + (col - row) * (_tile_w/2)
 	#             iso_y = _origin_y + (col + row) * (_tile_h/2)
@@ -286,8 +313,8 @@ func pixel_to_tile(px: Vector2) -> Variant:
 	var dy: float = (px.y - _origin_y) / hh  # = col + row
 	var col_f: float = (dx + dy) / 2.0
 	var row_f: float = (dy - dx) / 2.0
-	var c: int = int(floor(col_f)) + 1
-	var r: int = int(floor(row_f)) + 1
+	var c: int = int(round(col_f))
+	var r: int = int(round(row_f))
 	if r >= 1 and r <= 8 and c >= 1 and c <= 10:
 		return {"row": r, "col": c}
 	return null
