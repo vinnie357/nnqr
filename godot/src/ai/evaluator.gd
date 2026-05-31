@@ -3,17 +3,22 @@
 ##
 ## POWER-ACTIVATION SEAM
 ## ─────────────────────
-## The evaluator currently scores only piece *moves* (position, capture, orb).
-## When the powers module is ready, power activation candidates should be added
-## to the action set at the call site in ai.gd (see the comment "POWER SEAM"
-## there). Here, the relevant hook surface is score_power_activation:
+## score_power_activation(state, piece, power_id) returns the expected gain of
+## activating power_id for piece in state.  Positive = beneficial.
+## -INF = not applicable (no valid target, wrong conditions, piece lacks power).
 ##
-##   score_power_activation(state: GameState, piece: Piece, power_id: String) -> float
-##
-## Implement it to return the expected gain of activating power_id for piece
-## in state (positive = beneficial). The signature is intentionally left as a
-## stub so the powers module author can drop in the implementation without
-## touching search.gd or ai.gd.
+## Implemented heuristics (nnqr-20):
+##   destroy_row / destroy_column / acidic_row / acidic_column / kamikaze_row /
+##   kamikaze_column / pilfer_row / pilfer_column / recruit_row / recruit_column —
+##     score by enemy count in line; -INF if < MIN_LINE_ENEMIES or any ally in line
+##     (kamikaze variants allow self-sacrifice when gain > 1 enemy).
+##   bomb / destroy_radial / acidic_radial / smart_bombs / kamikaze_radial /
+##   pilfer_radial / destroy_radial —
+##     score by enemy count in 3x3; -INF if < MIN_AREA_ENEMIES or ally in area.
+##   jump_proof —
+##     positive only when piece is threatened AND not already jump_proof.
+##   All others —
+##     -INF (not handled; no beneficial heuristic defined).
 extends RefCounted
 
 const Board = preload("res://src/board.gd")
@@ -214,17 +219,173 @@ static func evaluate_board(state: GameState, player: int) -> float:
 
 
 # ---------------------------------------------------------------------------
-# POWER-ACTIVATION SEAM (stub — implement when powers module lands)
+# POWER-ACTIVATION SEAM (nnqr-20 implementation)
 # ---------------------------------------------------------------------------
+
+## Minimum number of enemies needed in a line to justify activating a line power.
+const MIN_LINE_ENEMIES: int = 2
+
+## Minimum number of enemies needed in a 3x3 area to justify activating an area power.
+const MIN_AREA_ENEMIES: int = 2
+
+## Score per enemy piece eliminated by an area/line attack.
+const POWER_ENEMY_VALUE: float = 80.0
+
+## Score for activating jump_proof when threatened.
+const JUMP_PROOF_VALUE: float = 40.0
+
+
+## True when `piece` is threatened — i.e. an opponent can capture it on their
+## next standard move. Used for jump_proof heuristic.
+static func _piece_is_threatened(state: GameState, piece: GameState.Piece) -> bool:
+	var opponent: int = 2 if piece.player == 1 else 1
+	for enemy: GameState.Piece in state.pieces:
+		if enemy.player != opponent:
+			continue
+		for m: Dictionary in Board.get_valid_moves(state, enemy):
+			if m.row == piece.row and m.col == piece.col:
+				return true
+	return false
+
+
+## Count enemies and allies in the same row as `piece` (excluding self).
+## Returns {"enemies": int, "allies": int}.
+static func _count_row(state: GameState, piece: GameState.Piece) -> Dictionary:
+	var enemies: int = 0
+	var allies: int = 0
+	for p: GameState.Piece in state.pieces:
+		if p.id == piece.id:
+			continue
+		if p.row != piece.row:
+			continue
+		if p.player == piece.player:
+			allies += 1
+		else:
+			enemies += 1
+	return {"enemies": enemies, "allies": allies}
+
+
+## Count enemies and allies in the same column as `piece` (excluding self).
+static func _count_col(state: GameState, piece: GameState.Piece) -> Dictionary:
+	var enemies: int = 0
+	var allies: int = 0
+	for p: GameState.Piece in state.pieces:
+		if p.id == piece.id:
+			continue
+		if p.col != piece.col:
+			continue
+		if p.player == piece.player:
+			allies += 1
+		else:
+			enemies += 1
+	return {"enemies": enemies, "allies": allies}
+
+
+## Count enemies and allies in the 3x3 area centred on `piece` (excluding self).
+static func _count_area3x3(state: GameState, piece: GameState.Piece) -> Dictionary:
+	var enemies: int = 0
+	var allies: int = 0
+	for p: GameState.Piece in state.pieces:
+		if p.id == piece.id:
+			continue
+		var dr: int = abs(p.row - piece.row)
+		var dc: int = abs(p.col - piece.col)
+		if dr <= 1 and dc <= 1:
+			if p.player == piece.player:
+				allies += 1
+			else:
+				enemies += 1
+	return {"enemies": enemies, "allies": allies}
+
 
 ## Score the expected gain of activating `power_id` for `piece` in `state`.
 ##
 ## Positive return value means activation is beneficial for the piece's owner.
 ## Returns -INF to mark a power as not applicable in the current position.
-##
-## This stub always returns -INF (no power use), which keeps the AI playing
-## pure movement until the powers module author drops in the real implementation.
-## The ai.gd choose_move function references this function for the power seam.
 static func score_power_activation(
-		_state: GameState, _piece: GameState.Piece, _power_id: String) -> float:
-	return -INF
+		state: GameState, piece: GameState.Piece, power_id: String) -> float:
+
+	# Guard: piece must own at least one copy of the power.
+	if not piece.powers.has(power_id):
+		return -INF
+
+	match power_id:
+		# ---------------------------------------------------------------
+		# Line powers — row variants
+		# ---------------------------------------------------------------
+		"destroy_row", "acidic_row", "pilfer_row", "recruit_row":
+			var counts := _count_row(state, piece)
+			# Don't use if any ally would be caught in the blast.
+			if counts.allies > 0:
+				return -INF
+			if counts.enemies < MIN_LINE_ENEMIES:
+				return -INF
+			return float(counts.enemies) * POWER_ENEMY_VALUE
+
+		# Kamikaze row: sacrifice self; only worthwhile when killing more enemies
+		# than the 1 piece we lose.
+		"kamikaze_row":
+			var counts := _count_row(state, piece)
+			if counts.enemies < 2:
+				return -INF
+			return (float(counts.enemies) - 1.0) * POWER_ENEMY_VALUE
+
+		# ---------------------------------------------------------------
+		# Line powers — column variants
+		# ---------------------------------------------------------------
+		"destroy_column", "acidic_column", "pilfer_column", "recruit_column":
+			var counts := _count_col(state, piece)
+			if counts.allies > 0:
+				return -INF
+			if counts.enemies < MIN_LINE_ENEMIES:
+				return -INF
+			return float(counts.enemies) * POWER_ENEMY_VALUE
+
+		"kamikaze_column":
+			var counts := _count_col(state, piece)
+			if counts.enemies < 2:
+				return -INF
+			return (float(counts.enemies) - 1.0) * POWER_ENEMY_VALUE
+
+		# ---------------------------------------------------------------
+		# Area powers — 3x3
+		# ---------------------------------------------------------------
+		"bomb", "destroy_radial", "acidic_radial", "pilfer_radial":
+			var counts := _count_area3x3(state, piece)
+			if counts.allies > 0:
+				return -INF
+			if counts.enemies < MIN_AREA_ENEMIES:
+				return -INF
+			return float(counts.enemies) * POWER_ENEMY_VALUE
+
+		# smart_bombs only hurts enemies — allies are safe.
+		"smart_bombs":
+			var counts := _count_area3x3(state, piece)
+			if counts.enemies < MIN_AREA_ENEMIES:
+				return -INF
+			return float(counts.enemies) * POWER_ENEMY_VALUE
+
+		# kamikaze_radial: self-sacrifice; worthwhile when net enemy kill ≥ 1.
+		"kamikaze_radial":
+			var counts := _count_area3x3(state, piece)
+			if counts.enemies < 2:
+				return -INF
+			return (float(counts.enemies) - 1.0) * POWER_ENEMY_VALUE
+
+		# ---------------------------------------------------------------
+		# Defensive powers
+		# ---------------------------------------------------------------
+		"jump_proof":
+			# Don't waste it if it's already active.
+			if piece.is_jump_proof:
+				return -INF
+			# Only activate when the piece is actually under threat.
+			if _piece_is_threatened(state, piece):
+				return JUMP_PROOF_VALUE
+			return -INF
+
+		# ---------------------------------------------------------------
+		# Default: no heuristic defined for this power.
+		# ---------------------------------------------------------------
+		_:
+			return -INF

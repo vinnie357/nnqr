@@ -251,6 +251,36 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Story 7: qa_ai_power
+# Starting: p1-mover at (3,5); p1-a at (5,6) and p1-b at (5,8);
+#           p2-ai at (5,2) with powers=['destroy_row'].
+# Inputs: click (3,5) select, click (4,5) move p1, ai_turn expert.
+# Expected: AI uses destroy_row — at least one of p1-a / p1-b is gone.
+# Assert: p1 piece count in state.json < 2 (started with 3, mover + 2 in row 5;
+#         destroy_row must have hit at least one of p1-a or p1-b).
+# ---------------------------------------------------------------------------
+STORY="qa_ai_power"
+run_scenario "$STORY" "qa_ai_power.json"
+STATE="$QA_DIR/state.json"
+if [ ! -f "$STATE" ]; then
+  fail "$STORY" "state.json not produced"
+else
+  # Count remaining p1 pieces in row 5 (p1-a and p1-b started there)
+  P1_ROW5=$($JQ '[.pieces[] | select(.player == 1 and .row == 5)] | length' "$STATE")
+
+  ERRORS=""
+  # destroy_row should have destroyed both p1-a and p1-b (they were the only pieces
+  # in row 5 besides p2-ai itself). Expect 0 p1 pieces remaining in row 5.
+  [ "$P1_ROW5" = "0" ] || ERRORS="$ERRORS; p1 pieces still in row 5 (count=$P1_ROW5, expected 0 — AI may not have used destroy_row)"
+
+  if [ -z "$ERRORS" ]; then
+    pass "$STORY"
+  else
+    fail "$STORY" "${ERRORS#; }"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo ""

@@ -122,9 +122,9 @@ describe("chooseMove – medium", () => {
     const decision = chooseMove(state, 1, "medium", makeRng(1));
 
     expect(decision).not.toBeNull();
-    expect(decision!.move.capture).toBe(true);
-    expect(decision!.move.row).toBe(4);
-    expect(decision!.move.col).toBe(5);
+    expect(decision!.move!.capture).toBe(true);
+    expect(decision!.move!.row).toBe(4);
+    expect(decision!.move!.col).toBe(5);
   });
 
   it("returns a legal move from the initial state", () => {
@@ -133,7 +133,7 @@ describe("chooseMove – medium", () => {
 
     expect(decision).not.toBeNull();
     const legal = getValidMoves(state, decision!.piece);
-    expect(legal).toContainEqual(decision!.move);
+    expect(legal).toContainEqual(decision!.move!);
   });
 });
 
@@ -147,7 +147,7 @@ describe("chooseMove – hard", () => {
     const decision = chooseMove(state, 1, "hard", makeRng(1));
 
     expect(decision).not.toBeNull();
-    expect(decision!.move.capture).toBe(true);
+    expect(decision!.move!.capture).toBe(true);
   });
 
   it("avoids moving a piece to a square the opponent can immediately recapture", () => {
@@ -164,7 +164,7 @@ describe("chooseMove – hard", () => {
     // The chosen target should not be (5,5) since that would land on p2 only if it's a capture
     // This test simply confirms a legal, non-suicidal move is returned
     const legal = getValidMoves(state, decision!.piece);
-    expect(legal).toContainEqual(decision!.move);
+    expect(legal).toContainEqual(decision!.move!);
   });
 });
 
@@ -174,7 +174,7 @@ describe("chooseMove – expert", () => {
     const decision = chooseMove(state, 1, "expert", makeRng(1));
 
     expect(decision).not.toBeNull();
-    expect(decision!.move.capture).toBe(true);
+    expect(decision!.move!.capture).toBe(true);
   });
 });
 

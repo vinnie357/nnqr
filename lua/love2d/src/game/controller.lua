@@ -80,14 +80,46 @@ return function(Game)
 			return
 		end
 
-		local move = AI.chooseMove(Game.ai, Game.state)
+		local move = AI.chooseMove(Game.ai, Game.state, Game.orbs)
 		if not move then
 			-- No valid moves - end turn (or handle stalemate)
 			Game.state = GameLogic.endTurn(Game.state)
 			return
 		end
 
-		local movingPiece = Game.state.pieces[move.piece]
+		local activatingPiece = Game.state.pieces[move.piece]
+
+		-- Power-activation path: Hard/Expert AI may return {piece, powerId} instead of a move
+		if move.powerId and activatingPiece then
+			Game.playSoundForPower(move.powerId)
+			Game.spawnPowerParticles(move.powerId, activatingPiece.row, activatingPiece.col)
+			Game.state = PowerExecutor.execute(Game.state, activatingPiece, move.powerId, nil)
+			Game.state = GameLogic.endTurn(Game.state)
+
+			-- Check for game over
+			if Game.state.gameState == "gameover" then
+				UI.setScreen(Game.uiState, "gameover")
+			else
+				Game.showTurnBanner(Game.state.currentPlayer)
+
+				if Powers.shouldSpawnOrbs(Game.state.turn) then
+					local newOrbs = Powers.spawnOrbs(
+						Game.state.cols,
+						Game.state.rows,
+						Game.state.pieces,
+						Game.orbs,
+						Powers.getOrbSpawnCount()
+					)
+					for _, orb in ipairs(newOrbs) do
+						table.insert(Game.orbs, orb)
+					end
+				end
+			end
+			return
+		end
+
+		-- Regular movement path
+		local movingPiece = activatingPiece
 		local targetPiece = GameLogic.getPieceAt(Game.state, move.target.row, move.target.col)
 
 		-- Execute the move
