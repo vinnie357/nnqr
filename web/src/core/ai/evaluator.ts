@@ -278,7 +278,7 @@ export function evaluateBoard(state: GameState, player: Player): number {
 }
 
 // ---------------------------------------------------------------------------
-// POWER-ACTIVATION SEAM (stub — implement when powers module lands)
+// POWER-ACTIVATION SEAM (implementation)
 // ---------------------------------------------------------------------------
 
 /**
@@ -287,15 +287,160 @@ export function evaluateBoard(state: GameState, player: Player): number {
  * Positive return value means activation is beneficial for the piece's owner.
  * Return -Infinity to mark a power as not applicable in the current position.
  *
- * This stub always returns -Infinity (no power use), which keeps the AI
- * playing pure movement until the powers module author drops in the real
- * implementation.  The ai.ts chooseMove function consults this function
- * whenever it builds the candidate action set for medium/hard/expert.
+ * Heuristics ported from lua/love2d/src/shared/ai/evaluator.lua:
+ *   - destroy_row / kamikaze_row / acidic_row / recruit_row / scramble_row:
+ *       score = enemyHits * CAPTURE_BONUS — but only when ≥2 enemies in row
+ *       AND no allies in row (avoid self-harm).
+ *   - destroy_column / kamikaze_column / acidic_column / recruit_column / scramble_column:
+ *       same logic along column axis.
+ *   - destroy_radial / bomb / kamikaze_radial / smart_bombs / acidic_radial:
+ *       score = enemyHits * CAPTURE_BONUS — only when ≥2 enemies in 3×3 area
+ *       AND no allies in area.
+ *   - jump_proof: score = JUMP_PROOF_BONUS when piece is threatened AND not
+ *       already jump-proof; -Infinity otherwise.
+ *   - Unknown or non-combat powers: -Infinity (not handled; AI ignores them).
+ *
+ * If the piece does not have the power in its inventory the function returns
+ * -Infinity so the candidate is never selected.
  */
 export function scorePowerActivation(
-  _state: GameState,
-  _piece: Piece,
-  _powerId: string,
+  state: GameState,
+  piece: Piece,
+  powerId: string,
 ): number {
+  // Piece must actually own the power.
+  if (!piece.powers.includes(powerId)) return -Infinity;
+
+  const player = piece.player;
+
+  // --- Row-targeting offensive powers ---
+  if (
+    powerId === "destroy_row" ||
+    powerId === "kamikaze_row" ||
+    powerId === "acidic_row" ||
+    powerId === "recruit_row" ||
+    powerId === "scramble_row" ||
+    powerId === "pilfer_row" ||
+    powerId === "trench_row" ||
+    powerId === "wall_row" ||
+    powerId === "invert_row" ||
+    powerId === "dredge_row" ||
+    powerId === "tripwire_row" ||
+    powerId === "bankrupt_row" ||
+    powerId === "inhibit_row" ||
+    powerId === "parasite_row" ||
+    powerId === "teach_row" ||
+    powerId === "learn_row" ||
+    powerId === "purify_row" ||
+    powerId === "refurb_row" ||
+    powerId === "spyware_row" ||
+    powerId === "orb_spy_row"
+  ) {
+    let enemiesInRow = 0;
+    let alliesInRow = 0;
+    for (const p of state.pieces) {
+      if (p === piece) continue;
+      if (p.row !== piece.row) continue;
+      if (p.player === player) alliesInRow++;
+      else enemiesInRow++;
+    }
+    // Threshold: ≥2 enemies, zero allies (avoid friendly fire).
+    if (enemiesInRow >= 2 && alliesInRow === 0) {
+      return enemiesInRow * WEIGHTS.CAPTURE_BONUS;
+    }
+    return -Infinity;
+  }
+
+  // --- Column-targeting offensive powers ---
+  if (
+    powerId === "destroy_column" ||
+    powerId === "kamikaze_column" ||
+    powerId === "acidic_column" ||
+    powerId === "recruit_column" ||
+    powerId === "scramble_column" ||
+    powerId === "pilfer_column" ||
+    powerId === "trench_column" ||
+    powerId === "wall_column" ||
+    powerId === "invert_column" ||
+    powerId === "dredge_column" ||
+    powerId === "tripwire_column" ||
+    powerId === "bankrupt_column" ||
+    powerId === "inhibit_column" ||
+    powerId === "parasite_column" ||
+    powerId === "teach_column" ||
+    powerId === "learn_column" ||
+    powerId === "purify_column" ||
+    powerId === "refurb_column" ||
+    powerId === "spyware_column" ||
+    powerId === "orb_spy_column"
+  ) {
+    let enemiesInCol = 0;
+    let alliesInCol = 0;
+    for (const p of state.pieces) {
+      if (p === piece) continue;
+      if (p.col !== piece.col) continue;
+      if (p.player === player) alliesInCol++;
+      else enemiesInCol++;
+    }
+    if (enemiesInCol >= 2 && alliesInCol === 0) {
+      return enemiesInCol * WEIGHTS.CAPTURE_BONUS;
+    }
+    return -Infinity;
+  }
+
+  // --- Area (3×3) offensive powers ---
+  if (
+    powerId === "destroy_radial" ||
+    powerId === "bomb" ||
+    powerId === "kamikaze_radial" ||
+    powerId === "smart_bombs" ||
+    powerId === "acidic_radial" ||
+    powerId === "pilfer_radial" ||
+    powerId === "scramble_radial" ||
+    powerId === "teach_radial" ||
+    powerId === "learn_radial" ||
+    powerId === "dredge_radial" ||
+    powerId === "tripwire_radial" ||
+    powerId === "bankrupt_radial" ||
+    powerId === "inhibit_radial" ||
+    powerId === "parasite_radial" ||
+    powerId === "refurb_radial" ||
+    powerId === "purify_radial" ||
+    powerId === "spyware_radial" ||
+    powerId === "orb_spy_radial"
+  ) {
+    let enemiesInArea = 0;
+    let alliesInArea = 0;
+    for (const p of state.pieces) {
+      if (p === piece) continue;
+      const dr = Math.abs(p.row - piece.row);
+      const dc = Math.abs(p.col - piece.col);
+      if (dr > 1 || dc > 1) continue;
+      if (p.player === player) alliesInArea++;
+      else enemiesInArea++;
+    }
+    if (enemiesInArea >= 2 && alliesInArea === 0) {
+      return enemiesInArea * WEIGHTS.CAPTURE_BONUS;
+    }
+    return -Infinity;
+  }
+
+  // --- Defensive: jump_proof ---
+  if (powerId === "jump_proof") {
+    // Already active — no benefit.
+    if (piece.isJumpProof) return -Infinity;
+    // Only activate when this piece is under immediate threat.
+    const threatened = getThreatenedPieces(state, player);
+    if (threatened.some((t) => t.id === piece.id)) {
+      // Score reflects survival value: piece base value + position + jump-proof bonus.
+      // This must beat a normal capture move score (CAPTURE_BONUS ≈ 50) so the AI
+      // prefers saving a threatened piece over most alternative actions.
+      return WEIGHTS.PIECE_VALUE + scorePiecePosition(state, piece) + WEIGHTS.JUMP_PROOF_BONUS;
+    }
+    return -Infinity;
+  }
+
+  // All other powers (movement, terrain, meta, utility, etc.) are not yet
+  // evaluated for autonomous AI activation.
   return -Infinity;
 }

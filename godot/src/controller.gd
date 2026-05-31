@@ -116,15 +116,17 @@ static func activate_power(
 
 ## Apply the AI's move for the current player in `state`.
 ##
-## Calls AI.choose_move, then board.select_piece + board.move_to.
-## After the move: collects any orb at the destination, checks overheat,
+## Calls AI.choose_move, then dispatches based on result shape:
+##   power_action=true  → execute the power via Executor, flip turn.
+##   otherwise          → board.select_piece + board.move_to (standard move).
+## After a move: collects any orb at the destination, checks overheat,
 ## and spawns orbs on the turn interval (mirrors web runAiTurn).
 ## If no move is available (no legal moves), returns the state unchanged.
 ##
 ## @param state      Current game state (AI player must be current_player).
 ## @param difficulty "easy" | "medium" | "hard" | "expert"
 ## @param rng        Seeded RNG instance from rng.gd.
-## @returns New GameState after the AI move, or original state if no move found.
+## @returns New GameState after the AI action, or original state if no action found.
 static func ai_take_turn(state: GameState, difficulty: String, rng: Object) -> GameState:
 	if state.status != "playing":
 		return state
@@ -133,6 +135,23 @@ static func ai_take_turn(state: GameState, difficulty: String, rng: Object) -> G
 	if decision == null:
 		return state
 
+	# --- Power activation branch ---
+	if decision.get("power_action", false):
+		var piece: GameState.Piece = decision["piece"]
+		var power_id: String = decision["power_id"]
+		var result: Dictionary = activate_power(state, piece, power_id, null)
+		var next: GameState = result["state"]
+		# Flip turn and increment counter (power activations end the AI's turn).
+		var after := _copy_state(next)
+		after.current_player = 2 if state.current_player == 1 else 1
+		after.turn = next.turn + 1
+		# Spawn orbs on turn boundary.
+		if Orbs.should_spawn_orbs(after.turn):
+			var spawn_rng := Rng.new(after.seed + after.turn)
+			after = Orbs.spawn_orbs(after, Defs.all_ids(), spawn_rng)
+		return after
+
+	# --- Standard move branch ---
 	var piece: GameState.Piece = decision["piece"]
 	var move: Dictionary = decision["move"]
 

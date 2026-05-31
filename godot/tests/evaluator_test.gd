@@ -166,14 +166,16 @@ func _init() -> void:
 		"get_best_move: picks capture target (4,5)", fails)
 
 	# ---------------------------------------------------------------------------
-	# score_power_activation: stub returns -INF for any input (seam preserved)
+	# score_power_activation: piece lacks the power → always returns -INF
+	# (guard clause: piece must own the power to score it)
 	# ---------------------------------------------------------------------------
 
 	var seam_state = _make_state([{"row": 4, "col": 5}], [])
 	var seam_piece = seam_state.pieces[0]
+	# seam_piece has no powers; querying "bomb" triggers the ownership guard → -INF.
 	var seam_score = Evaluator.score_power_activation(seam_state, seam_piece, "bomb")
 	_assert(seam_score == -INF,
-		"score_power_activation: stub returns -INF (got %s)" % seam_score, fails)
+		"score_power_activation: piece lacks power → -INF (got %s)" % seam_score, fails)
 
 	# ---------------------------------------------------------------------------
 	# Print result

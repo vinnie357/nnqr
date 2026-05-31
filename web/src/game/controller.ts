@@ -3,7 +3,7 @@
 // scene calls to re-render whenever state changes.
 
 import { chooseMove, type Difficulty } from "../core/ai/ai";
-import { moveTo, selectPiece } from "../core/board";
+import { checkWinner, moveTo, selectPiece } from "../core/board";
 import { POWER_IDS } from "../core/powers/definitions";
 import { execute } from "../core/powers/executor";
 import { getTargetTiles, needsTarget, overheatPower } from "../core/powers/targets";
@@ -201,6 +201,14 @@ export class GameController {
     }, 450);
   }
 
+  /**
+   * Run the AI turn synchronously (no scheduling delay). Exposed for the scene
+   * and for tests that need to drive a full AI turn deterministically.
+   */
+  runAiTurnNow(): void {
+    this.runAiTurn();
+  }
+
   private runAiTurn(): void {
     const { game, aiPlayer, difficulty } = this.state;
     if (game.status !== "playing" || game.currentPlayer !== aiPlayer) {
@@ -216,17 +224,27 @@ export class GameController {
       return;
     }
 
+    // Power activation: the AI chose to activate a power rather than move.
+    // Apply it through the real executor so the effect reaches the board.
+    if (decision.powerId !== undefined) {
+      this.applyAiPower(decision.piece, decision.powerId);
+      return;
+    }
+
+    // Normal move path — decision.move is guaranteed present when powerId is absent.
+    const move = decision.move!;
+
     // Reselect the piece (updates validMoves in state).
     let next = selectPiece(game, decision.piece.row, decision.piece.col);
     this.state = { ...this.state, game: next };
 
     // Apply the move.
-    next = moveTo(next, decision.move.row, decision.move.col);
+    next = moveTo(next, move.row, move.col);
 
     // Collect orb.
     const movedPiece = next.pieces.find((p) => p.id === decision.piece.id);
     if (movedPiece) {
-      const { state: afterOrb, collected } = collectOrb(next, decision.move.row, decision.move.col);
+      const { state: afterOrb, collected } = collectOrb(next, move.row, move.col);
       if (collected) {
         next = afterOrb;
         const updatedPiece = next.pieces.find((p) => p.id === decision.piece.id);
@@ -244,6 +262,72 @@ export class GameController {
 
     // Spawn orbs on turn boundary.
     if (shouldSpawnOrbs(next.turn)) {
+      next = spawnOrbs(next, POWER_IDS, makeRng(next.seed + next.turn));
+    }
+
+    this.set({ game: next, aiThinking: false });
+  }
+
+  /**
+   * Apply an AI-chosen power activation through the real executor, then advance
+   * the turn the same way the normal move path does: flip to the human player,
+   * re-check the winner, spawn orbs on the turn boundary, and clear aiThinking.
+   *
+   * Mirrors the structure of the normal move branch and `executePower`.
+   */
+  private applyAiPower(piece: Piece, powerId: string): void {
+    const { game } = this.state;
+
+    // Re-resolve the live piece by id (it must still be on the board).
+    const livePiece = game.pieces.find((p) => p.id === piece.id);
+    if (!livePiece) {
+      this.set({ aiThinking: false });
+      return;
+    }
+
+    // Resolve a target if this power requires one. The AI's offensive line/area
+    // powers (destroy_row, destroy_column, bomb, radial, …) are self-targeted
+    // and take no target; targeted powers (recruit, switcheroo, …) need a tile.
+    let target: { row: number; col: number } | undefined;
+    if (needsTarget(powerId)) {
+      const tiles = getTargetTiles(game, livePiece, powerId);
+      if (tiles.length === 0) {
+        // No valid target — abort the activation and end the turn safely.
+        this.set({ aiThinking: false });
+        return;
+      }
+      // Pick the highest-value target: prefer a tile occupied by an enemy piece,
+      // else the first valid tile. (Targeted AI powers are rare today; this keeps
+      // the choice deterministic and reasonable.)
+      const best =
+        tiles.find((t) =>
+          game.pieces.some(
+            (p) => p.row === t.row && p.col === t.col && p.player !== livePiece.player,
+          ),
+        ) ?? tiles[0]!;
+      target = { row: best.row, col: best.col };
+    }
+
+    // Execute the power (pure — returns new state with the effect + power consumed).
+    let next = execute(game, livePiece, powerId, target);
+
+    // Advance the turn: flip to the opponent and bump the turn counter.
+    next = {
+      ...next,
+      selected: null,
+      validMoves: [],
+      currentPlayer: next.currentPlayer === 1 ? 2 : 1,
+      turn: next.turn + 1,
+    };
+
+    // Re-check the winner after the power may have removed pieces.
+    const winner = checkWinner(next);
+    if (winner) {
+      next = { ...next, status: "won", winner };
+    }
+
+    // Spawn orbs on the turn boundary, mirroring the move path.
+    if (next.status === "playing" && shouldSpawnOrbs(next.turn)) {
       next = spawnOrbs(next, POWER_IDS, makeRng(next.seed + next.turn));
     }
 

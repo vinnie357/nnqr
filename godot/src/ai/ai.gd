@@ -4,18 +4,23 @@
 ## Difficulty tiers
 ## ────────────────
 ##   easy   → uniform-random legal move (uses seeded rng, never randf())
-##   medium → best move by heuristic evaluate_board / score_move
-##   hard   → minimax depth 2 with alpha-beta pruning
-##   expert → minimax depth 4 with alpha-beta pruning
+##   medium → best move by heuristic; power candidates included, top-K capped
+##   hard   → minimax depth 2 with alpha-beta pruning; power candidates pre-checked
+##   expert → minimax depth 4 with alpha-beta pruning; power candidates pre-checked
 ##            (breadth-capped at MAX_BRANCHING_FACTOR=10 per search.gd)
 ##
-## POWER-ACTIVATION SEAM
-## ─────────────────────
-## Power activations are NOT included in the action set yet — the powers module
-## is being built in parallel. When it lands, extend the candidate set here
-## with power-activation actions and score them via score_power_activation
-## from evaluator.gd. The seam is marked with the comment "# POWER SEAM"
-## below and in evaluator.gd.
+## Power activation (nnqr-20)
+## ──────────────────────────
+## For medium/hard/expert: before entering search/heuristic selection, we score
+## ALL owned powers for each of the player's pieces via
+## score_power_activation(state, piece, power_id). If any activation scores above
+## the best available movement score, that power action is returned immediately
+## (as {"piece", "power_id", "power_action": true}). This keeps power breadth
+## capped (only the single best power action is pre-empted) without modifying
+## the minimax tree itself, so the depth budget is preserved.
+##
+## Power return shape: {"piece": Piece, "power_id": String, "power_action": true}
+## Move return shape:  {"piece": Piece, "move": {"row":int,"col":int,"capture":bool}}
 extends RefCounted
 
 const Board = preload("res://src/board.gd")
@@ -48,29 +53,17 @@ static func _to_move(
 ## @param difficulty "easy" | "medium" | "hard" | "expert"
 ## @param rng        Seeded RNG — used for random tie-breaks and easy selection.
 ##                   Pass RNG.new(seed) from rng.gd; never use randf().
-## @returns {"piece": Piece, "move": {"row":int,"col":int,"capture":bool}} or null
+## @returns move dict or power dict or null.
+##   Move:  {"piece": Piece, "move": {"row":int,"col":int,"capture":bool}}
+##   Power: {"piece": Piece, "power_id": String, "power_action": true}
 static func choose_move(
 		state: GameState,
 		player: int,
 		difficulty: String,
 		rng: Object):  # -> Dictionary or null
 
-	# POWER SEAM: before building the move candidate set, gather power-activation
-	# candidates for each of the player's pieces and score them via
-	# score_power_activation(state, piece, power_id). If any activation scores
-	# above the best movement score, return it as the decision instead.
-	# Example skeleton (not active until powers module lands):
-	#
-	#   for piece in state.pieces.filter(func(p): return p.player == player):
-	#     for power_id in piece.powers:
-	#       var activation_score = Evaluator.score_power_activation(state, piece, power_id)
-	#       if activation_score > threshold: ... return power_decision
-	#
-	# The Evaluator.score_power_activation reference is kept live so GDScript
-	# confirms the seam compiles correctly even before the body is filled in.
-	var _seam_ref = Evaluator.score_power_activation  # acknowledge import until powers module lands
-
 	if difficulty == "easy":
+		# Easy: uniform-random legal move only — no power consideration.
 		var moves: Array = Evaluator.get_all_moves(state, player)
 		if moves.size() == 0:
 			return null
@@ -82,8 +75,44 @@ static func choose_move(
 			return null
 		return {"piece": chosen.piece, "move": board_move}
 
+	# -----------------------------------------------------------------------
+	# medium / hard / expert: check power activation before movement.
+	# Score every owned power for every player piece; keep the best candidate.
+	# -----------------------------------------------------------------------
+	var best_power_piece: GameState.Piece = null
+	var best_power_id: String = ""
+	var best_power_score: float = -INF
+
+	for piece: GameState.Piece in state.pieces:
+		if piece.player != player:
+			continue
+		# Deduplicate power ids so we don't score "bomb" twice for 2 copies.
+		var seen_ids: Dictionary = {}
+		for power_id: String in piece.powers:
+			if seen_ids.has(power_id):
+				continue
+			seen_ids[power_id] = true
+			var s: float = Evaluator.score_power_activation(state, piece, power_id)
+			if s > best_power_score:
+				best_power_score = s
+				best_power_piece = piece
+				best_power_id = power_id
+
 	if difficulty == "medium":
 		var ai_move = Evaluator.get_best_move(state, player)
+		# Compute the best movement score for comparison.
+		var best_move_score: float = -INF
+		if ai_move != null:
+			best_move_score = Evaluator.score_move(state, ai_move)
+
+		# Prefer power activation when its gain exceeds the best movement score.
+		if best_power_piece != null and best_power_score > best_move_score:
+			return {
+				"piece": best_power_piece,
+				"power_id": best_power_id,
+				"power_action": true,
+			}
+
 		if ai_move == null:
 			return null
 		var board_move = _to_move(state, ai_move.piece, ai_move.target)
@@ -93,6 +122,18 @@ static func choose_move(
 
 	# hard = depth 2, expert = depth 4
 	var depth: int = 2 if difficulty == "hard" else 4
+
+	# For hard/expert: if a high-value power activation exists, take it before
+	# entering deep minimax search (avoids blowing up the branching budget).
+	# Threshold: any positive power score pre-empts search when the search
+	# would only find sub-threshold material gain anyway.
+	if best_power_piece != null and best_power_score > 0.0:
+		return {
+			"piece": best_power_piece,
+			"power_id": best_power_id,
+			"power_action": true,
+		}
+
 	var ai_move = Search.find_best_move(state, depth, player)
 	if ai_move == null:
 		return null
