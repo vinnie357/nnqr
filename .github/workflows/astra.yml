@@ -1,0 +1,33 @@
+name: Astra
+
+on:
+  push:
+    branches: [main, 'feature/**']
+    paths: ['astra/**', '.github/workflows/astra.yml', 'mise.toml']
+  pull_request:
+    paths: ['astra/**', '.github/workflows/astra.yml', 'mise.toml']
+
+permissions:
+  contents: read
+
+jobs:
+  astra:
+    name: Astra rules and controller
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache pinned Godot engine
+        uses: actions/cache@v4
+        with:
+          path: astra/.tools
+          key: astra-godot-macos-4.6.3-stable
+      - name: Run headless suites
+        run: bash astra/scripts/test.sh
+      - name: Upload diagnostic test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-test-logs
+          path: astra/.logs/
+          if-no-files-found: ignore

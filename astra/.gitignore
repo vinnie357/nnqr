@@ -1,0 +1,8 @@
+.godot/
+.tools/
+.logs/
+.userdata/
+.testdata/
+build/
+
+.qa/
