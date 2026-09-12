@@ -1,22 +1,37 @@
 # Not Not Quadradius (NNQR)
 
-A multi-implementation recreation of **Quadradius** built with **Claude AI**.
+A multi-implementation recreation of **Quadradius**, built with Claude AI and GPT Astra.
 
 The original Quadradius was a beloved Flash strategy game described as "checkers on steroids", created by Jimmi Heiserman and Brad Kayal in 2007. This turn-based masterpiece combined simple movement mechanics with ~70 different power-ups that dramatically altered gameplay.
 
 ## About This Project
 
-This project explores how Claude AI can assist in recreating a classic game across multiple programming languages and game engines. Each implementation is developed collaboratively with Claude, demonstrating AI-assisted game development workflows.
+This project explores how Claude AI can assist in recreating a classic game across multiple programming languages and game engines. The original implementations were developed with Claude. The independent Astra Edition is made by GPT Astra, with its own architecture decisions and 3D presentation.
 
 ## Implementations
 
 | Implementation | Status | Description |
 |----------------|--------|-------------|
+| [Astra Edition](astra/) | Local playtest development | Independent Godot 3D arena by GPT Astra; 86 powers, AI, hotseat, diagnostics, and ADRs |
 | [Rust/Bevy](rust/bevy/) | In Development | Advanced 3D isometric with 38+ powers |
 | [Lua/Love2D](lua/love2d/) | In Development | Lightweight 2D/isometric version |
 | [Godot](godot/) | In Development | 2D Godot 4 implementation; title screen with vs AI / Hotseat 2P mode select and Easy–Expert difficulty, power menu, pause/resume/quit-to-title overlay, and a headless QA snapshot harness |
 
 ## Quick Start
+
+### Astra Edition
+
+```bash
+mise run astra-start  # Native Mac launch with local diagnostics
+mise run astra-test   # Rules, powers, AI, diagnostics and controller tests
+mise run astra-qa     # Render verification screenshots
+```
+
+See [Astra setup and current validation status](astra/README.md),
+[playtest instructions](astra/docs/playtest.md), and
+[architecture decisions](astra/docs/adrs/README.md).
+
+
 
 ### Rust/Bevy (Development)
 ```bash

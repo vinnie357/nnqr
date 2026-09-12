@@ -614,3 +614,40 @@ print "🛑 Stopping Colima..."
 do { ^mise exec lima@latest colima@latest -- colima stop } | complete
 print "✅ Colima stopped"
 """
+
+# Astra Edition: independent Godot implementation
+[tasks.astra-start]
+description = "Launch NNQR Astra Edition with diagnostics"
+run = "bash astra/scripts/run.sh"
+
+[tasks.astra-test]
+description = "Run Astra rules, powers, AI and diagnostics tests"
+run = "bash astra/scripts/test.sh"
+
+[tasks.astra-qa]
+description = "Render Astra verification screenshots and validate camera picking"
+run = "bash astra/scripts/qa.sh"
+
+[tasks.astra-export-web]
+description = "Export Astra browser build (matching Godot templates required)"
+run = "bash astra/scripts/export.sh web"
+
+[tasks.astra-serve]
+description = "Serve the exported Astra browser build"
+run = "bash astra/scripts/serve.sh"
+
+[tasks.astra-status]
+description = "Show actual Astra build and verification artifacts"
+run = "nu astra/astra.nu status"
+
+[tasks.astra-reports]
+description = "List local Astra diagnostic reports"
+run = "nu astra/astra.nu reports"
+
+[tasks.astra-replay]
+description = "Replay an Astra diagnostic ZIP or replay.json"
+run = "nu astra/astra.nu replay"
+
+[tasks.astra-logs]
+description = "Show recent Astra game log output"
+run = "nu astra/astra.nu logs"

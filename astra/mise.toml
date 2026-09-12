@@ -1,0 +1,38 @@
+[tasks.run]
+run = "bash scripts/run.sh"
+
+[tasks.test]
+run = "bash scripts/test.sh"
+
+[tasks.export-web]
+run = "bash scripts/export.sh web"
+
+[tasks.export-native]
+run = "bash scripts/export.sh native"
+
+[tasks.serve]
+run = "bash scripts/serve.sh"
+
+
+[tasks.qa]
+run = "bash scripts/qa.sh"
+
+[tasks.status]
+run = "nu astra.nu status"
+
+[tasks.reports]
+run = "nu astra.nu reports"
+
+[tasks.replay]
+run = "nu astra.nu replay"
+
+[tasks.logs]
+run = "nu astra.nu logs"
+
+[tasks.ci]
+description = "Astra local CI: test suites and whitespace checks"
+dir = "{{config_root}}"
+run = """
+bash scripts/test.sh
+git diff --check
+"""
