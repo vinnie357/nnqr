@@ -22,3 +22,4 @@ run_suite() {
 
 run_suite res://tests/run.gd tests "$@"
 run_suite res://tests/ui_test.gd ui-tests "$@"
+run_suite res://tests/dialog_test.gd dialog-tests "$@"

@@ -2,6 +2,14 @@
 
 Source testing branch: [`feature/nnqr-45-astra`](https://github.com/vinnie357/nnqr/tree/feature/nnqr-45-astra), published for collaborative playtesting in [draft PR #24](https://github.com/vinnie357/nnqr/pull/24). Release acceptance is not complete.
 
+## PR #24 UI enhancement — 2026-10-03
+
+- Applied [godot-ui-containers](https://github.com/thedivergentai/GD-Agentic-Skills/blob/main/skills/godot-ui-containers/SKILL.md) and [godot-input-handling](https://github.com/thedivergentai/GD-Agentic-Skills/blob/main/skills/godot-input-handling/SKILL.md) guidance, checking APIs against Godot 4.6.3. Read the container sizing/layout and input routing/injection examples; implemented within Astra's existing scene rather than copying their scaffolds.
+- Dialogs now have a fixed heading and bounded scrollable body, initial focus, a dynamic modal focus ring, focus restoration, and action-based cancel with key-repeat suppression. Removed fixed content widths from manual, power laboratory, and report dialogs.
+- Added real GUI event tests for title entry, Tab/Shift+Tab isolation, filtered-list rebuilding, focus restoration, cancel actions, title/handoff protection, and five dialog layouts at an 800×600 viewport with interface scales 1.0 and 1.3.
+- Native rendered QA captures the manual at normal/enlarged scales and checks dialog bounds. Inspected both captures: heading, search focus, encyclopedia text and return button remain readable; enlarged content scrolls within the panel. This is functional visual acceptance, not a completed `godot-agent-vision` rubric audit.
+- Remaining skills work: structured team/terrain visual review, measured refresh profiling, and browser export acceptance. Full-match and platform acceptance below remain pending.
+
 ## Passed
 
 - `mise run astra-test`: core, powers, AI, diagnostics, and controller/camera integration; zero failures and no GDScript runtime errors.

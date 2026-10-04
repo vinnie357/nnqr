@@ -8,7 +8,7 @@ From a normal Terminal at the repository root:
 mise run astra-qa
 ```
 
-The game briefly opens, saves `astra/.qa/arena.png`, `power.png`, and `state.json`, prints `ASTRA_QA_OK`, then closes. Tell Astra the result so it can inspect the generated files. This launch needs macOS GUI access; the restricted agent process cannot provide that access. Headless tests already verify controller/camera math, but cannot prove visual quality.
+The game briefly opens, saves `astra/.qa/arena.png`, `power.png`, `manual-1.0.png`, `manual-1.3.png`, and `state.json`, prints `ASTRA_QA_OK`, then closes. The manual captures verify dialog bounds at normal and enlarged interface scales. This launch needs macOS GUI access; an agent may need an approved launch outside its sandbox. Headless tests verify controller/camera math and dialog input/layout, but cannot prove visual quality.
 
 ## Interactive test (about five minutes)
 
@@ -21,6 +21,7 @@ Run `mise run astra-start`, then:
 5. Start a hotseat game and make a move. Expect an opaque handoff screen; only **Ready** should reveal the next player's view.
 6. Close and relaunch. Choose **Continue saved match** and check board, powers, and turn restoration.
 7. Use **Report issue**. Enter your feedback, export the ZIP, and use **Open reports folder**. Attach that ZIP in the conversation. Browser builds download the ZIP instead.
+8. Navigate the title and dialogs with Tab and Shift+Tab. The title starts on difficulty selection; search and feedback dialogs focus their text field. Tab stays inside each dialog, including after filtering powers. Escape closes a dismissible dialog and restores focus to its opener, cancels a power preview, or pauses the arena. Holding Escape should not toggle pause repeatedly. Escape cannot bypass mode selection or the hotseat handoff. Increase **Pause → Interface scale** to 1.3: dialog titles stay visible and long content scrolls to keep focused controls reachable.
 
 Please comment on three things: can you read elevations and legal moves quickly; does a power's explanation match the outcome; and does the board feel responsive? For a bug, include what you expected and your last few actions.
 

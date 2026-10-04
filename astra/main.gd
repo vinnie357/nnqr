@@ -39,6 +39,10 @@ var inspector: VBoxContainer
 var log_label: RichTextLabel
 var overlay: PanelContainer
 var overlay_body: VBoxContainer
+var dialog_scroll: ScrollContainer
+var dialog_heading: Label
+var dialog_return_focus: Control
+var dialog_dismissible = true
 var feedback: TextEdit
 var action_log: Array[String] = []
 var hover_label: Label
@@ -207,32 +211,90 @@ func _build_ui() -> void:
 	overlay.custom_minimum_size.x=580
 	overlay.add_theme_stylebox_override("panel",_style(PANEL,Color("395366"),18))
 	centered.add_child(overlay)
+	var dialog_column=VBoxContainer.new()
+	dialog_column.add_theme_constant_override("separation",14)
+	overlay.add_child(dialog_column)
+	dialog_heading=_label("",28)
+	dialog_heading.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	dialog_column.add_child(dialog_heading)
+	dialog_scroll=ScrollContainer.new()
+	dialog_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	dialog_scroll.follow_focus=true
+	dialog_column.add_child(dialog_scroll)
 	overlay_body=VBoxContainer.new()
+	overlay_body.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	overlay_body.add_theme_constant_override("separation",14)
-	overlay.add_child(overlay_body)
+	dialog_scroll.add_child(overlay_body)
+	root.resized.connect(_size_dialog)
+	overlay_body.minimum_size_changed.connect(_size_dialog)
+	get_viewport().gui_focus_changed.connect(_guard_dialog_focus)
 	sound=AudioStreamPlayer.new()
 	add_child(sound)
 
 func _dialog(title: String, subtitle: String="") -> void:
+	if not root.get_node("Dialogs").visible:
+		dialog_return_focus=get_viewport().gui_get_focus_owner()
 	paused=true
+	dialog_dismissible=true
 	root.get_node("Shield").color=Color(0.015,0.025,0.04,1.0 if handing_off else 0.77)
 	root.get_node("Shield").show()
 	root.get_node("Dialogs").show()
 	_clear(overlay_body)
-	overlay_body.add_child(_label(title,28))
+	dialog_scroll.scroll_vertical=0
+	dialog_heading.text=title
 	if not subtitle.is_empty():
 		var sub=_label(subtitle,15,MUTED)
 		sub.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-		sub.custom_minimum_size.x=540
 		overlay_body.add_child(sub)
+	call_deferred("_prepare_dialog")
+
+func _size_dialog() -> void:
+	if dialog_scroll == null: return
+	# Container-owned sizing: cap the panel and scroll its content in short windows.
+	overlay.custom_minimum_size.x=minf(580, maxf(0,root.size.x-48))
+	var available_height=maxf(0,root.size.y-94-dialog_heading.get_combined_minimum_size().y)
+	dialog_scroll.custom_minimum_size.y=minf(overlay_body.get_combined_minimum_size().y,available_height)
+
+func _dialog_controls(node: Node) -> Array[Control]:
+	var controls: Array[Control]=[]
+	for child in node.get_children():
+		if child is Control and child.is_visible_in_tree():
+			if child.focus_mode==Control.FOCUS_ALL and not (child is BaseButton and child.disabled):
+				controls.append(child)
+			controls.append_array(_dialog_controls(child))
+	return controls
+
+func _prepare_dialog() -> void:
+	if not root.get_node("Dialogs").visible: return
+	var controls: Array[Control]=_dialog_controls(overlay_body)
+	for i in range(controls.size()):
+		var control: Control=controls[i]
+		control.focus_previous=control.get_path_to(controls[(i-1+controls.size())%controls.size()])
+		control.focus_next=control.get_path_to(controls[(i+1)%controls.size()])
+		if control is Button:
+			control.clip_text=true
+			control.focus_neighbor_top=control.focus_previous
+			control.focus_neighbor_bottom=control.focus_next
+	_size_dialog()
+	var focused: Control=get_viewport().gui_get_focus_owner()
+	if not controls.is_empty() and (focused == null or not overlay_body.is_ancestor_of(focused)):
+		controls[0].grab_focus()
+
+func _guard_dialog_focus(control: Control) -> void:
+	if root.get_node("Dialogs").visible and not overlay_body.is_ancestor_of(control):
+		call_deferred("_prepare_dialog")
 
 func _dismiss() -> void:
 	paused=false
 	root.get_node("Shield").hide()
 	root.get_node("Dialogs").hide()
+	if is_instance_valid(dialog_return_focus) and dialog_return_focus.is_visible_in_tree():
+		dialog_return_focus.grab_focus()
+	dialog_return_focus=null
 
 func _title() -> void:
 	_dialog("N N Q R  /  ASTRA", "A mechanical arena. An unpredictable arsenal.\nOutmaneuver your opponent. Leave no torus standing.")
+	dialog_dismissible=false
 	overlay_body.add_child(_label("LOCAL PLAY",12,CYAN))
 	var options=OptionButton.new()
 	for item in ["Easy","Medium","Hard","Expert"]: options.add_item(item)
@@ -514,7 +576,7 @@ func _help() -> void:
 	search.placeholder_text="Search the power encyclopedia…"
 	overlay_body.add_child(search)
 	var scroll=ScrollContainer.new()
-	scroll.custom_minimum_size=Vector2(540,260)
+	scroll.custom_minimum_size=Vector2(0,260)
 	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
 	overlay_body.add_child(scroll)
 	var list=VBoxContainer.new()
@@ -527,7 +589,7 @@ func _help() -> void:
 			if not query.is_empty() and not (str(d.name)+str(d.description)).to_lower().contains(query.to_lower()): continue
 			list.add_child(_label(str(d.name),16,CYAN))
 			var text=_wrapped(str(d.description))
-			text.custom_minimum_size.x=510
+			text.custom_minimum_size.x=0
 			list.add_child(text)
 	search.text_changed.connect(fill)
 	fill.call("")
@@ -539,7 +601,7 @@ func _grant_dialog() -> void:
 	search.placeholder_text="Search powers…"
 	overlay_body.add_child(search)
 	var scroll=ScrollContainer.new()
-	scroll.custom_minimum_size=Vector2(540,360)
+	scroll.custom_minimum_size=Vector2(0,360)
 	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
 	overlay_body.add_child(scroll)
 	var list=VBoxContainer.new()
@@ -551,6 +613,7 @@ func _grant_dialog() -> void:
 			var d: Dictionary=Powers.catalog()[id]
 			if not query.is_empty() and not str(d.name).to_lower().contains(query.to_lower()): continue
 			list.add_child(_button(str(d.name),_grant.bind(str(id))))
+		call_deferred("_prepare_dialog")
 	search.text_changed.connect(fill)
 	fill.call("")
 	overlay_body.add_child(_button("Cancel",_dismiss))
@@ -576,7 +639,7 @@ func _report_dialog() -> void:
 	_dialog("REPORT AN ISSUE","Describe what you tried, what you expected, and what happened. The local report includes your match, recent actions, engine log and a screenshot. Share the ZIP with me here.")
 	feedback=TextEdit.new()
 	feedback.placeholder_text="Steps to reproduce, visual feedback, or anything that felt wrong…"
-	feedback.custom_minimum_size=Vector2(540,160)
+	feedback.custom_minimum_size=Vector2(0,160)
 	overlay_body.add_child(feedback)
 	overlay_body.add_child(_button("Export diagnostic report",_export_report,true))
 	overlay_body.add_child(_button("Cancel",_dismiss))
@@ -606,9 +669,10 @@ func _tone(frequency: float) -> void:
 	sound.stream=stream
 	sound.play()
 
-func _unhandled_key_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE:
-		if handing_off: return
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		if handing_off or (paused and not dialog_dismissible): return
 		if paused: _dismiss()
 		elif not armed.is_empty(): armed=""; _refresh()
 		else: _pause()
@@ -643,7 +707,20 @@ func _qa() -> void:
 		get_tree().quit(1)
 		return
 	print("ASTRA_QA_REPORT: "+report_path)
-	print("ASTRA_QA_OK: screenshots, state, report and camera picking verified")
+	# Include real rendered dialogs at default and enlarged interface scales.
+	for scale in [1.0,1.3]:
+		get_tree().root.content_scale_factor=scale
+		_help()
+		for frame in range(4): await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		var bounds: Rect2=overlay.get_global_rect()
+		if bounds.position.x<0 or bounds.position.y<0 or bounds.end.x>root.size.x+1 or bounds.end.y>root.size.y+1:
+			push_error("QA dialog exceeds viewport at scale %s" % scale)
+			get_tree().quit(1)
+			return
+		get_viewport().get_texture().get_image().save_png("res://.qa/manual-%s.png" % str(scale))
+		_dismiss()
+	print("ASTRA_QA_OK: screenshots, state, report, camera picking and dialog bounds verified")
 	get_tree().quit(0)
 
 func _exit_tree() -> void:
